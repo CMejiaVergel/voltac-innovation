@@ -5,9 +5,11 @@ build/
 *.tsbuildinfo
 next-env.d.ts
 
+# Cualquier variante de .env queda fuera, incluidas las copias de seguridad
+# tipo .env.bak-20260829: llevan SESSION_SECRET y claves de API dentro.
 .env
-.env.local
-.env.production
+.env.*
+!.env.example
 
 prisma/*.db
 prisma/*.db-journal
