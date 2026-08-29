@@ -38,7 +38,7 @@ En `http://localhost:3000`, con el correo y la contraseña de `SEED_ADMIN_*`.
 El seed carga el proyecto Cabot con sus 110 fragmentos, 9 fuentes y 7 preguntas
 pendientes.
 
-Para el agente hace falta `ANTHROPIC_API_KEY` en el `.env`. Sin ella el resto
+Para el agente hace falta `OPENROUTER_API_KEY` en el `.env`. Sin ella el resto
 funciona igual y la pantalla del agente lo avisa.
 
 ## Despliegue
@@ -91,6 +91,33 @@ Los 110 fragmentos migrados del prototipo entraron casi todos como "por
 confirmar" a proposito: el prototipo no guardaba fuente por fragmento, y
 marcarlos como verificados habria sido inventar respaldo.
 
+### OpenRouter, y el modelo se elige desde la interfaz
+
+El proveedor es OpenRouter: una clave, una factura y acceso a cientos de
+modelos. El modelo se guarda **por proyecto** (`Project.agentModel`), asi que
+cambiarlo no exige tocar codigo ni redesplegar.
+
+El selector lee el catalogo vivo de OpenRouter con los precios del momento, asi
+que no hay ninguna tabla de precios que se quede vieja en el repositorio.
+
+Lo que domina el costo de una corrida no es el modelo sino la **busqueda web**,
+que se cobra por resultado. Por eso es apagable por proyecto, y por eso cada
+corrida guarda su costo real en USD: para decidir con datos y no con intuicion.
+
+### La aplicacion es instalable y avisa cuando termina
+
+Manifiesto, iconos y service worker en `public/`. En movil la navegacion es una
+barra inferior de pestañas, y el mapa 5x5 se sustituye por una vista de **un
+lente a la vez**: una rejilla de 25 celdas no cabe en un telefono.
+
+El service worker **no cachea datos de la aplicacion** a proposito. El mapa
+cambia a cada rato y varias personas lo editan; servir una copia vieja seria
+peor que no funcionar sin conexion. Solo cachea el armazon estatico.
+
+Las notificaciones push avisan cuando termina una corrida del agente, que es el
+unico momento en que hay algo que esperar. Requieren claves VAPID; sin ellas el
+resto funciona igual.
+
 ### El agente propone, la persona decide
 
 Nada de lo que produce el agente entra al mapa. Aterriza como `PROPOSED` y
@@ -135,9 +162,13 @@ src/lib/projects.ts         Control de acceso por proyecto.
 src/lib/agent/prompt.ts     Las reglas del agente. Archivo normativo.
 src/lib/agent/run.ts        Ejecucion en segundo plano y persistencia.
 src/lib/agent/schema.ts     Contrato de salida validado con zod.
+src/lib/agent/openrouter.ts Cliente de OpenRouter y catalogo de modelos.
+src/lib/push.ts             Notificaciones push (VAPID).
 
 src/app/actions/            Mutaciones. Todas verifican permiso y dejan historial.
-src/components/bom/         El tablero.
+src/components/bom/         El tablero (rejilla en escritorio, lentes en movil).
+src/app/(app)/guia/         Guia de uso dentro de la aplicacion.
+public/brand/               Logo, isotipo e iconos del PWA.
 docs/                       Contexto original y prototipo HTML de referencia.
 ```
 

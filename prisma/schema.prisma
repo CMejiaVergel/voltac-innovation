@@ -31,12 +31,29 @@ model User {
   updatedAt    DateTime @updatedAt
 
   sessions      Session[]
+  pushSubs      PushSubscription[]
   memberships   Membership[]
   projects      Project[]          @relation("ProjectCreator")
   fragments     Fragment[]         @relation("FragmentAuthor")
   revisions     FragmentRevision[] @relation("RevisionAuthor")
   researchRuns  ResearchRun[]
   reviewedFrags Fragment[]         @relation("FragmentReviewer")
+}
+
+/// Suscripcion push de un navegador concreto (Web Push).
+/// Una persona puede tener varias: telefono, portatil, tableta.
+model PushSubscription {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint String @unique
+  p256dh   String
+  auth     String
+  /// Para reconocerla en la lista de dispositivos del usuario.
+  label     String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Session {
@@ -64,6 +81,12 @@ model Project {
   /// Programa o convocatoria (ej. "Caribe Innova 2026")
   program String?
   status  String @default("ACTIVE") // ACTIVE | ARCHIVED
+
+  /// Modelo de OpenRouter que usa el agente en este proyecto. Vacio = el que
+  /// diga OPENROUTER_MODEL en el entorno.
+  agentModel     String  @default("")
+  /// Si el agente puede buscar en la web. Es lo que mas cuesta por corrida.
+  agentWebSearch Boolean @default(true)
 
   createdById String
   createdBy   User   @relation("ProjectCreator", fields: [createdById], references: [id])
@@ -333,6 +356,8 @@ model ResearchRun {
   inputTokens  Int    @default(0)
   outputTokens Int    @default(0)
   webSearches  Int    @default(0)
+  /// Coste real en USD reportado por OpenRouter. null si no lo informo.
+  costUsd      Float?
   /// Texto crudo devuelto por el modelo, para auditar que propuso y por que.
   rawResponse String?
   error       String?

@@ -3,11 +3,15 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireProject, getPrimaryMap } from "@/lib/projects";
-import { canEdit, RUN_STATUS_LABEL, asEnum, RUN_STATUSES, VERIFICATION_META, VERIFICATIONS } from "@/lib/enums";
+import { canEdit, RUN_STATUS_LABEL, asEnum, RUN_STATUSES, VERIFICATIONS } from "@/lib/enums";
 import { agentIsConfigured, reapStaleRuns } from "@/lib/agent/run";
+import { DEFAULT_MODEL } from "@/lib/agent/openrouter";
 import { THIN_CELL_THRESHOLD } from "@/lib/gimi";
 import { AgentLaunchForm } from "@/components/agent/AgentLaunchForm";
 import { ReviewQueue } from "@/components/agent/ReviewQueue";
+import { ModelPicker } from "@/components/agent/ModelPicker";
+import { NotificationToggle } from "@/components/PwaClient";
+import { publicKey } from "@/lib/push";
 
 // La cola cambia por si sola cuando termina una corrida: no se cachea.
 export const dynamic = "force-dynamic";
@@ -54,7 +58,7 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
         <div className="rounded-[4px] border border-[rgba(217,139,63,0.45)] bg-[rgba(217,139,63,0.12)] p-4">
           <p className="text-[13px] font-semibold text-warn">El agente no esta configurado.</p>
           <p className="hint mt-1.5">
-            Falta <code className="font-mono text-[11.5px]">ANTHROPIC_API_KEY</code> en el
+            Falta <code className="font-mono text-[11.5px]">OPENROUTER_API_KEY</code> en el
             entorno del servidor. Sin ella el resto de la aplicacion funciona con normalidad;
             solo el llenado automatico queda deshabilitado.
           </p>
@@ -89,6 +93,28 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
               <li>Nada entra al mapa sin que una persona lo acepte.</li>
             </ul>
           </div>
+        </div>
+      </section>
+
+      {/* ── Modelo ───────────────────────────────────────────────────────── */}
+      <section className="panel">
+        <h2 className="kicker mb-1">Motor de IA</h2>
+        <p className="hint mb-4">
+          Esta tarea no necesita un modelo grande: hay que seguir un reglamento, buscar y
+          devolver JSON con frases cortas. Empieza barato y sube solo si los fragmentos salen
+          pobres. Los precios los publica OpenRouter en vivo.
+        </p>
+        <ModelPicker
+          slug={slug}
+          currentModel={project.agentModel}
+          envDefault={process.env.OPENROUTER_MODEL?.trim() || DEFAULT_MODEL}
+          webSearch={project.agentWebSearch}
+          editable={editable}
+        />
+
+        <div className="mt-6 border-t border-[rgba(232,227,216,0.1)] pt-5">
+          <h3 className="kicker mb-3">Avisarme cuando termine</h3>
+          <NotificationToggle vapidKey={publicKey()} />
         </div>
       </section>
 
@@ -182,8 +208,8 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
                     {r._count.fragments} fragmento{r._count.fragments === 1 ? "" : "s"}
                   </span>
                   <span className="font-mono text-[10.5px] text-[#5e7370]">
-                    {r.webSearches} busquedas · {r.inputTokens + r.outputTokens} tokens ·{" "}
-                    {r.model}
+                    {r.webSearches} resultados web · {r.inputTokens + r.outputTokens} tokens
+                    {r.costUsd !== null ? ` · $${r.costUsd.toFixed(4)}` : ""} · {r.model}
                   </span>
                   <span className="font-mono text-[10.5px] text-[#4d5a58]">
                     {r.requestedBy.name} · {r.startedAt.toLocaleString("es-CO")}

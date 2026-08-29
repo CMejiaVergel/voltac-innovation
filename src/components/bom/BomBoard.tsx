@@ -24,6 +24,7 @@ import {
 } from "@/app/actions/fragments";
 
 import { Note } from "./Note";
+import { BomMobile } from "./BomMobile";
 import type { BoardFragment, BoardProps } from "./types";
 
 /**
@@ -161,22 +162,24 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
     setDragging(items.find((f) => f.id === e.active.id) ?? null);
   }
 
-  function handleDragEnd(e: DragEndEvent) {
-    setDragging(null);
-    const overId = e.over?.id;
-    if (!overId || typeof overId !== "string") return;
-
-    const [rowId, colId] = overId.split("|");
-    const id = String(e.active.id);
+  function handleMove(id: string, rowId: string, colId: string) {
     const fragment = items.find((f) => f.id === id);
     if (!fragment || (fragment.rowId === rowId && fragment.colId === colId)) return;
-
     const before = items;
     run(
       () => setItems((s) => s.map((f) => (f.id === id ? { ...f, rowId, colId, position: 9999 } : f))),
       () => setItems(before),
       () => moveFragment(id, rowId, colId),
     );
+  }
+
+  function handleDragEnd(e: DragEndEvent) {
+    setDragging(null);
+    const overId = e.over?.id;
+    if (!overId || typeof overId !== "string") return;
+
+    const [rowId, colId] = overId.split("|");
+    handleMove(String(e.active.id), rowId, colId);
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -186,7 +189,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
   return (
     <div>
       {/* Barra de herramientas */}
-      <div className="no-print sticky top-[53px] z-40 -mx-[18px] flex flex-wrap items-center gap-2 border-b border-[rgba(232,227,216,0.14)] bg-[rgba(18,24,27,0.95)] px-[18px] py-2.5 backdrop-blur">
+      <div className="no-print sticky top-[52px] z-40 -mx-4 flex flex-wrap items-center gap-2 overflow-x-auto border-b border-[rgba(232,227,216,0.14)] bg-[rgba(18,24,27,0.95)] px-4 py-2.5 backdrop-blur md:-mx-[18px] md:px-[18px]">
         <button
           type="button"
           onClick={() => setShowGaps((v) => !v)}
@@ -211,7 +214,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
             Propuestas del agente ({proposedCount})
           </button>
         )}
-        <button type="button" onClick={() => window.print()} className="btn">
+        <button type="button" onClick={() => window.print()} className="btn hidden md:inline-flex">
           Imprimir / PDF
         </button>
 
@@ -227,8 +230,23 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
         </p>
       )}
 
+      {/* Vista de telefono: un lente a la vez. Ver BomMobile. */}
+      <BomMobile
+        shape={shape}
+        byCell={byCell}
+        editable={editable}
+        showGaps={showGaps}
+        onAdd={handleAdd}
+        onEditText={handleEditText}
+        onSetVerification={handleVerification}
+        onDelete={handleDelete}
+        onReview={handleReview}
+        onMove={handleMove}
+      />
+
+      {/* Rejilla completa: escritorio e impresion. */}
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="board-shell mt-4">
+        <div className="board-shell mt-4 hidden md:block print:block">
           <div className="board">
             {/* Encabezado de columnas */}
             <div

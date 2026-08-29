@@ -1,8 +1,13 @@
 import "server-only";
 
-import Anthropic from "@anthropic-ai/sdk";
-
 import { prisma } from "@/lib/db";
+import { notifyUser } from "@/lib/push";
+import {
+  chat,
+  DEFAULT_MODEL,
+  openRouterIsConfigured,
+  OpenRouterNotConfigured,
+} from "@/lib/agent/openrouter";
 import { parseShape, isValidCoord } from "@/lib/templates";
 import { buildSystemPrompt, buildUserPrompt, type AgentScope } from "@/lib/agent/prompt";
 import { parseAgentOutput, type AgentFragment } from "@/lib/agent/schema";
@@ -17,19 +22,22 @@ import { parseAgentOutput, type AgentFragment } from "@/lib/agent/schema";
  *
  * Nada de lo que produce el agente entra al mapa directamente: todo aterriza
  * como PROPOSED y espera revision humana.
+ *
+ * El proveedor es OpenRouter: una sola clave da acceso a cientos de modelos y
+ * el equipo elige cual usar por proyecto, sin tocar codigo ni redesplegar.
  */
 
 const STALE_AFTER_MS = 25 * 60 * 1000;
 
-export class AgentNotConfigured extends Error {
-  constructor() {
-    super("Falta ANTHROPIC_API_KEY en el entorno. El agente no puede correr.");
-    this.name = "AgentNotConfigured";
-  }
-}
+export { OpenRouterNotConfigured as AgentNotConfigured };
 
 export function agentIsConfigured(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return openRouterIsConfigured();
+}
+
+/** Modelo efectivo de un proyecto: el suyo, o el del entorno, o el de fabrica. */
+export function resolveModel(projectModel: string | null | undefined): string {
+  return projectModel?.trim() || process.env.OPENROUTER_MODEL?.trim() || DEFAULT_MODEL;
 }
 
 /** Crea la corrida y la lanza. Devuelve el id para que la UI haga seguimiento. */
@@ -39,7 +47,12 @@ export async function startResearchRun(params: {
   userId: string;
   scope: AgentScope;
 }): Promise<string> {
-  if (!agentIsConfigured()) throw new AgentNotConfigured();
+  if (!agentIsConfigured()) throw new OpenRouterNotConfigured();
+
+  const project = await prisma.project.findUniqueOrThrow({
+    where: { id: params.projectId },
+    select: { agentModel: true },
+  });
 
   const run = await prisma.researchRun.create({
     data: {
@@ -48,7 +61,7 @@ export async function startResearchRun(params: {
       requestedById: params.userId,
       status: "RUNNING",
       scope: JSON.stringify(params.scope),
-      model: process.env.ANTHROPIC_MODEL ?? "claude-opus-5",
+      model: resolveModel(project.agentModel),
     },
   });
 
@@ -87,39 +100,19 @@ async function executeRun(runId: string): Promise<void> {
     orderBy: [{ rowId: "asc" }, { colId: "asc" }, { position: "asc" }],
   });
 
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const model = process.env.ANTHROPIC_MODEL ?? "claude-opus-5";
-  const maxSearches = Number(process.env.AGENT_MAX_WEB_SEARCHES ?? 12);
+  const model = resolveModel(run.project.agentModel);
+  const maxResults = Number(process.env.AGENT_MAX_WEB_RESULTS ?? 8);
 
-  const stream = client.messages.stream({
+  const completion = await chat({
     model,
-    max_tokens: 16000,
     system: buildSystemPrompt(shape),
-    tools: [
-      {
-        type: "web_search_20250305",
-        name: "web_search",
-        max_uses: Number.isFinite(maxSearches) ? maxSearches : 12,
-      } as Anthropic.Messages.ToolUnion,
-    ],
-    messages: [
-      {
-        role: "user",
-        content: buildUserPrompt(run.project, run.project.brief, shape, scope, existing),
-      },
-    ],
+    user: buildUserPrompt(run.project, run.project.brief, shape, scope, existing),
+    maxTokens: 8000,
+    webSearch: run.project.agentWebSearch,
+    maxWebResults: Number.isFinite(maxResults) ? maxResults : 8,
   });
 
-  const message = await stream.finalMessage();
-
-  const text = message.content
-    .filter((b): b is Anthropic.Messages.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("\n");
-
-  const usage = message.usage as Anthropic.Messages.Usage & {
-    server_tool_use?: { web_search_requests?: number };
-  };
+  const text = completion.text;
 
   const parsed = parseAgentOutput(text);
 
@@ -130,9 +123,11 @@ async function executeRun(runId: string): Promise<void> {
         status: "ERROR",
         error: parsed.error,
         rawResponse: text,
-        inputTokens: usage.input_tokens ?? 0,
-        outputTokens: usage.output_tokens ?? 0,
-        webSearches: usage.server_tool_use?.web_search_requests ?? 0,
+        model: completion.model,
+        inputTokens: completion.inputTokens,
+        outputTokens: completion.outputTokens,
+        webSearches: completion.webResults,
+        costUsd: completion.costUsd,
         finishedAt: new Date(),
       },
     });
@@ -225,14 +220,18 @@ async function executeRun(runId: string): Promise<void> {
     });
   }
 
+  await notifyRequester(run.requestedById, run.project.slug, accepted, discarded);
+
   await prisma.researchRun.update({
     where: { id: runId },
     data: {
       status: "DONE",
       rawResponse: text,
-      inputTokens: usage.input_tokens ?? 0,
-      outputTokens: usage.output_tokens ?? 0,
-      webSearches: usage.server_tool_use?.web_search_requests ?? 0,
+      model: completion.model,
+      inputTokens: completion.inputTokens,
+      outputTokens: completion.outputTokens,
+      webSearches: completion.webResults,
+      costUsd: completion.costUsd,
       error:
         discarded > 0
           ? `${discarded} fragmento(s) descartados por celda invalida o duplicado. ${accepted} propuestos.`
@@ -243,6 +242,28 @@ async function executeRun(runId: string): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+/** Aviso push a quien lanzo la corrida. Nunca puede tumbar la corrida. */
+async function notifyRequester(
+  userId: string,
+  slug: string,
+  accepted: number,
+  discarded: number,
+): Promise<void> {
+  try {
+    await notifyUser(userId, {
+      title: "El agente termino",
+      body:
+        accepted > 0
+          ? `${accepted} fragmento${accepted === 1 ? "" : "s"} por revisar${discarded ? ` (${discarded} descartados)` : ""}.`
+          : "No encontro material nuevo que proponer.",
+      url: `/proyectos/${slug}/agente`,
+      tag: `corrida-${slug}`,
+    });
+  } catch {
+    // Sin claves VAPID o con el navegador desuscrito: no es un fallo de la corrida.
+  }
+}
 
 function normalize(text: string): string {
   return text

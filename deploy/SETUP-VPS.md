@@ -71,8 +71,15 @@ Tres valores importan:
   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
   ```
 
-- `ANTHROPIC_API_KEY` — la del agente investigador. Sin ella todo funciona
-  salvo el llenado automatico.
+- `OPENROUTER_API_KEY` — la del agente investigador (https://openrouter.ai/keys).
+  Sin ella todo funciona salvo el llenado automatico.
+
+- `VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY` — para las notificaciones push.
+  Generalas UNA sola vez y no las cambies: si cambian, todos los dispositivos
+  suscritos dejan de recibir avisos.
+  ```bash
+  npx web-push generate-vapid-keys
+  ```
 
 Y `NODE_ENV="production"`. Con esa variable las cookies de sesion se emiten
 como `secure`, asi que **solo viajan por HTTPS**: no intentes entrar por
@@ -156,6 +163,8 @@ sudo tail -f /var/log/nginx/voltac-innovation.error.log
 | El dominio muestra OTRA aplicacion | El puerto del `proxy_pass` lo ocupa otro proyecto. Comprueba con `ss -tlnp \| grep :3007` |
 | `Permission denied` al desplegar | `chmod +x deploy/deploy.sh` |
 | Entra al login y vuelve al login | `NODE_ENV=production` sin HTTPS: la cookie `secure` no se guarda |
-| El agente no aparece | Falta `ANTHROPIC_API_KEY`; se avisa en la pantalla del agente |
+| El agente no aparece | Falta `OPENROUTER_API_KEY`; se avisa en la pantalla del agente |
+| No llegan notificaciones | Faltan las claves VAPID. En iPhone ademas hay que instalar la app en la pantalla de inicio |
+| No sale la opcion de instalar la app | El PWA exige HTTPS. Por `http://` no aparece |
 | Corridas colgadas en "Investigando" | El proceso se reinicio a mitad. Se marcan como error solas a los 25 minutos |
 | `EACCES` al escribir la base | El directorio de `DATABASE_URL` no pertenece al usuario de PM2 |

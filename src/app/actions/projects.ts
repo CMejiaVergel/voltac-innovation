@@ -127,6 +127,26 @@ export async function launchAgent(slug: string, formData: FormData): Promise<voi
   revalidatePath(`/proyectos/${slug}/agente`);
 }
 
+/** Modelo de IA y busqueda web del proyecto. */
+export async function updateAgentSettings(slug: string, formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const project = await prisma.project.findUnique({ where: { slug } });
+  if (!project) throw new Error("El proyecto no existe.");
+
+  const access = await getProjectRole(user, project.id);
+  if (!canEdit(access?.role)) throw new Error("No tienes permiso para cambiar esto.");
+
+  await prisma.project.update({
+    where: { id: project.id },
+    data: {
+      agentModel: String(formData.get("agentModel") ?? "").trim(),
+      agentWebSearch: formData.get("agentWebSearch") === "on",
+    },
+  });
+
+  revalidatePath(`/proyectos/${slug}/agente`);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Preguntas pendientes y bibliografia
 // ─────────────────────────────────────────────────────────────────────────────

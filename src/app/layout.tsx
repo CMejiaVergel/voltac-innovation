@@ -1,10 +1,35 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { PwaRegister } from "@/components/PwaClient";
 
 export const metadata: Metadata = {
-  title: "Plataforma de Innovacion — Voltac Systems",
+  title: "Voltac Innovacion",
   description:
-    "Mapa de Oportunidades de Negocio y proceso IDEX del GIM Institute, con agente investigador.",
+    "Mapas de Oportunidades de Negocio y proceso IDEX del GIM Institute, con agente investigador.",
+  manifest: "/manifest.webmanifest",
+  applicationName: "Voltac Innovacion",
+  icons: {
+    icon: [
+      { url: "/brand/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/brand/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Innovacion",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#12181B",
+  width: "device-width",
+  initialScale: 1,
+  // Sin tope de zoom: limitarlo rompe la accesibilidad para quien necesita
+  // ampliar, y el mapa es denso.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -18,7 +43,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <PwaRegister />
+      </body>
     </html>
   );
 }

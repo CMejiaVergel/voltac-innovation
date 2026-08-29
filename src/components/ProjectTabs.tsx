@@ -17,7 +17,9 @@ export function ProjectTabs({ slug }: { slug: string }) {
   const base = `/proyectos/${slug}`;
 
   return (
-    <nav className="no-print mt-5 flex flex-wrap gap-x-5 gap-y-2 border-b border-[rgba(232,227,216,0.12)] pb-0">
+    // En movil estas pestañas se sustituyen por la barra inferior: repetirlas
+    // arriba solo gasta altura de pantalla.
+    <nav className="no-print mt-5 hidden flex-wrap gap-x-5 gap-y-2 border-b border-[rgba(232,227,216,0.12)] pb-0 md:flex">
       {TABS.map((t) => {
         const href = `${base}${t.href}`;
         const active = t.href === "" ? pathname === base : pathname.startsWith(href);
