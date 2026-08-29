@@ -32,10 +32,21 @@ echo "==> Respaldo de la base antes de migrar"
 DB_PATH="$(grep -E '^DATABASE_URL' .env | sed 's/.*file://; s/"//g')"
 if [ -f "$DB_PATH" ]; then
   mkdir -p "$APP_DIR/backups"
-  cp "$DB_PATH" "$APP_DIR/backups/$(date +%Y%m%d-%H%M%S).db"
+  DEST="$APP_DIR/backups/$(date +%Y%m%d-%H%M%S).db"
+
+  # `.backup` de sqlite3 es consistente con la aplicacion escribiendo; `cp` no
+  # lo es. Solo se usa cp si sqlite3 no esta instalado, y se avisa.
+  if command -v sqlite3 > /dev/null 2>&1; then
+    sqlite3 "$DB_PATH" ".backup '$DEST'"
+  else
+    echo "    AVISO: sqlite3 no esta instalado; se copia el archivo directo."
+    echo "    Instalalo con 'sudo apt install -y sqlite3' para respaldos consistentes."
+    cp "$DB_PATH" "$DEST"
+  fi
+
   # Conservar los ultimos 20 respaldos.
-  ls -1t "$APP_DIR/backups"/*.db | tail -n +21 | xargs -r rm --
-  echo "    respaldo hecho"
+  ls -1t "$APP_DIR/backups"/*.db 2>/dev/null | tail -n +21 | xargs -r rm --
+  echo "    respaldo en $DEST"
 else
   echo "    sin base previa (primer despliegue)"
 fi

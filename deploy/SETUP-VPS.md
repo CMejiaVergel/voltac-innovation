@@ -29,7 +29,20 @@ sudo apt install -y nginx git
 sudo npm install -g pm2
 ```
 
-## 2. Traer el codigo
+## 2. Elegir puerto libre
+
+El VPS aloja varias aplicaciones. Esta usa el **3007**; comprueba que este
+libre antes de seguir:
+
+```bash
+ss -tlnp | grep -E ':(3000|3007)\s' || echo "3000 y 3007 libres"
+```
+
+Si el 3007 aparece ocupado, elige otro y cambialo en los DOS unicos sitios
+donde vive: `PORT` en `deploy/ecosystem.config.js` y los dos `proxy_pass` de
+`deploy/nginx.conf`.
+
+## 3. Traer el codigo
 
 ```bash
 sudo mkdir -p /var/www && sudo chown "$USER":"$USER" /var/www
@@ -37,7 +50,7 @@ git clone https://github.com/CMejiaVergel/voltac-innovation.git /var/www/voltac-
 cd /var/www/voltac-innovation
 ```
 
-## 3. Configurar el entorno
+## 4. Configurar el entorno
 
 ```bash
 cp .env.example .env
@@ -65,7 +78,7 @@ Y `NODE_ENV="production"`. Con esa variable las cookies de sesion se emiten
 como `secure`, asi que **solo viajan por HTTPS**: no intentes entrar por
 `http://` una vez configurado.
 
-## 4. Primer despliegue
+## 5. Primer despliegue
 
 ```bash
 mkdir -p /var/log/voltac-innovation
@@ -79,13 +92,15 @@ pm2 start deploy/ecosystem.config.js && pm2 save && pm2 startup
 El seed lee `SEED_ADMIN_EMAIL` y `SEED_ADMIN_PASSWORD` del `.env`. Cambia esa
 contraseña desde Administracion apenas entres.
 
-Comprueba que el proceso responde antes de tocar nginx:
+Comprueba que el proceso responde **y que es el nuestro** antes de tocar
+nginx. Debe devolver `HTTP/1.1 200 OK`; si devuelve 404, en ese puerto esta
+contestando otra aplicacion:
 
 ```bash
-curl -I http://127.0.0.1:3000/login
+curl -sI http://127.0.0.1:3007/login | head -1
 ```
 
-## 5. Nginx y certificado
+## 6. Nginx y certificado
 
 ```bash
 sudo cp deploy/nginx.conf /etc/nginx/sites-available/innovation.voltac.com.co
@@ -98,11 +113,15 @@ sudo certbot --nginx -d innovation.voltac.com.co
 Certbot reescribe el archivo para agregar el bloque 443 y la redireccion. La
 renovacion queda automatica; verificala con `sudo certbot renew --dry-run`.
 
-## 6. Despliegues siguientes
+## 7. Despliegues siguientes
 
 ```bash
 cd /var/www/voltac-innovation && ./deploy/deploy.sh
 ```
+
+Si diera `Permission denied`, al script le falta el bit de ejecucion:
+`chmod +x deploy/deploy.sh`. Ya viene marcado en el repositorio, asi que no
+deberia pasar en un clon nuevo.
 
 Hace respaldo de la base antes de migrar, guarda los ultimos 20 en `backups/`
 y recarga PM2. Si el build falla, corta antes de tocar el proceso vivo.
@@ -134,6 +153,8 @@ sudo tail -f /var/log/nginx/voltac-innovation.error.log
 | Sintoma | Causa habitual |
 |---|---|
 | 502 desde nginx | El proceso no esta arriba: `pm2 restart voltac-innovation` |
+| El dominio muestra OTRA aplicacion | El puerto del `proxy_pass` lo ocupa otro proyecto. Comprueba con `ss -tlnp \| grep :3007` |
+| `Permission denied` al desplegar | `chmod +x deploy/deploy.sh` |
 | Entra al login y vuelve al login | `NODE_ENV=production` sin HTTPS: la cookie `secure` no se guarda |
 | El agente no aparece | Falta `ANTHROPIC_API_KEY`; se avisa en la pantalla del agente |
 | Corridas colgadas en "Investigando" | El proceso se reinicio a mitad. Se marcan como error solas a los 25 minutos |
