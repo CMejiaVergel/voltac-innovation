@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Direccion visual: tablero claro tipo papel sobre fondo oscuro, post-its
+ * rosados con tipografia manuscrita. No es decoracion — el equipo hizo este
+ * ejercicio fisicamente con papelitos y la correspondencia visual reduce la
+ * friccion al pasar del taller a la herramienta (foto 017.jpg).
+ */
+
+@layer base {
+  :root {
+    --board-line: #d5cec0;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-bg font-ui text-[14px] text-ink antialiased;
+  }
+
+  ::selection {
+    background: #6fbfb2;
+    color: #08302b;
+  }
+}
+
+@layer components {
+  /* ── Cromo oscuro ─────────────────────────────────────────────────────── */
+
+  .kicker {
+    @apply font-mono text-[10.5px] uppercase tracking-[0.18em] text-[#5e8c86];
+  }
+
+  .btn {
+    @apply inline-flex items-center gap-1.5 rounded-[3px] border border-[rgba(192,204,202,0.3)]
+           bg-transparent px-3 py-1.5 text-[12px] text-[#c0ccca] transition
+           hover:border-[rgba(192,204,202,0.6)] hover:bg-[rgba(192,204,202,0.12)] hover:text-white
+           disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-primary {
+    @apply border-accent bg-accent font-semibold text-accentDeep
+           hover:border-accent hover:bg-[#8ad0c4] hover:text-accentDeep;
+  }
+
+  .btn-danger {
+    @apply hover:border-danger hover:bg-danger hover:text-white;
+  }
+
+  .field {
+    @apply w-full rounded-[3px] border border-[rgba(192,204,202,0.22)] bg-[#0e1417]
+           px-3 py-2 text-[13px] text-[#dfe6e4] outline-none transition
+           placeholder:text-[#4d5a58] focus:border-accent;
+  }
+
+  .label {
+    @apply mb-1.5 block font-mono text-[10px] uppercase tracking-[0.14em] text-[#7f8f8c];
+  }
+
+  .panel {
+    @apply rounded-[4px] border border-[rgba(232,227,216,0.12)] bg-panel p-5;
+  }
+
+  .hint {
+    @apply text-[12px] leading-relaxed text-[#8b9a97];
+  }
+
+  /* ── Tablero ──────────────────────────────────────────────────────────── */
+
+  .board-shell {
+    @apply overflow-x-auto rounded-[4px] shadow-[0_22px_60px_rgba(0,0,0,0.5)];
+  }
+
+  .board {
+    @apply min-w-[1180px] bg-board;
+  }
+
+  .board-cell {
+    @apply flex min-h-[132px] flex-col gap-1.5 border-l border-boardLine px-2 py-2.5 transition-colors;
+  }
+
+  /* Celda poco explorada: menos de THIN_CELL_THRESHOLD fragmentos. */
+  .board-cell.is-thin {
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 7px,
+      rgba(180, 120, 60, 0.07) 7px,
+      rgba(180, 120, 60, 0.07) 14px
+    );
+  }
+
+  .board-cell.is-over {
+    @apply bg-[rgba(111,191,178,0.22)] outline-dashed outline-2 -outline-offset-[3px] outline-[#3e8c80];
+  }
+
+  /* ── Post-its ─────────────────────────────────────────────────────────── */
+
+  .note {
+    @apply relative rounded-[1px] bg-note px-2 py-1.5 font-hand text-[15px] leading-[1.24]
+           text-noteInk shadow-[1px_2px_3px_rgba(0,0,0,0.16)];
+    word-break: break-word;
+  }
+
+  .note:nth-child(even) {
+    @apply bg-noteAlt;
+    transform: rotate(-0.5deg);
+  }
+
+  .note:nth-child(3n) {
+    transform: rotate(0.6deg);
+  }
+
+  .note-proposed {
+    @apply bg-[#FFE9A8] text-[#3B2F0B] shadow-[1px_2px_3px_rgba(0,0,0,0.16)];
+    transform: none;
+  }
+
+  .note-text:focus {
+    @apply rounded-[2px] bg-white/60 outline-none;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .board-shell {
+    overflow: visible;
+    box-shadow: none;
+  }
+  .board {
+    min-width: 0;
+  }
+  .board-cell.is-thin {
+    background: none;
+  }
+  .note {
+    box-shadow: none;
+    border: 1px solid #c98ba8;
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

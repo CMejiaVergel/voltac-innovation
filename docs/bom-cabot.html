@@ -1,0 +1,516 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa de Oportunidades de Negocio — Cabot Cartagena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Caveat:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#12181B;
+  --board:#F6F3EC;
+  --board-line:#D5CEC0;
+  --ink:#1C2529;
+  --muted:#77837F;
+
+  --d1:#8B9B3C;  /* Mercado */
+  --d2:#D98B3F;  /* Entrega */
+  --d3:#9E6F72;  /* Oferta */
+  --d4:#6B7C8C;  /* Produccion */
+  --d5:#4E8C85;  /* Modelos de Negocio */
+
+  --note:#F9A8C8;
+  --note-2:#F58FB8;
+  --note-ink:#3A1123;
+
+  --ui:"Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --hand:"Caveat", "Bradley Hand", cursive;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);font-family:var(--ui);color:var(--ink);font-size:14px}
+button{font-family:inherit;cursor:pointer}
+
+.wrap{max-width:1680px;margin:0 auto;padding:0 18px 70px}
+
+/* ---- header ---- */
+header{padding:30px 0 18px;color:#E8E3D8}
+.kicker{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#5E8C86;margin:0 0 10px}
+h1{font-weight:700;font-size:clamp(24px,3.6vw,38px);line-height:1.02;margin:0;letter-spacing:-.02em}
+h1 span{color:#6FBFB2}
+.lede{color:#9AA7A5;max-width:78ch;margin:12px 0 0;font-size:13.5px;line-height:1.55}
+.lede b{color:#E8E3D8;font-weight:600}
+
+/* ---- toolbar ---- */
+.bar{position:sticky;top:0;z-index:60;display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  padding:10px 0;background:rgba(18,24,27,.95);backdrop-filter:blur(8px);
+  border-bottom:1px solid rgba(232,227,216,.14)}
+.btn{background:transparent;color:#C0CCCA;border:1px solid rgba(192,204,202,.3);
+  padding:6px 12px;border-radius:3px;font-size:12px;transition:.15s}
+.btn:hover{background:rgba(192,204,202,.12);color:#fff;border-color:rgba(192,204,202,.6)}
+.btn.on{background:#6FBFB2;border-color:#6FBFB2;color:#08302B;font-weight:600}
+.btn.warn:hover{background:#8E3324;border-color:#8E3324;color:#fff}
+.grow{flex:1}
+.stat{font-family:var(--mono);font-size:11px;color:#5E7370}
+
+/* ---- board ---- */
+.scroll{margin-top:20px;overflow-x:auto;border-radius:4px;box-shadow:0 22px 60px rgba(0,0,0,.5)}
+.board{background:var(--board);min-width:1180px}
+
+.board-top{display:grid;grid-template-columns:118px repeat(5,1fr);
+  border-bottom:2px solid var(--ink);background:#EFEBE1;position:sticky;top:0;z-index:20}
+.corner{padding:12px 10px;display:flex;align-items:flex-end}
+.corner span{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);line-height:1.3}
+.lens{padding:12px 12px 10px;border-left:1px solid var(--board-line)}
+.lens h2{margin:0 0 3px;font-size:14.5px;font-weight:700;letter-spacing:-.01em}
+.lens p{margin:0;font-size:10.5px;line-height:1.35;color:var(--muted)}
+.lens .n{font-family:var(--mono);font-size:9.5px;color:var(--muted);float:right;font-weight:400}
+
+.row{display:grid;grid-template-columns:118px repeat(5,1fr);border-bottom:1px solid var(--board-line)}
+.row:last-child{border-bottom:0}
+
+.spine{background:var(--acc);color:#fff;padding:14px 11px;display:flex;flex-direction:column}
+.spine .nm{font-size:17px;font-weight:700;line-height:1.02;letter-spacing:-.02em}
+.spine .fc{font-size:10px;line-height:1.4;color:rgba(255,255,255,.8);margin-top:5px}
+.spine .n{margin-top:auto;font-family:var(--mono);font-size:9.5px;color:rgba(255,255,255,.65);padding-top:8px}
+
+.cell{border-left:1px solid var(--board-line);padding:9px 8px 8px;min-height:132px;
+  display:flex;flex-direction:column;gap:6px;transition:background .12s}
+.cell.thin{background:repeating-linear-gradient(45deg,transparent,transparent 7px,rgba(180,120,60,.07) 7px,rgba(180,120,60,.07) 14px)}
+.cell.over{background:rgba(111,191,178,.22);outline:2px dashed #3E8C80;outline-offset:-3px}
+
+/* ---- post-its ---- */
+.note{background:var(--note);color:var(--note-ink);border-radius:1px;padding:6px 8px 6px 7px;
+  font-family:var(--hand);font-size:15px;line-height:1.24;position:relative;
+  box-shadow:1px 2px 3px rgba(0,0,0,.16);cursor:grab;word-break:break-word}
+.note:nth-child(even){background:var(--note-2);transform:rotate(-.5deg)}
+.note:nth-child(3n){transform:rotate(.6deg)}
+.note.dragging{opacity:.35;cursor:grabbing}
+.note .t{outline:none;display:block}
+.note .t:focus{background:rgba(255,255,255,.55);border-radius:2px}
+.note .x{position:absolute;top:1px;right:2px;border:0;background:transparent;color:rgba(58,17,35,.45);
+  font-size:13px;line-height:1;padding:2px 3px;opacity:0;transition:.12s;font-family:var(--ui)}
+.note:hover .x{opacity:1}
+.note .x:hover{color:#8E1B3A}
+
+.add{margin-top:auto;border:1px dashed var(--board-line);background:transparent;color:#9C958A;
+  font-size:11px;padding:4px 6px;border-radius:2px;text-align:left;transition:.12s}
+.cell:hover .add{border-color:#B5AC9C;color:#77706A}
+.add:hover{border-color:var(--acc)!important;color:var(--acc)!important}
+
+/* ---- notes panel ---- */
+.method{margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;color:#93A09E;font-size:12.5px;line-height:1.55}
+.method h3{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6FBFB2;margin:0 0 8px;font-weight:500}
+.method ul{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:5px}
+.method b{color:#CBD4D2;font-weight:600}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(18px);
+  background:#6FBFB2;color:#08302B;font-weight:600;font-size:12.5px;padding:9px 18px;border-radius:3px;
+  opacity:0;pointer-events:none;transition:.2s;z-index:99}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media print{
+  body{background:#fff}
+  .bar,.method,.add,.note .x{display:none!important}
+  header{color:#000;padding:0 0 12px}
+  h1{font-size:20px}h1 span{color:#4E8C85}
+  .lede,.kicker{color:#555}.lede{font-size:10px}
+  .scroll{overflow:visible;box-shadow:none}
+  .board{min-width:0}
+  .row{break-inside:avoid}
+  .note{box-shadow:none;border:1px solid #C98BA8;font-size:11px}
+  .cell.thin{background:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="kicker">Caribe Innova 2026 · GIMI / IXL Center · Manos a la obra</p>
+  <h1>Mapa de Oportunidades de Negocio — <span>Cabot Cartagena</span></h1>
+  <p class="lede">Fragmentos de idea sobre las cinco dimensiones del negocio, observadas desde cinco lentes distintos. <b>Todavía no hay conclusiones aquí.</b> Un fragmento es una observación suelta: se anota aunque no encaje con nada, porque las constelaciones se trazan después, cuando el mapa ya está lleno. Si al escribir un post-it ya sabes para qué sirve, probablemente no es un fragmento sino una conclusión disfrazada.</p>
+</header>
+
+<div class="bar">
+  <button class="btn" id="gaps">Marcar celdas flojas</button>
+  <span class="grow"></span>
+  <span class="stat" id="stat">—</span>
+  <button class="btn" id="exp">Descargar JSON</button>
+  <button class="btn" id="imp">Cargar JSON</button>
+  <button class="btn" id="prt">Imprimir</button>
+  <button class="btn warn" id="rst">Restaurar borrador</button>
+  <input type="file" id="file" accept="application/json" hidden>
+</div>
+
+<div class="scroll">
+  <div class="board">
+    <div class="board-top" id="top"></div>
+    <div id="rows"></div>
+  </div>
+</div>
+
+<div class="method">
+  <div>
+    <h3>Los cinco lentes</h3>
+    <ul>
+      <li><b>Su Compañía.</b> Qué es Cabot hoy en esa dimensión. Hechos, no aspiraciones.</li>
+      <li><b>Futuro.</b> Cómo se ve esa dimensión en 5–10 años si las tendencias siguen.</li>
+      <li><b>Competidores.</b> Qué hacen Birla, Orion, Tokai, Phillips Carbon Black y los entrantes.</li>
+      <li><b>Adyacencias.</b> Industrias ajenas que resolvieron un problema de forma trasladable.</li>
+      <li><b>Cadena de Valor.</b> Quién está aguas arriba y aguas abajo, y qué mueve a cada uno.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Reglas al llenarlo</h3>
+    <ul>
+      <li>Un post-it, una observación. Si tiene dos ideas, son dos post-its.</li>
+      <li>Los fragmentos que no encajan con nada son los más valiosos. No los borres.</li>
+      <li>Cada dato debe ser rastreable a una fuente. Si no lo es, márcalo para verificar.</li>
+      <li>Adyacencias no es "otra empresa grande": es un mecanismo específico que se puede trasladar.</li>
+      <li>Una celda vacía es una señal de que no miraste por ese lente, no de que no hay nada.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Cómo se usa</h3>
+    <ul>
+      <li>Clic en el texto de un post-it para editarlo. Se guarda solo.</li>
+      <li>Arrastra un post-it a otra celda si estaba mal ubicado.</li>
+      <li>"Marcar celdas flojas" raya las que tienen menos de tres fragmentos.</li>
+      <li>El contenido cargado es un <b>borrador de arranque</b>: reemplázalo con lo que su equipo levantó en el taller.</li>
+      <li>Los insights vienen después, sobre el mapa lleno. Por eso aquí no hay ningún campo para escribirlos.</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY="bom_cabot_5x5_v1";
+
+const DIMS=[
+ {id:"mercado",   nm:"Mercado",            fc:"Clientes · Necesidades · Experiencias", c:"var(--d1)"},
+ {id:"entrega",   nm:"Entrega",            fc:"Ocasiones · Localidades · Canales",     c:"var(--d2)"},
+ {id:"oferta",    nm:"Oferta",             fc:"Productos · Servicios · Marcas",        c:"var(--d3)"},
+ {id:"produccion",nm:"Producción",         fc:"Competencias · Activos · Tecnologías",  c:"var(--d4)"},
+ {id:"modelos",   nm:"Modelos de Negocio", fc:"Redes y Aliados · Modelos de Precio",   c:"var(--d5)"}
+];
+
+const LENS=[
+ {id:"compania",  nm:"Su Compañía",    q:"Qué es Cabot hoy"},
+ {id:"futuro",    nm:"Futuro",         q:"Hacia dónde va en 5–10 años"},
+ {id:"compet",    nm:"Competidores",   q:"Qué hacen bien los rivales"},
+ {id:"adyac",     nm:"Adyacencias",    q:"Qué resolvió otra industria"},
+ {id:"cadena",    nm:"Cadena de Valor",q:"Quién está arriba y abajo"}
+];
+
+const SEED={
+"mercado|compania":[
+ "Las llanteras absorben la mayor parte del volumen de negro de humo",
+ "También vende a tintas, recubrimientos, plásticos y cables",
+ "El cliente exige consistencia lote a lote: estructura y área superficial",
+ "Planta de Cartagena operando desde 1964",
+ "Cabot es cofundadora de la Fundación Mamonal desde 1975"],
+"mercado|futuro":[
+ "Las llantas de vehículo eléctrico piden menor resistencia a la rodadura y cambian la especificación del refuerzo",
+ "La UE avanza en regulación de partículas de desgaste de llantas",
+ "Los clientes van a exigir huella de carbono por producto y pasaporte digital",
+ "Presión regulatoria por contenido reciclado obligatorio en llantas",
+ "Cartagena entró en racionamiento de agua en mayo de 2026"],
+"mercado|compet":[
+ "Birla Carbon es el mayor productor mundial y tiene plantas en Brasil y Egipto",
+ "Orion Engineered Carbons es fuerte en specialty blacks de alto margen",
+ "Tokai Carbon se está moviendo hacia materiales de batería",
+ "Productores chinos presionan los grados commodity por costo",
+ "Phillips Carbon Black pertenece a un grupo con negocio energético"],
+"mercado|adyac":[
+ "Coca-Cola devuelve a la cuenca el agua que consume mediante programas de reposición",
+ "Nespresso construyó recolección de cápsulas usadas junto al cliente",
+ "Patagonia recompra su propio producto usado con Worn Wear",
+ "Interface recupera nylon post-consumo para volver a fabricar alfombra",
+ "Netflix cambió la propiedad del contenido por acceso por suscripción"],
+"mercado|cadena":[
+ "Michelin, Bridgestone, Goodyear y Continental concentran la demanda",
+ "Las ensambladoras automotrices imponen requisitos que bajan hasta el proveedor de materia prima",
+ "Los recicladores de llantas al final de vida están entrando como nuevo eslabón",
+ "Los compounders de caucho mezclan antes de que el material llegue a la llantera"],
+
+"entrega|compania":[
+ "Producto despachado en pellets, a granel y en big bags",
+ "Ubicada en el corredor industrial de Mamonal",
+ "Cercanía al puerto de Cartagena para exportación",
+ "El agua cruda llega vía Acuacar desde el Canal del Dique, a unos 45 km",
+ "El feedstock oleoso entra por transporte terrestre"],
+"entrega|futuro":[
+ "Trazabilidad digital del lote desde la planta hasta la llanta terminada",
+ "Corredores industriales con servicios compartidos de agua, vapor y energía",
+ "Flotas de transporte a gas o eléctricas en logística industrial",
+ "Las obras del Canal del Dique podrían habilitar transporte fluvial",
+ "Mamonal es zona inundable y varias plantas ya tienen sistemas robustos de evacuación de lluvia"],
+"entrega|compet":[
+ "Varios competidores tienen planta integrada a refinería y reciben feedstock por tubería",
+ "Orion ubica plantas cerca de los clientes llanteros para bajar logística",
+ "Phillips Carbon Black entrega electricidad a la red desde su gas de cola"],
+"entrega|adyac":[
+ "Uber Freight redujo millas vacías 22,6% agrupando cargas por algoritmo",
+ "En transportistas de cisterna las millas vacías llegan al 44,9% del recorrido",
+ "Amazon convirtió su logística interna en un producto vendible (FBA)",
+ "Las aerolíneas venden bodega de carga en vuelos que ya iban a salir",
+ "DHL opera centros de consolidación compartidos entre clientes que compiten"],
+"entrega|cadena":[
+ "Transportadores de carga que sirven a todo el corredor Mamonal",
+ "Sociedad Portuaria de Cartagena",
+ "Acuacar como proveedor prácticamente único de agua",
+ "La refinería de Cartagena es origen potencial de feedstock y de efluentes"],
+
+"oferta|compania":[
+ "Negro de humo de refuerzo para grados de llanta",
+ "Specialty carbon blacks para tintas, recubrimientos y plásticos",
+ "El portafolio global incluye sílice pirogénica, carbón activado, aerogel y materiales de batería",
+ "La marca Cabot tiene reconocimiento técnico fuerte en la industria del caucho"],
+"oferta|futuro":[
+ "Negro de humo de base sostenible, con feedstock renovable o reciclado",
+ "Carbonos conductivos para baterías de vehículo eléctrico",
+ "Producto vendido junto con su huella de carbono certificada",
+ "La asistencia técnica y la formulación pasan a ser parte de la oferta, no un extra"],
+"oferta|compet":[
+ "Orion comercializa una línea de negros sostenibles a partir de aceite de pirólisis",
+ "Birla tiene una gama propia de negro de humo sostenible",
+ "Startups de pirólisis como Bolder Industries y Wastefront entran como nuevos oferentes",
+ "Algunos competidores venden energía además de producto"],
+"oferta|adyac":[
+ "Rolls-Royce vende horas de empuje en vez de motores, con Power by the Hour",
+ "Philips le vendió luz como servicio al aeropuerto de Schiphol, conservando la propiedad de las lámparas",
+ "Michelin cobra por kilómetro recorrido a flotas en vez de vender la llanta",
+ "Ecolab y Veolia firman contratos de desempeño hídrico en industria"],
+"oferta|cadena":[
+ "Los compounders de caucho son un eslabón intermedio con criterio técnico propio",
+ "Laboratorios de certificación y ensayo validan la especificación",
+ "La sílice precipitada compite parcialmente como material de refuerzo"],
+
+"produccion|compania":[
+ "Reactores de horno con quench de agua",
+ "Torres de enfriamiento CT1 y CT2 como punto de consumo de agua cruda",
+ "El gas de cola es un subproducto con valor energético",
+ "Competencia central en controlar estructura y área superficial del producto",
+ "Calificación A- en CDP Water Security 2025, subiendo desde B en 2024",
+ "Meta 2030: reducir 10% la intensidad de captación de agua dulce en sitios con estrés hídrico",
+ "Meta 2030: exportar el 250% de la energía que importa"],
+"produccion|futuro":[
+ "Reactores eléctricos o de plasma que eliminan la combustión",
+ "Captura de CO2 sobre la corriente de gas de cola",
+ "Gemelos digitales de circuitos de enfriamiento para optimizar ciclos de concentración",
+ "Membranas tolerantes al ensuciamiento amplían qué aguas son tratables",
+ "Enfriamiento híbrido y seco reduce la dependencia del agua"],
+"produccion|compet":[
+ "Monolith produce negro de humo por pirólisis de metano con energía limpia y sin combustión",
+ "Phillips Carbon Black cogenera electricidad desde el gas de cola",
+ "Las plantas integradas a refinería comparten servicios industriales y diluyen costos fijos"],
+"produccion|adyac":[
+ "La VPP de Australia del Sur agrega hasta 50.000 hogares para entregar 250 MW como una central",
+ "Las cooperativas lecheras reciben de cientos de proveedores pequeños y prueban calidad en recepción",
+ "Los bancos de sangre tipifican, almacenan y despachan un insumo crítico e intermitente",
+ "Las fábricas de semiconductores usan cascadas de agua fit-for-purpose, distinta calidad por uso",
+ "Kalundborg conecta 17 empresas con más de 30 flujos de recursos y ahorra 4 millones de m³ de agua al año"],
+"produccion|cadena":[
+ "Refinerías y proveedores de decant oil como origen del feedstock",
+ "Proveedores de química de tratamiento de agua: Ecolab, Nalco, Veolia",
+ "Cardique y EPA Cartagena como autoridad ambiental competente",
+ "Operadores de servicios industriales que ya trabajan dentro del corredor"],
+
+"modelos|compania":[
+ "Venta B2B por volumen con precio indexado al costo del feedstock",
+ "Contratos anuales o plurianuales con las llanteras",
+ "La Fundación Mamonal funciona como red de relacionamiento industrial",
+ "Cabot ya definió que el reto debe cubrir costos de operación más 10% de AIU"],
+"modelos|futuro":[
+ "Prima de precio por contenido reciclado o baja huella de carbono",
+ "Alianzas de simbiosis industrial formalizadas dentro del corredor",
+ "Modelos as-a-service donde un tercero aporta el CAPEX y cobra por servicio",
+ "Mercados de créditos hídricos verificados, siguiendo el camino del carbono"],
+"modelos|compet":[
+ "Phillips Carbon Black monetiza energía además del producto principal",
+ "Hay joint ventures entre productores y recicladores de llantas",
+ "Birla integra verticalmente hacia el feedstock"],
+"modelos|adyac":[
+ "Verra y Gold Standard convirtieron una tonelada no emitida en un activo transable",
+ "El contenedor ISO no fue innovación tecnológica sino de estándar de interfaz",
+ "Visa y ACH no mueven el dinero: cobran por el protocolo que todos usan",
+ "Airbnb y Uber monetizan capacidad ociosa que pertenece a terceros",
+ "Las cooperativas agrícolas agregan oferta dispersa para negociar un contrato colectivo"],
+"modelos|cadena":[
+ "Vecinos del corredor: Dow, Yara, Tenaris, Esenttia, Argos, Biofilm, Ajover",
+ "Reficar y Ecopetrol como gran generador de corrientes",
+ "ANDI Bolívar como articulador gremial del corredor",
+ "La Universidad Tecnológica de Bolívar como aliado de caracterización e I+D",
+ "Las zonas francas quedan fuera por su régimen jurídico distinto"]
+};
+
+let data=JSON.parse(JSON.stringify(SEED));
+let showGaps=false, timer=null;
+const $=s=>document.querySelector(s);
+
+/* Almacenamiento: usa window.storage dentro de Claude; localStorage si el
+   archivo se abre directamente en el navegador. */
+const store=(()=>{
+  const ws=(typeof window!=="undefined")&&window.storage;
+  if(ws) return {get:k=>ws.get(k), set:(k,v)=>ws.set(k,v), kind:"claude"};
+  return {
+    kind:"local",
+    async get(k){
+      const v=localStorage.getItem(k);
+      if(v===null) throw new Error("sin dato previo");
+      return {key:k,value:v};
+    },
+    async set(k,v){ localStorage.setItem(k,v); return {key:k,value:v}; }
+  };
+})();
+
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1900);}
+
+async function save(){
+  clearTimeout(timer);
+  timer=setTimeout(async()=>{
+    try{ await store.set(KEY,JSON.stringify(data));
+      $("#stat").textContent=count()+" fragmentos · guardado "+new Date().toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"});
+    }catch(e){ $("#stat").textContent=count()+" fragmentos · no se pudo guardar"; }
+  },450);
+}
+async function load(){
+  try{const r=await store.get(KEY);
+    if(r&&r.value){data=JSON.parse(r.value);return;}
+  }catch(e){}
+}
+const count=()=>Object.values(data).reduce((a,b)=>a+b.length,0);
+const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+function render(){
+  $("#top").innerHTML='<div class="corner"><span>Mapa de<br>Oportunidades</span></div>'+
+    LENS.map(l=>{
+      const n=DIMS.reduce((a,d)=>a+(data[d.id+"|"+l.id]||[]).length,0);
+      return `<div class="lens"><span class="n">${n}</span><h2>${l.nm}</h2><p>${l.q}</p></div>`;
+    }).join("");
+
+  $("#rows").innerHTML=DIMS.map(d=>{
+    const tot=LENS.reduce((a,l)=>a+(data[d.id+"|"+l.id]||[]).length,0);
+    const cells=LENS.map(l=>{
+      const k=d.id+"|"+l.id, items=data[k]||[];
+      const thin=showGaps&&items.length<3?" thin":"";
+      return `<div class="cell${thin}" data-k="${k}">
+        ${items.map((t,i)=>`<div class="note" draggable="true" data-k="${k}" data-i="${i}">
+            <span class="t" contenteditable="true">${esc(t)}</span>
+            <button class="x" title="Eliminar">✕</button></div>`).join("")}
+        <button class="add" data-k="${k}">+ fragmento</button></div>`;
+    }).join("");
+    return `<div class="row" style="--acc:${d.c}">
+      <div class="spine"><span class="nm">${d.nm}</span><span class="fc">${d.fc}</span><span class="n">${tot}</span></div>
+      ${cells}</div>`;
+  }).join("");
+
+  $("#stat").textContent=count()+" fragmentos";
+}
+
+/* editar */
+$("#rows").addEventListener("focusin",e=>{
+  const n=e.target.closest(".note"); if(n) n.draggable=false;
+});
+$("#rows").addEventListener("focusout",e=>{
+  if(!e.target.classList.contains("t")) return;
+  const n=e.target.closest(".note"); n.draggable=true;
+  const {k,i}=n.dataset, v=e.target.textContent.trim();
+  if(v===""){ data[k].splice(i,1); render(); } else { data[k][i]=v; }
+  save();
+});
+$("#rows").addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&e.target.classList.contains("t")){e.preventDefault();e.target.blur();}
+});
+
+/* agregar / borrar */
+$("#rows").addEventListener("click",e=>{
+  if(e.target.classList.contains("add")){
+    const k=e.target.dataset.k;
+    (data[k]=data[k]||[]).push("Nuevo fragmento");
+    render();save();
+    const notes=document.querySelectorAll(`.note[data-k="${k}"] .t`);
+    const last=notes[notes.length-1];
+    if(last){last.focus();document.getSelection().selectAllChildren(last);}
+    return;
+  }
+  if(e.target.classList.contains("x")){
+    const n=e.target.closest(".note");
+    data[n.dataset.k].splice(n.dataset.i,1);
+    render();save();
+  }
+});
+
+/* arrastrar */
+let drag=null;
+$("#rows").addEventListener("dragstart",e=>{
+  const n=e.target.closest(".note"); if(!n)return;
+  drag={k:n.dataset.k,i:+n.dataset.i};
+  n.classList.add("dragging");
+  e.dataTransfer.effectAllowed="move";
+  e.dataTransfer.setData("text/plain","");
+});
+$("#rows").addEventListener("dragend",e=>{
+  const n=e.target.closest(".note"); if(n)n.classList.remove("dragging");
+  document.querySelectorAll(".cell.over").forEach(c=>c.classList.remove("over"));
+  drag=null;
+});
+$("#rows").addEventListener("dragover",e=>{
+  const c=e.target.closest(".cell"); if(!c||!drag)return;
+  e.preventDefault(); e.dataTransfer.dropEffect="move";
+  if(!c.classList.contains("over")){
+    document.querySelectorAll(".cell.over").forEach(x=>x.classList.remove("over"));
+    c.classList.add("over");
+  }
+});
+$("#rows").addEventListener("drop",e=>{
+  const c=e.target.closest(".cell"); if(!c||!drag)return;
+  e.preventDefault();
+  const to=c.dataset.k;
+  if(to===drag.k){drag=null;render();return;}
+  const [txt]=data[drag.k].splice(drag.i,1);
+  (data[to]=data[to]||[]).push(txt);
+  drag=null; render(); save();
+});
+
+/* toolbar */
+$("#gaps").addEventListener("click",()=>{
+  showGaps=!showGaps;
+  $("#gaps").classList.toggle("on",showGaps);
+  render();
+  if(showGaps){
+    const n=Object.keys(data).filter(k=>data[k].length<3).length
+      + (25-Object.keys(data).length);
+    toast(n?n+" celdas con menos de tres fragmentos":"Todas las celdas tienen tres o más");
+  }
+});
+$("#exp").addEventListener("click",()=>{
+  const b=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(b); a.download="bom-cabot.json"; a.click();
+  URL.revokeObjectURL(a.href); toast("JSON descargado");
+});
+$("#imp").addEventListener("click",()=>$("#file").click());
+$("#file").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{
+    const p=JSON.parse(r.result);
+    if(typeof p!=="object"||Array.isArray(p))throw 0;
+    data=p; render(); save(); toast("Mapa cargado");
+  }catch(err){toast("Ese archivo no tiene el formato del mapa");}};
+  r.readAsText(f); e.target.value="";
+});
+$("#prt").addEventListener("click",()=>window.print());
+$("#rst").addEventListener("click",()=>{
+  if(!confirm("Esto descarta todos los cambios y vuelve al borrador de arranque. ¿Continuar?"))return;
+  data=JSON.parse(JSON.stringify(SEED)); render(); save(); toast("Borrador restaurado");
+});
+
+(async()=>{await load();render();})();
+</script>
