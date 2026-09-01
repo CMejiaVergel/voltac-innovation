@@ -23,3 +23,6 @@ prisma/*.db-shm
 Thumbs.db
 npm-debug.log*
 .pm2/
+
+# Token del servidor MCP: nunca al repositorio
+.mcp.local.json

@@ -118,6 +118,48 @@ Las notificaciones push avisan cuando termina una corrida del agente, que es el
 unico momento en que hay algo que esperar. Requieren claves VAPID; sin ellas el
 resto funciona igual.
 
+### Segunda via: Claude Code como agente, por MCP
+
+Ademas del agente interno (OpenRouter), hay una via para que un cliente MCP
+—Claude Code— actue como agente investigador contra el mismo mapa.
+
+```
+Claude Code  →  mcp/server.mjs  →  /api/agent/*  →  src/lib/agentApi.ts
+```
+
+El servidor MCP **no habla con la base de datos**. Entra por `/api/agent`, que
+es la misma capa de reglas que usa la interfaz: acceso por proyecto, validacion
+de coordenadas contra la plantilla, rechazo de duplicados, degradado de
+`VERIFIED` sin fuente e historial obligatorio. Un cliente MCP no puede saltarse
+una regla del metodo aunque quiera.
+
+La autenticacion es por token (`ApiToken`), que **hereda los permisos del
+usuario dueño**: no es una llave maestra. Se emite por CLI porque el valor en
+claro se muestra una sola vez:
+
+```bash
+npm run token:crear -- --email tu@correo --label "Claude Code"
+npm run token:listar
+npm run token:revocar -- --prefijo vin_xxxxxxxx
+```
+
+Las reglas que sigue Claude Code viven en
+`.claude/skills/agente-investigador/SKILL.md`. Son las mismas de
+`src/lib/agent/prompt.ts`, que es la fuente normativa: si divergen, manda el
+archivo de codigo.
+
+### Mapas versionados
+
+`prisma/data/bom-*.json` guarda versiones completas del mapa con fuente y
+justificacion de ubicacion por fragmento. Se aplican con:
+
+```bash
+node scripts/aplicar-bom.mjs --archivo prisma/data/bom-cabot-v2.json --slug <slug> --estado ACCEPTED
+```
+
+Ese script entra por `/api/agent` a proposito: prueba el mismo camino que
+recorre el MCP en vez de un atajo que no probaria nada.
+
 ### El agente propone, la persona decide
 
 Nada de lo que produce el agente entra al mapa. Aterriza como `PROPOSED` y
@@ -163,7 +205,14 @@ src/lib/agent/prompt.ts     Las reglas del agente. Archivo normativo.
 src/lib/agent/run.ts        Ejecucion en segundo plano y persistencia.
 src/lib/agent/schema.ts     Contrato de salida validado con zod.
 src/lib/agent/openrouter.ts Cliente de OpenRouter y catalogo de modelos.
+src/lib/agentApi.ts         Operaciones que un agente externo puede ejecutar.
+src/lib/apiToken.ts         Autenticacion por token para MCP y scripts.
 src/lib/push.ts             Notificaciones push (VAPID).
+
+mcp/server.mjs              Servidor MCP. Habla con /api/agent, no con la BD.
+.claude/skills/             Reglas que sigue Claude Code como agente.
+scripts/token.ts            Emitir, listar y revocar tokens.
+scripts/aplicar-bom.mjs     Aplicar un mapa versionado a un proyecto.
 
 src/app/actions/            Mutaciones. Todas verifican permiso y dejan historial.
 src/components/bom/         El tablero (rejilla en escritorio, lentes en movil).

@@ -31,6 +31,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   sessions      Session[]
+  apiTokens     ApiToken[]
   pushSubs      PushSubscription[]
   memberships   Membership[]
   projects      Project[]          @relation("ProjectCreator")
@@ -38,6 +39,33 @@ model User {
   revisions     FragmentRevision[] @relation("RevisionAuthor")
   researchRuns  ResearchRun[]
   reviewedFrags Fragment[]         @relation("FragmentReviewer")
+}
+
+/// Token de acceso para agentes externos (MCP, scripts, integraciones).
+///
+/// Existe para que Claude Code —u otro cliente MCP— pueda actuar como agente
+/// investigador contra la misma API guardada que usa la interfaz, sin abrir
+/// una sesion de navegador ni compartir la contraseña de nadie.
+///
+/// Se guarda solo el SHA-256: el valor en claro se muestra una unica vez al
+/// crearlo y despues no se puede recuperar.
+model ApiToken {
+  id        String    @id @default(cuid())
+  /// SHA-256 del token en claro.
+  tokenHash String    @unique
+  /// Prefijo visible (vin_xxxxxxxx) para poder identificarlo en una lista.
+  prefix    String
+  label     String
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Solo lectura, o lectura y escritura.
+  readOnly  Boolean   @default(false)
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
 }
 
 /// Suscripcion push de un navegador concreto (Web Push).

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "voltac-innovacion": {
+      "command": "node",
+      "args": ["mcp/server.mjs"],
+      "env": {
+        "VOLTAC_API_URL": "${VOLTAC_API_URL:-https://innovation.voltac.com.co}",
+        "VOLTAC_API_TOKEN": "${VOLTAC_API_TOKEN}"
+      }
+    }
+  }
+}
