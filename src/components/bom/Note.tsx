@@ -1,7 +1,7 @@
 "use client";
 
 import { useDraggable } from "@dnd-kit/core";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { VERIFICATION_META, VERIFICATIONS, type Verification } from "@/lib/enums";
 import type { BoardFragment } from "./types";
@@ -9,14 +9,17 @@ import type { BoardFragment } from "./types";
 /**
  * Un post-it.
  *
- * El arrastre se activa a partir de 8px de movimiento (ver el sensor del
- * tablero), asi que hacer clic para poner el cursor en el texto no dispara un
- * drag. Mientras se edita, el arrastre queda desactivado del todo.
+ * Editar exige DOBLE clic. Con un solo clic, un arrastre que empieza despacio
+ * entraba en modo edicion sin querer: el umbral de 8px del sensor no alcanza
+ * cuando el gesto arranca corto. El doble clic separa las dos intenciones sin
+ * ambiguedad. Mientras se edita, el arrastre queda desactivado del todo.
  */
 export function Note({
   fragment,
   editable,
   showVerification,
+  showSource,
+  showOrigin,
   onEditText,
   onSetVerification,
   onDelete,
@@ -25,6 +28,8 @@ export function Note({
   fragment: BoardFragment;
   editable: boolean;
   showVerification: boolean;
+  showSource: boolean;
+  showOrigin: boolean;
   onEditText: (id: string, text: string) => void;
   onSetVerification: (id: string, v: Verification) => void;
   onDelete: (id: string) => void;
@@ -41,6 +46,26 @@ export function Note({
     disabled: !editable || editing,
   });
 
+  // contentEditable solo existe mientras se edita, asi que hay que llevar el
+  // cursor al texto una vez React lo ha vuelto editable.
+  useEffect(() => {
+    if (!editing || !ref.current) return;
+    const el = ref.current;
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  }, [editing]);
+
+  function guardar(el: HTMLElement) {
+    const next = el.textContent?.trim() ?? "";
+    if (next && next !== fragment.text) onEditText(fragment.id, next);
+    else if (!next) el.textContent = fragment.text;
+  }
+
   const meta = VERIFICATION_META[fragment.verification];
 
   return (
@@ -51,23 +76,23 @@ export function Note({
       } ${editable && !editing ? "cursor-grab" : ""}`}
       {...(editable && !editing ? listeners : {})}
       {...attributes}
+      onDoubleClick={() => {
+        if (editable) setEditing(true);
+      }}
       title={
         fragment.agentRationale
           ? `Por que aqui: ${fragment.agentRationale}`
-          : fragment.authorName ?? undefined
+          : (fragment.authorName ?? undefined)
       }
     >
       <div
         ref={ref}
         className="note-text block"
-        contentEditable={editable}
+        contentEditable={editable && editing}
         suppressContentEditableWarning
-        onFocus={() => setEditing(true)}
         onBlur={(e) => {
+          guardar(e.currentTarget);
           setEditing(false);
-          const next = e.currentTarget.textContent?.trim() ?? "";
-          if (next && next !== fragment.text) onEditText(fragment.id, next);
-          else if (!next) e.currentTarget.textContent = fragment.text;
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
@@ -89,6 +114,7 @@ export function Note({
           <button
             type="button"
             disabled={!editable}
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               const i = VERIFICATIONS.indexOf(fragment.verification);
@@ -102,7 +128,7 @@ export function Note({
           </button>
         )}
 
-        {fragment.sourceUrl && (
+        {showSource && fragment.sourceUrl && (
           <a
             href={fragment.sourceUrl}
             target="_blank"
@@ -116,7 +142,9 @@ export function Note({
           </a>
         )}
 
-        {fragment.origin === "AGENT" && (
+        {/* El origen se guarda siempre en la base y viaja en la exportacion y
+            en el historial; aqui solo se decide si se muestra. */}
+        {showOrigin && fragment.origin === "AGENT" && (
           <span
             title="Propuesto por el agente investigador"
             className="font-ui text-[9px] uppercase tracking-[0.08em] opacity-50"

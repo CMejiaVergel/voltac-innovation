@@ -25,6 +25,9 @@ export function BomMobile({
   byCell,
   editable,
   showGaps,
+  showVerification,
+  showSource,
+  showOrigin,
   onAdd,
   onEditText,
   onSetVerification,
@@ -36,6 +39,9 @@ export function BomMobile({
   byCell: Map<string, BoardFragment[]>;
   editable: boolean;
   showGaps: boolean;
+  showVerification: boolean;
+  showSource: boolean;
+  showOrigin: boolean;
   onAdd: (rowId: string, colId: string) => void;
   onEditText: (id: string, text: string) => void;
   onSetVerification: (id: string, v: Verification) => void;
@@ -120,6 +126,9 @@ export function BomMobile({
                     fragment={f}
                     shape={shape}
                     editable={editable}
+                    showVerification={showVerification}
+                    showSource={showSource}
+                    showOrigin={showOrigin}
                     onEditText={onEditText}
                     onSetVerification={onSetVerification}
                     onDelete={onDelete}
@@ -152,6 +161,9 @@ function MobileNote({
   fragment,
   shape,
   editable,
+  showVerification,
+  showSource,
+  showOrigin,
   onEditText,
   onSetVerification,
   onDelete,
@@ -161,6 +173,9 @@ function MobileNote({
   fragment: BoardFragment;
   shape: TemplateShape;
   editable: boolean;
+  showVerification: boolean;
+  showSource: boolean;
+  showOrigin: boolean;
   onEditText: (id: string, text: string) => void;
   onSetVerification: (id: string, v: Verification) => void;
   onDelete: (id: string) => void;
@@ -193,20 +208,22 @@ function MobileNote({
       )}
 
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <button
-          type="button"
-          disabled={!editable}
-          onClick={() => {
-            const i = VERIFICATIONS.indexOf(fragment.verification);
-            onSetVerification(fragment.id, VERIFICATIONS[(i + 1) % VERIFICATIONS.length]);
-          }}
-          className="font-ui text-[10px] font-semibold uppercase tracking-[0.08em]"
-          style={{ color: meta.color }}
-        >
-          {meta.dot} {meta.label}
-        </button>
+        {showVerification && (
+          <button
+            type="button"
+            disabled={!editable}
+            onClick={() => {
+              const i = VERIFICATIONS.indexOf(fragment.verification);
+              onSetVerification(fragment.id, VERIFICATIONS[(i + 1) % VERIFICATIONS.length]);
+            }}
+            className="font-ui text-[10px] font-semibold uppercase tracking-[0.08em]"
+            style={{ color: meta.color }}
+          >
+            {meta.dot} {meta.label}
+          </button>
+        )}
 
-        {fragment.sourceUrl && (
+        {showSource && fragment.sourceUrl && (
           <a
             href={fragment.sourceUrl}
             target="_blank"
@@ -217,7 +234,7 @@ function MobileNote({
           </a>
         )}
 
-        {fragment.origin === "AGENT" && (
+        {showOrigin && fragment.origin === "AGENT" && (
           <span className="font-ui text-[10px] uppercase tracking-[0.08em] opacity-45">IA</span>
         )}
 

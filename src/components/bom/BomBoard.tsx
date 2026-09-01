@@ -41,6 +41,10 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
   const [error, setError] = useState<string | null>(null);
   const [showGaps, setShowGaps] = useState(true);
   const [showVerification, setShowVerification] = useState(true);
+  const [showSource, setShowSource] = useState(true);
+  // Apagado por defecto: la marca de origen no se muestra en el tablero. El
+  // dato sigue guardado y viaja en el historial y en la exportacion.
+  const [showOrigin, setShowOrigin] = useState(false);
   const [showProposals, setShowProposals] = useState(true);
   const [, startTransition] = useTransition();
 
@@ -205,6 +209,22 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
         >
           Verificacion
         </button>
+        <button
+          type="button"
+          onClick={() => setShowSource((v) => !v)}
+          className={`btn ${showSource ? "btn-primary" : ""}`}
+          title="Muestra u oculta el enlace a la fuente en cada fragmento"
+        >
+          Fuente
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowOrigin((v) => !v)}
+          className={`btn ${showOrigin ? "btn-primary" : ""}`}
+          title="Muestra u oculta que fragmentos propuso el agente. El dato se guarda siempre."
+        >
+          Origen
+        </button>
         {proposedCount > 0 && (
           <button
             type="button"
@@ -236,6 +256,9 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
         byCell={byCell}
         editable={editable}
         showGaps={showGaps}
+        showVerification={showVerification}
+        showSource={showSource}
+        showOrigin={showOrigin}
         onAdd={handleAdd}
         onEditText={handleEditText}
         onSetVerification={handleVerification}
@@ -245,7 +268,15 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
       />
 
       {/* Rejilla completa: escritorio e impresion. */}
-      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      {/* El id explicito evita un aviso de hidratacion: sin el, dnd-kit numera
+          sus descripciones de accesibilidad con un contador que no coincide
+          entre el render del servidor y el del cliente. */}
+      <DndContext
+        id="bom"
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
         <div className="board-shell mt-4 hidden md:block print:block">
           <div className="board">
             {/* Encabezado de columnas */}
@@ -313,6 +344,8 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
                       editable={editable}
                       showGaps={showGaps}
                       showVerification={showVerification}
+                      showSource={showSource}
+                      showOrigin={showOrigin}
                       onAdd={handleAdd}
                       onEditText={handleEditText}
                       onSetVerification={handleVerification}
@@ -381,6 +414,8 @@ function Cell({
   editable,
   showGaps,
   showVerification,
+  showSource,
+  showOrigin,
   onAdd,
   onEditText,
   onSetVerification,
@@ -394,6 +429,8 @@ function Cell({
   editable: boolean;
   showGaps: boolean;
   showVerification: boolean;
+  showSource: boolean;
+  showOrigin: boolean;
   onAdd: (rowId: string, colId: string) => void;
   onEditText: (id: string, text: string) => void;
   onSetVerification: (id: string, v: Verification) => void;
@@ -416,6 +453,8 @@ function Cell({
           fragment={f}
           editable={editable}
           showVerification={showVerification}
+          showSource={showSource}
+          showOrigin={showOrigin}
           onEditText={onEditText}
           onSetVerification={onSetVerification}
           onDelete={onDelete}
