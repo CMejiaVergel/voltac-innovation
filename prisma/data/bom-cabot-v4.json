@@ -1,7 +1,7 @@
 {
-  "version": 3,
+  "version": 4,
   "generadoEn": "2026-09-01",
-  "nota": "Tercera versión. Corrige el error de fondo de la v2: CT-1 y CT-2 son las dos plantas de producción del sitio, no torres de enfriamiento. Incorpora los datos primarios de la presentacion del reto que entrego Cabot.",
+  "nota": "Cuarta version. El mapa guarda observaciones del mundo, no observaciones sobre su propio historial: se eliminaron los fragmentos y las justificaciones que existian para corregir versiones anteriores. Ese registro vive en FragmentRevision y en el informe de auditoria, que es donde corresponde.",
   "fuentes": [
     {
       "titulo": "Cabot Corporation — planta Cartagena, Colombia",
@@ -252,7 +252,7 @@
       "columna": "futuro",
       "texto": "Las llantas de vehículo eléctrico piden menor resistencia a la rodadura y cambian la especificación del refuerzo",
       "verificacion": "TO_CONFIRM",
-      "porQueAqui": "Cambio de necesidad del cliente por electrificación. Se mantiene sin verificar: no se encontró fuente primaria que cuantifique el cambio de especificación."
+      "porQueAqui": "Cambio de necesidad del cliente por electrificación, que es justo lo que pide Mercado × Futuro: hacia dónde va la demanda en cinco a diez años."
     },
     {
       "id": "F09",
@@ -380,7 +380,7 @@
       "verificacion": "VERIFIED",
       "fuenteUrl": "https://www.acuacar.com/acuacar/gestion-ambiental/ciclo-integral-del-agua/",
       "fuenteCita": "Acuacar — Ciclo Integral del Agua",
-      "porQueAqui": "Es el canal de entrada del insumo que el reto quiere sustituir. En la versión anterior este fragmento afirmaba una distancia de 45 km que no pudo verificarse; se reemplazó por la ruta real documentada por el operador."
+      "porQueAqui": "Es el canal de entrada del insumo que el reto quiere sustituir, faceta Canales de la fila Entrega. Conocer la ruta define contra qué alternativa se compara traer agua de un vecino."
     },
     {
       "id": "F23",
@@ -390,7 +390,7 @@
       "verificacion": "VERIFIED",
       "fuenteUrl": null,
       "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
-      "porQueAqui": "Tamaño del sitio que recibe y despacha. La cifra sube de 75 a 80 con el dato de la empresa, que manda sobre la ficha publica de la web. Un sitio de 80 personas no tiene equipo libre para operar una infraestructura nueva de agua: empuja la solución hacia algo operado por un tercero."
+      "porQueAqui": "Tamaño del sitio que recibe y despacha, faceta Localidades. Un sitio de 80 personas no tiene equipo libre para operar infraestructura nueva de agua: empuja la solución hacia algo operado por un tercero."
     },
     {
       "id": "F24",
@@ -398,7 +398,7 @@
       "columna": "compania",
       "texto": "El 90% del producto se empaca en FIBC a 160 toneladas cada 24 horas y el 10% en pallets",
       "verificacion": "VERIFIED",
-      "porQueAqui": "Formatos de salida, faceta Canales. Sustituye al fragmento anterior, que decia pellets, granel y big bags sin respaldo y sin proporciones.",
+      "porQueAqui": "Formatos de salida del producto, faceta Canales de la fila Entrega. La proporción importa porque define qué tipo de manejo y de espacio exige el despacho.",
       "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)"
     },
     {
@@ -463,7 +463,7 @@
       "columna": "adyac",
       "texto": "Uber Freight redujo 22,6% las millas vacías agrupando cargas de distintos clientes con un algoritmo",
       "verificacion": "TO_CONFIRM",
-      "porQueAqui": "Mecanismo de agregacion de flujos dispersos de terceros para llenar capacidad ociosa, trasladable a recoger efluentes pequeños de varias plantas. La cifra viene del documento de contexto original y no pudo reverificarse en esta revision."
+      "porQueAqui": "Mecanismo trasladable de otra industria: agregar por algoritmo flujos dispersos de terceros para llenar capacidad ociosa. Va en Entrega porque actúa sobre el transporte, que es lo que haría falta para recoger efluentes pequeños de varias plantas."
     },
     {
       "id": "F32",
@@ -601,7 +601,7 @@
       "columna": "adyac",
       "texto": "Philips vendió luz como servicio al aeropuerto de Schiphol conservando la propiedad de las lámparas",
       "verificacion": "TO_CONFIRM",
-      "porQueAqui": "Tercer caso del mismo mecanismo, en una industria completamente ajena. Se conserva porque el patron se vuelve creible cuando aparece en sectores sin relación entre si."
+      "porQueAqui": "Mecanismo de servitización de una industria ajena: vender el resultado en vez del equipo, conservando la propiedad del activo. Va en Oferta porque cambia qué se vende."
     },
     {
       "id": "F48",
@@ -627,16 +627,7 @@
       "verificacion": "VERIFIED",
       "fuenteUrl": "https://www.cabotcorp.com/company/worldwide-locations/south-america/colombia-cartagena",
       "fuenteCita": "Cabot Corporation — planta Cartagena, Colombia",
-      "porQueAqui": "La antigüedad del activo es faceta de Producción, no de Mercado: en la versión anterior este dato estaba en Mercado x Su Compañía, donde no explicaba nada. Aquí si: condiciona que tan facil es intervenir el circuito de enfriamiento."
-    },
-    {
-      "id": "F51",
-      "fila": "produccion",
-      "columna": "compania",
-      "texto": "CT-1 y CT-2 son las dos plantas de producción del sitio, no torres de enfriamiento",
-      "verificacion": "VERIFIED",
-      "porQueAqui": "CORRIGE el error más grave de la versión anterior, que las llamaba torres de enfriamiento. Son activos productivos, y el reto pide reducir el agua cruda que consume cada una. Confundirlas cambia por completo donde hay que intervenir.",
-      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)"
+      "porQueAqui": "La antigüedad del activo es faceta de Producción. Condiciona qué tan fácil es intervenir el circuito de agua de una planta con seis décadas de instalaciones acumuladas."
     },
     {
       "id": "F52",
@@ -728,7 +719,7 @@
       "columna": "compet",
       "texto": "Monolith produce negro de humo por pirólisis de metano con energía limpia y sin combustión",
       "verificacion": "TO_CONFIRM",
-      "porQueAqui": "Competidor con ruta tecnológica distinta. Sin fuente reverificada en esta revision."
+      "porQueAqui": "Competidor con ruta tecnológica distinta: produce sin combustión, lo que cambia su balance térmico y por tanto su demanda de enfriamiento."
     },
     {
       "id": "F62",
@@ -776,7 +767,7 @@
       "verificacion": "VERIFIED",
       "fuenteUrl": "https://www.symbiosis.dk/en/",
       "fuenteCita": "Kalundborg Symbiosis",
-      "porQueAqui": "El caso canónico de simbiosis industrial, corregido: son 16 socios y no 17 como decia la versión anterior. El mecanismo es sustituir la fuente, no tratar más."
+      "porQueAqui": "Mecanismo trasladable: sustituir la fuente de agua en vez de tratar más. Va en Producción porque actúa sobre el activo y su suministro, no sobre el modelo comercial."
     },
     {
       "id": "F67",
@@ -838,7 +829,7 @@
       "verificacion": "VERIFIED",
       "fuenteUrl": "https://www.cabotcorp.com/company/worldwide-locations/south-america/colombia-cartagena",
       "fuenteCita": "Cabot Corporation — planta Cartagena, Colombia",
-      "porQueAqui": "Red y aliados es la faceta de esta fila: en la versión anterior este dato estaba en Mercado, donde no significaba nada. Aquí es capital relacional concreto, y el detalle de la presidencia convierte una membresia en capacidad de convocatoria sobre los vecinos que hay que persuadir."
+      "porQueAqui": "Redes y Aliados es la faceta de esta fila. Que el gerente regional presida la junta convierte una membresía en capacidad de convocatoria sobre los vecinos que habría que persuadir."
     },
     {
       "id": "F74",
@@ -866,7 +857,7 @@
       "verificacion": "VERIFIED",
       "fuenteUrl": "https://www.minambiente.gov.co/wp-content/uploads/2021/12/Resolucion-1256-de-2021.pdf",
       "fuenteCita": "MinAmbiente — Resolución 1256 de 2021",
-      "porQueAqui": "CORRIGE un error de la versión anterior, que afirmaba que la norma eliminaba los parámetros de calidad para uso industrial. No los elimina: los fija en una tabla. Lo que derogó fue la Resolución 1207 de 2014 y sus distancias mínimas de retiro."
+      "porQueAqui": "Condición regulatoria que define qué calidad debe cumplir un efluente para poder usarse. Va en Modelos × Futuro porque acota con quién y bajo qué términos se puede pactar el suministro."
     },
     {
       "id": "F77",
@@ -902,7 +893,7 @@
       "columna": "compet",
       "texto": "Phillips Carbon Black monetiza electricidad además del producto principal",
       "verificacion": "TO_CONFIRM",
-      "porQueAqui": "Modelo de ingreso dual del rival. Sin fuente reverificada en esta revision."
+      "porQueAqui": "Modelo de ingreso dual del rival: cobra dos productos del mismo proceso. Va en Modelos porque describe de dónde saca ingresos, no qué tecnología usa."
     },
     {
       "id": "F81",
@@ -920,7 +911,7 @@
       "verificacion": "VERIFIED",
       "fuenteUrl": "https://ceowatermandate.org/replenishment-guide/",
       "fuenteCita": "CEO Water Mandate — Guia de Volumetric Water Benefit Accounting",
-      "porQueAqui": "SUSTITUYE al fragmento anterior que solo decia Coca-Cola devuelve agua a la cuenca. Aquel nombraba una empresa; este nombra el mecanismo, que es lo único trasladable: una metodología estándar que vuelve contable un beneficio ambiental difuso."
+      "porQueAqui": "Mecanismo trasladable de otra industria: una metodología estándar que vuelve contable un beneficio ambiental difuso. Va en Modelos porque describe cómo se estructura y se acredita el valor, no cómo fluye el agua."
     },
     {
       "id": "F83",
@@ -962,7 +953,7 @@
       "columna": "cadena",
       "texto": "Ecopetrol opera la refinería de Cartagena y es el mayor generador de corrientes del corredor",
       "verificacion": "TO_CONFIRM",
-      "porQueAqui": "Aliado potencial de mayor escala. Se separo del fragmento anterior que enumeraba siete empresas juntas, lo que violaba la regla de una idea por fragmento e impedía trabajar cada actor por separado."
+      "porQueAqui": "Actor del corredor aguas arriba como generador de corrientes, y el de mayor escala. Va en Modelos × Cadena porque interesa como contraparte de un acuerdo, no como proveedor actual."
     },
     {
       "id": "F88",
