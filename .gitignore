@@ -24,5 +24,7 @@ Thumbs.db
 npm-debug.log*
 .pm2/
 
-# Token del servidor MCP: nunca al repositorio
+# Token del servidor MCP: nunca al repositorio.
+# settings.local.json puede llevar VOLTAC_API_TOKEN dentro.
 .mcp.local.json
+.claude/settings.local.json
