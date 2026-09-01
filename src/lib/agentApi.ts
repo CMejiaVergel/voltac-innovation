@@ -468,6 +468,66 @@ export async function addQuestions(
   return { creadas: n };
 }
 
+/**
+ * Corrige o borra preguntas del banco.
+ *
+ * Un agente que solo puede AÑADIR acaba duplicando lo que ya estaba escrito con
+ * otras palabras. Poder curar es lo que mantiene el banco util.
+ */
+export async function updateQuestions(
+  user: SessionUser,
+  slug: string,
+  cambios: Array<{ id: string; texto?: string; resuelve?: string; estado?: string; respuesta?: string }>,
+) {
+  const project = await loadProject(user, slug, true);
+  let n = 0;
+
+  for (const c of cambios) {
+    const q = await prisma.openQuestion.findUnique({ where: { id: c.id } });
+    if (!q || q.projectId !== project.id) continue;
+
+    const texto = c.texto?.trim();
+    if (c.texto !== undefined && !texto) {
+      throw new AgentApiError("Una pregunta no puede quedar vacia.", 400);
+    }
+
+    await prisma.openQuestion.update({
+      where: { id: c.id },
+      data: {
+        ...(texto ? { text: texto } : {}),
+        ...(c.resuelve !== undefined ? { askedTo: c.resuelve.trim() } : {}),
+        ...(c.estado !== undefined ? { status: c.estado } : {}),
+        ...(c.respuesta !== undefined ? { answer: c.respuesta.trim() } : {}),
+      },
+    });
+    n++;
+  }
+
+  return { actualizadas: n };
+}
+
+export async function deleteQuestions(user: SessionUser, slug: string, ids: string[]) {
+  const project = await loadProject(user, slug, true);
+  const r = await prisma.openQuestion.deleteMany({
+    where: { id: { in: ids }, projectId: project.id },
+  });
+  return { eliminadas: r.count };
+}
+
+/** Fija el orden del banco. El equipo decide que preguntar primero. */
+export async function orderQuestions(user: SessionUser, slug: string, ids: string[]) {
+  const project = await loadProject(user, slug, true);
+  let n = 0;
+  for (const [i, id] of ids.entries()) {
+    const r = await prisma.openQuestion.updateMany({
+      where: { id, projectId: project.id },
+      data: { position: i },
+    });
+    n += r.count;
+  }
+  return { ordenadas: n };
+}
+
 export async function addSources(
   user: SessionUser,
   slug: string,

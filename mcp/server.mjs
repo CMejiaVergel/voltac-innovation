@@ -205,6 +205,44 @@ const TOOLS = [
       api(`${slugPath(slug)}/preguntas`, { method: "POST", body: { preguntas } }),
   },
   {
+    name: "curar_preguntas",
+    description:
+      "Edita, elimina y reordena preguntas del banco en una sola llamada. Usalo para quitar duplicados, reformular una pregunta mal planteada o decidir el orden en que se preguntaran. Los ids salen de leer_proyecto.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        slug: { type: "string" },
+        editar: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              texto: { type: "string" },
+              resuelve: {
+                type: "string",
+                description:
+                  "Quien la resuelve. No siempre es la empresa: varias se resuelven investigando.",
+              },
+              estado: { type: "string", enum: ["OPEN", "ANSWERED", "DISCARDED"] },
+              respuesta: { type: "string" },
+            },
+            required: ["id"],
+          },
+        },
+        eliminar: { type: "array", items: { type: "string" } },
+        orden: {
+          type: "array",
+          items: { type: "string" },
+          description: "Ids en el orden final deseado.",
+        },
+      },
+      required: ["slug"],
+    },
+    run: ({ slug, ...body }) =>
+      api(`${slugPath(slug)}/preguntas/gestion`, { method: "POST", body }),
+  },
+  {
     name: "registrar_fuentes",
     description:
       "Agrega entradas a la bibliografia del proyecto. Toda afirmacion del mapa deberia poder rastrearse hasta aqui.",

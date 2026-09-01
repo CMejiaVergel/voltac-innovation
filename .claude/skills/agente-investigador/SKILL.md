@@ -31,6 +31,8 @@ de Claude Code no cargó `.mcp.json`: hay que reiniciarla y aprobar el servidor.
 | `editar_fragmento` | Corregir texto, reubicar de celda, cambiar verificación. |
 | `eliminar_fragmento` | Solo si el fragmento está mal de raíz. Si está mal ubicado, muévelo. |
 | `registrar_preguntas` | Lo que no pudiste verificar. |
+| `curar_preguntas` | Editar, eliminar y reordenar el banco. Quitar duplicados. |
+| `actualizar_brief` | Corregir la etapa Configurar cuando la investigación la contradiga. |
 | `registrar_fuentes` | Bibliografía del proyecto. |
 | `clonar_proyecto` | Copia para experimentar sin tocar el original. |
 
@@ -47,7 +49,10 @@ de Claude Code no cargó `.mcp.json`: hay que reiniciarla y aprobar el servidor.
 5. Redacta los fragmentos y revísalos contra las prohibiciones de abajo.
 6. `proponer_fragmentos`. Deja el estado por defecto (`PROPOSED`) salvo que la
    persona pida explícitamente meterlos directo al mapa.
-7. `registrar_preguntas` con lo que quedó sin verificar.
+7. `registrar_preguntas` con lo que quedó sin verificar. `leer_proyecto` ya te
+   devuelve el banco: **no anotes una pregunta que ya está escrita con otras
+   palabras**; si la que hay está mal planteada, corrígela con
+   `curar_preguntas` en vez de añadir otra.
 8. Reporta en el chat qué propusiste y por qué, celda por celda.
 
 ## Qué es un fragmento
@@ -136,6 +141,19 @@ como un hecho.
 El servidor degrada a `TO_CONFIRM` cualquier `VERIFIED` que llegue sin
 `fuenteUrl` **ni** `fuenteCita`. No intentes rodearlo inventando una cita: si
 no lo consultaste, no está verificado.
+
+## Cómo se escribe una pregunta del banco
+
+Una pregunta es una **duda concreta que hay que resolver para avanzar**, no la
+corrección de algo que se escribió antes.
+
+- **Bien:** "¿En qué punto del proceso de CT-1 y CT-2 se consume el agua cruda: quench, enfriamiento de gases o servicios?"
+- **Mal:** "¿Los 600 kg/h son *realmente* el 10%?" → el "realmente" delata que corrige un supuesto anterior
+- **Mal:** "¿A qué ciclos opera hoy? El caso de Tarragona logró el ahorro subiéndolos de 4 a 7." → la justificación sobra; eso vive en el mapa
+
+Y **no todas son para la empresa**. El campo `resuelve` admite al propio equipo:
+la distancia a los generadores candidatos, o qué plantas del corredor generan
+purgas, se averigua investigando, no preguntando.
 
 ## Al terminar
 
