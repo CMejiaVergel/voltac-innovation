@@ -309,8 +309,9 @@ function MobileNote({
               onSetHidden(fragment.id, !fragment.hidden);
               setMenu(false);
             }}
-            className="rounded-[3px] border border-black/15 bg-white/60 px-3 py-2 font-ui text-[12px] font-semibold text-noteInk"
+            className="flex items-center justify-center gap-2 rounded-[3px] border border-black/15 bg-white/60 px-3 py-2 font-ui text-[12px] font-semibold text-noteInk"
           >
+            <Ojo tachado={!fragment.hidden} />
             {fragment.hidden ? "Devolver al mapa" : "Ocultar del mapa"}
           </button>
 
@@ -327,5 +328,35 @@ function MobileNote({
         </div>
       )}
     </article>
+  );
+}
+
+/** Ojo abierto: el fragmento se ve. Ojo tachado: esta oculto. */
+function Ojo({ tachado }: { tachado: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-[15px] w-[15px]"
+      aria-hidden
+    >
+      {tachado ? (
+        <>
+          <path d="M3 3l18 18" />
+          <path d="M10.6 5.1A9.9 9.9 0 0112 5c5 0 9 4.5 9 7a12 12 0 01-2.4 3.4" />
+          <path d="M6.5 6.8C4.2 8.3 3 10.4 3 12c0 2.5 4 7 9 7a9.6 9.6 0 004.2-.95" />
+          <path d="M9.9 9.9a3 3 0 004.2 4.2" />
+        </>
+      ) : (
+        <>
+          <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7z" />
+          <circle cx="12" cy="12" r="2.6" />
+        </>
+      )}
+    </svg>
   );
 }

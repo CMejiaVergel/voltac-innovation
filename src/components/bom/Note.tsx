@@ -163,9 +163,9 @@ export function Note({
         {fragment.hidden && (
           <span
             title="Oculto del mapa. Sigue guardado."
-            className="font-ui text-[9px] uppercase tracking-[0.08em] text-noteInk/55"
+            className="grid h-[14px] w-[14px] place-items-center text-noteInk/55"
           >
-            oculto
+            <Ojo tachado />
           </span>
         )}
 
@@ -198,14 +198,18 @@ export function Note({
               type="button"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => onSetHidden(fragment.id, !fragment.hidden)}
-              className="font-ui text-[9px] uppercase tracking-[0.08em] text-noteInk/50 hover:text-noteInk"
+              className="grid h-[18px] w-[18px] place-items-center rounded-full text-noteInk/45 transition hover:bg-black/10 hover:text-noteInk"
+              aria-label={fragment.hidden ? "Devolver al mapa" : "Ocultar del mapa"}
               title={
                 fragment.hidden
                   ? "Devolver al mapa"
                   : "Ocultar del mapa sin borrarlo. Se recupera con el boton Ocultos."
               }
             >
-              {fragment.hidden ? "mostrar" : "ocultar"}
+              {/* El icono muestra la ACCION, no el estado: sobre un fragmento
+                  visible ofrece taparlo; sobre uno oculto, destaparlo. El
+                  estado ya lo indica el ojo tachado fijo del pie. */}
+              <Ojo tachado={!fragment.hidden} />
             </button>
             <button
               type="button"
@@ -224,5 +228,35 @@ export function Note({
         )}
       </div>
     </div>
+  );
+}
+
+/** Ojo abierto: el fragmento se ve. Ojo tachado: esta oculto. */
+function Ojo({ tachado }: { tachado: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-[13px] w-[13px]"
+      aria-hidden
+    >
+      {tachado ? (
+        <>
+          <path d="M3 3l18 18" />
+          <path d="M10.6 5.1A9.9 9.9 0 0112 5c5 0 9 4.5 9 7a12 12 0 01-2.4 3.4" />
+          <path d="M6.5 6.8C4.2 8.3 3 10.4 3 12c0 2.5 4 7 9 7a9.6 9.6 0 004.2-.95" />
+          <path d="M9.9 9.9a3 3 0 004.2 4.2" />
+        </>
+      ) : (
+        <>
+          <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7z" />
+          <circle cx="12" cy="12" r="2.6" />
+        </>
+      )}
+    </svg>
   );
 }

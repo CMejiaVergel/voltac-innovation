@@ -6,14 +6,16 @@ import {
   DragOverlay,
   PointerSensor,
   closestCenter,
+  pointerWithin,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
 import { THIN_CELL_THRESHOLD } from "@/lib/gimi";
 import { VERIFICATION_META, type Verification } from "@/lib/enums";
@@ -32,6 +34,24 @@ import { BomMobile } from "./BomMobile";
 import type { BoardFragment, BoardProps } from "./types";
 
 const cellKey = (rowId: string, colId: string) => `${rowId}|${colId}`;
+const esCelda = (id: string) => id.includes("|");
+
+/**
+ * Deteccion de colision del tablero.
+ *
+ * Cada celda es zona de caida ademas de contenedor de fragmentos, asi que al
+ * cruzar de columna el puntero cae sobre las dos cosas a la vez. Sin esta
+ * prioridad, `over` se resolvia a la CELDA y el fragmento aterrizaba al final
+ * en vez de en el hueco donde se solto. Los fragmentos ganan; la celda solo
+ * responde cuando se suelta en su espacio vacio.
+ */
+const prioridadFragmentos: CollisionDetection = (args) => {
+  const bajoPuntero = pointerWithin(args);
+  const fragmentos = bajoPuntero.filter((c) => !esCelda(String(c.id)));
+  if (fragmentos.length > 0) return fragmentos;
+  if (bajoPuntero.length > 0) return bajoPuntero;
+  return closestCenter(args);
+};
 
 /**
  * El tablero.
@@ -78,7 +98,8 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(f);
     }
-    for (const list of m.values()) list.sort((a, b) => a.position - b.position);
+    // Sin ordenar por `position`: el orden del arreglo manda mientras se
+    // arrastra, y es lo que se persiste al soltar.
     return m;
   }, [visible]);
 
@@ -205,7 +226,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
   // su id. `celdaDe` resuelve cualquiera de los dos a una celda.
 
   function celdaDe(id: string): string | null {
-    if (id.includes("|")) return id;
+    if (esCelda(id)) return id;
     const f = items.find((x) => x.id === id);
     return f ? cellKey(f.rowId, f.colId) : null;
   }
@@ -215,19 +236,46 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
     setDragging(items.find((f) => f.id === e.active.id) ?? null);
   }
 
-  /** Mientras se arrastra por encima de otra celda, el fragmento se traslada
-   *  en el estado local para que el hueco se abra donde va a caer. */
+  /**
+   * Al cruzar a otra celda, el fragmento se traslada YA en el estado local y
+   * se inserta en el hueco exacto donde esta el puntero. Asi el usuario ve
+   * abrirse el espacio donde va a caer, y al soltar no se mueve a otro sitio.
+   */
   function handleDragOver(e: DragOverEvent) {
     const activeId = String(e.active.id);
     const overId = e.over ? String(e.over.id) : null;
-    if (!overId) return;
+    if (!overId || activeId === overId) return;
 
     const origen = celdaDe(activeId);
     const destino = celdaDe(overId);
     if (!origen || !destino || origen === destino) return;
 
     const [rowId, colId] = destino.split("|");
-    setItems((s) => s.map((f) => (f.id === activeId ? { ...f, rowId, colId } : f)));
+
+    setItems((prev) => {
+      const i = prev.findIndex((f) => f.id === activeId);
+      if (i === -1) return prev;
+
+      const movido = { ...prev[i], rowId, colId };
+      const resto = prev.filter((f) => f.id !== activeId);
+
+      let insertarEn: number;
+      if (esCelda(overId)) {
+        // Se solto en el espacio vacio de la celda: al final de esa celda.
+        const ultimo = resto.reduce(
+          (acc, f, k) => (cellKey(f.rowId, f.colId) === destino ? k : acc),
+          -1,
+        );
+        insertarEn = ultimo >= 0 ? ultimo + 1 : resto.length;
+      } else {
+        const sobre = resto.findIndex((f) => f.id === overId);
+        insertarEn = sobre === -1 ? resto.length : sobre;
+      }
+
+      const next = [...resto];
+      next.splice(insertarEn, 0, movido);
+      return next;
+    });
   }
 
   function handleDragEnd(e: DragEndEvent) {
@@ -239,41 +287,46 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
     setAntesDelDrag(null);
     if (!overId || !previo) return;
 
-    const destino = celdaDe(overId);
+    const destino = celdaDe(activeId);
     if (!destino) return;
     const [rowId, colId] = destino.split("|");
 
-    // Orden final de la celda destino: se toma el estado actual y, si se solto
-    // sobre otro fragmento, se coloca el arrastrado en esa posicion.
-    const enCelda = items
+    // El orden visible de la celda ya refleja el arrastre. Si el gesto fue
+    // dentro de la misma celda, aqui se aplica el intercambio final.
+    const idsCelda = items
       .filter((f) => cellKey(f.rowId, f.colId) === destino)
-      .sort((a, b) => a.position - b.position)
       .map((f) => f.id);
 
-    const sinActivo = enCelda.filter((id) => id !== activeId);
-    const indice = overId.includes("|") ? sinActivo.length : sinActivo.indexOf(overId);
-    const orden = [...sinActivo];
-    orden.splice(indice < 0 ? sinActivo.length : indice, 0, activeId);
+    let orden = idsCelda;
+    if (!esCelda(overId) && idsCelda.includes(overId)) {
+      const desde = idsCelda.indexOf(activeId);
+      const hasta = idsCelda.indexOf(overId);
+      if (desde !== -1 && hasta !== -1 && desde !== hasta) {
+        orden = arrayMove(idsCelda, desde, hasta);
+      }
+    }
 
+    const antes = previo
+      .filter((f) => cellKey(f.rowId, f.colId) === destino)
+      .map((f) => f.id);
     const sinCambios =
-      orden.length === enCelda.length && orden.every((id, i) => id === enCelda[i]);
-    const mismaCelda = celdaDe(activeId) === (previo.find((f) => f.id === activeId)
-      ? cellKey(
-          previo.find((f) => f.id === activeId)!.rowId,
-          previo.find((f) => f.id === activeId)!.colId,
-        )
-      : null);
-    if (sinCambios && mismaCelda) return;
+      orden.length === antes.length && orden.every((id, i) => id === antes[i]);
+    if (sinCambios) return;
 
     run(
       () =>
-        setItems((s) =>
-          s.map((f) =>
-            orden.includes(f.id)
-              ? { ...f, rowId, colId, position: orden.indexOf(f.id) }
-              : f,
-          ),
-        ),
+        setItems((s) => {
+          const fuera = s.filter((f) => !orden.includes(f.id));
+          const dentro = orden.map((id, i) => {
+            const f = s.find((x) => x.id === id)!;
+            return { ...f, rowId, colId, position: i };
+          });
+          // Se reinserta el bloque de la celda en el lugar del primero de ellos.
+          const corte = s.findIndex((f) => orden.includes(f.id));
+          const res = [...fuera];
+          res.splice(corte === -1 ? res.length : corte, 0, ...dentro);
+          return res;
+        }),
       () => setItems(previo),
       () => setCellOrder(mapId, rowId, colId, orden),
     );
@@ -375,7 +428,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
       <DndContext
         id="bom"
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={prioridadFragmentos}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
