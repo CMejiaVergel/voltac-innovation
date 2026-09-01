@@ -129,12 +129,13 @@ como un hecho.
 
 | Estado | Cuándo |
 |---|---|
-| `VERIFIED` | Lo respalda una fuente pública que **consultaste en esta sesión**. Exige `fuenteUrl` real. Nunca por memoria. |
+| `VERIFIED` | Lo respalda una fuente identificada: una URL que **consultaste en esta sesión**, o un documento concreto que el equipo tiene (`fuenteCita`). Nunca por memoria. |
 | `TO_CONFIRM` | El dato existe y es plausible, pero no hay fuente directa. Es el estado honesto por defecto. |
 | `ASSUMPTION` | Inferencia tuya. Con moderación, y solo si el equipo puede contrastarla. |
 
 El servidor degrada a `TO_CONFIRM` cualquier `VERIFIED` que llegue sin
-`fuenteUrl`. No intentes rodearlo: si no lo buscaste, no está verificado.
+`fuenteUrl` **ni** `fuenteCita`. No intentes rodearlo inventando una cita: si
+no lo consultaste, no está verificado.
 
 ## Al terminar
 

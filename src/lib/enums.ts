@@ -40,7 +40,7 @@ export const VERIFICATION_META: Record<
   VERIFIED: {
     label: "Verificado",
     short: "VER",
-    help: "Existe una fuente publica consultable que respalda la afirmacion.",
+    help: "Hay una fuente identificada que respalda la afirmacion: una URL consultable o un documento concreto.",
     color: "#2F7D5F",
     dot: "●",
   },

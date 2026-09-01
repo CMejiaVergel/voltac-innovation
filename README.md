@@ -84,8 +84,11 @@ equipo.
 
 Cada fragmento declara si esta **verificado**, **por confirmar** o es un
 **supuesto**. Es lo que impide que una estimacion se lea despues como un hecho.
-El codigo lo hace cumplir: si el agente marca algo como verificado sin adjuntar
-URL, `src/lib/agent/run.ts` lo degrada a "por confirmar" antes de guardarlo.
+El codigo lo hace cumplir: si el agente marca algo como verificado sin
+identificar contra que —ni URL ni cita documental—, `src/lib/agent/run.ts` lo
+degrada a "por confirmar" antes de guardarlo. Vale una URL publica o un
+documento que el equipo tiene en la mano, como la presentacion del reto: lo
+que no vale es afirmar verificacion a secas.
 
 Los 110 fragmentos migrados del prototipo entraron casi todos como "por
 confirmar" a proposito: el prototipo no guardaba fuente por fragmento, y

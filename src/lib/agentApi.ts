@@ -222,9 +222,13 @@ export async function createFragments(
 
     const sourceId = await resolveSource(project.id, item);
 
-    // Misma disciplina que en el agente interno: verificado exige URL.
+    // Verificado exige una FUENTE IDENTIFICADA, no necesariamente una URL: un
+    // documento que el equipo tiene en la mano —la presentacion del reto, una
+    // norma en PDF— es una cita legitima. Lo que no se admite es afirmar que
+    // algo esta verificado sin decir contra que.
     const pedida = asEnum(VERIFICATIONS, item.verificacion, "TO_CONFIRM");
-    const verificacion = pedida === "VERIFIED" && !item.fuenteUrl ? "TO_CONFIRM" : pedida;
+    const conFuente = Boolean(item.fuenteUrl?.trim() || item.fuenteCita?.trim());
+    const verificacion = pedida === "VERIFIED" && !conFuente ? "TO_CONFIRM" : pedida;
 
     const created = await prisma.fragment.create({
       data: {

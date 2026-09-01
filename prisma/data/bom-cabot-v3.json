@@ -1,0 +1,1230 @@
+{
+  "version": 3,
+  "generadoEn": "2026-09-01",
+  "nota": "Tercera versión. Corrige el error de fondo de la v2: CT-1 y CT-2 son las dos plantas de producción del sitio, no torres de enfriamiento. Incorpora los datos primarios de la presentacion del reto que entrego Cabot.",
+  "fuentes": [
+    {
+      "titulo": "Cabot Corporation — planta Cartagena, Colombia",
+      "url": "https://www.cabotcorp.com/company/worldwide-locations/south-america/colombia-cartagena",
+      "editor": "Cabot Corporation",
+      "anio": "2026",
+      "nota": "Ficha oficial de la planta: construida en 1964, dos unidades de manufactura, ~75 empleados, certificaciones ISCC PLUS, ISO 9001 e ISO 14001, Responsible Care. Fundación Mamonal desde 1975 con el gerente regional como presidente."
+    },
+    {
+      "titulo": "Cabot — desempeño CDP 2025 en agua y clima",
+      "url": "https://www.tyre-trends.com/spotlight/cabot-builds-momentum-on-water-stewardship-and-climate-action-in-cdp-2025-assessment",
+      "editor": "Tyre Trends",
+      "anio": "2025",
+      "nota": "A- en CDP Water Security (subiendo desde B en 2024), B en Climate Change. Metas 2030: -15% intensidad de GEI alcance 1 y 2, exportar 250% de la energía importada, -10% intensidad de captación de agua dulce en sitios con estrés hídrico. Recuperación de energía en 13 plantas de carbono de refuerzo."
+    },
+    {
+      "titulo": "Cabot — Metas de Sostenibilidad 2030",
+      "url": "https://www.cabotcorp.com/responsibility/our-approach/sustainability-goals",
+      "editor": "Cabot Corporation",
+      "anio": "2025",
+      "nota": "Seis temas prioritarios definidos tras una evaluación de materialidad cerrada en 2024. Proyectos de conservación y reciclaje de agua en evaluación en toda la red global."
+    },
+    {
+      "titulo": "Zona industrial de Mamonal: empresas, empleos y contaminacion",
+      "url": "https://www.eluniversal.com.co/cartagena/2026/08/11/zona-industrial-de-mamonal-empresas-empleos-y-contaminacion/",
+      "editor": "El Universal (Cartagena)",
+      "anio": "2026",
+      "nota": "~300 empresas grandes y medianas; más del 90% del valor agregado industrial de Bolívar; 4,7% del PIB industrial de Colombia; 52,6% del recaudo de ICA y Predial de Cartagena. Planta solar flotante Yurbaqua de 2,8 MW en su segunda fase. Monitoreo de calidad de agua EPA-Cardique-industria."
+    },
+    {
+      "titulo": "Acuacar explica la crisis por microalgas",
+      "url": "https://www.eluniversal.com.co/cartagena/2026/05/23/aguas-de-cartagena-explica-crisis-por-microalgas-comprendemos-la-preocupacion/",
+      "editor": "El Universal (Cartagena)",
+      "anio": "2026",
+      "nota": "Proliferacion masiva de microalgas en la estacion de tratamiento de la planta El Bosque, que abastece cerca del 90% del agua potable de la ciudad. El racionamiento arrancó el 11 de mayo de 2026 y afectó al 15% de la población."
+    },
+    {
+      "titulo": "Balance de Acuacar: termino el racionamiento",
+      "url": "https://www.eluniversal.com.co/cartagena/2026/07/03/balance-de-acuacar-termino-el-racionamiento-pero-podrian-darse-bajas-presiones/",
+      "editor": "El Universal (Cartagena)",
+      "anio": "2026",
+      "nota": "Cierre del racionamiento a comienzos de julio de 2026, con advertencia de bajas presiones. Inversion anunciada de 60 mil millones de pesos para 2026-2027, de los cuales 49 mil millones van a la ampliacion de red desde la planta El Cerro, con entrega prevista en 2027."
+    },
+    {
+      "titulo": "Acuacar — Ciclo Integral del Agua",
+      "url": "https://www.acuacar.com/acuacar/gestion-ambiental/ciclo-integral-del-agua/",
+      "editor": "Aguas de Cartagena",
+      "anio": "2026",
+      "nota": "El agua cruda de Cartagena viene del Canal del Dique y se bombea desde dos estaciones con tuberías independientes: Dolores y Gambote, pasando por el sistema de lagunas Juan Gomez Dolores."
+    },
+    {
+      "titulo": "MinAmbiente — Resolución 1256 de 2021",
+      "url": "https://www.minambiente.gov.co/wp-content/uploads/2021/12/Resolucion-1256-de-2021.pdf",
+      "editor": "Ministerio de Ambiente y Desarrollo Sostenible",
+      "anio": "2021",
+      "nota": "Reglamenta el reuso de aguas residuales tratadas. Define Usuario Generador, Usuario Receptor y Punto de Control, y fija criterios mínimos de calidad en la tabla del artículo 5."
+    },
+    {
+      "titulo": "Holland & Knight — Minambiente reglamenta el uso de aguas residuales",
+      "url": "https://www.hklaw.com/en/insights/publications/2021/11/minambiente-en-colombia-reglamenta-uso-de-aguas-residuales",
+      "editor": "Holland & Knight",
+      "anio": "2021",
+      "nota": "Análisis jurídico de la Resolución 1256. El usuario receptor requiere concesión de aguas para adquirir el derecho al uso, salvo excepciones. La recirculación interna del mismo usuario generador no exige permiso. Derogo la Resolución 1207 de 2014."
+    },
+    {
+      "titulo": "Orion S.A. lanza producción de negro de humo circular en China",
+      "url": "https://www.businesswire.com/news/home/20260604379732/en/Orion-S.A.-Launches-Circular-Carbon-Black-Production-in-China",
+      "editor": "Businesswire",
+      "anio": "2026",
+      "nota": "Orion produce negro de humo circular a partir de aceite de pirólisis de llantas al final de su vida."
+    },
+    {
+      "titulo": "Orion — negro de humo circular reconocido por el Innovation Radar de la UE",
+      "url": "https://investor.orioncarbons.com/financial-press-releases/press-releases-details/2025/Orion-S.A.s-Circular-Carbon-Black-Recognized-by-EUs-Innovation-Radar/default.aspx",
+      "editor": "Orion S.A.",
+      "anio": "2025",
+      "nota": "Primera empresa en producir negro de humo circular con 100% de aceite de pirólisis de llantas. Grados ECORAX Circular 200, 210 y 215; producción de gran volumen en Jasło, Polonia."
+    },
+    {
+      "titulo": "Orion firma acuerdo de suministro de aceite de pirólisis con Contec S.A.",
+      "url": "https://investor.orioncarbons.com/financial-press-releases/press-releases-details/2025/Orion-S.A.-signs-supply-agreement-for-tire-pyrolysis-oil-with-Contec-S.A/default.aspx",
+      "editor": "Orion S.A.",
+      "anio": "2025",
+      "nota": "Acuerdo de febrero de 2025 para asegurar aceite de pirólisis de llantas como materia prima."
+    },
+    {
+      "titulo": "Birla Carbon — Continua Sustainable Carbonaceous Material",
+      "url": "https://www.birlacarbon.com/birla-carbon-highlights-aspiration-to-develop-continua-sustainable-carbonaceous-material-as-a-significant-part-of-its-global-product-portfolio/",
+      "editor": "Birla Carbon",
+      "anio": "2025",
+      "nota": "Birla aspira a desplazar hasta el 10% del consumo mundial de negro de humo con materiales circulares derivados de llantas al final de su vida."
+    },
+    {
+      "titulo": "Consejo de la UE adopta el reglamento Euro 7",
+      "url": "https://www.consilium.europa.eu/en/press/press-releases/2024/04/12/euro-7-council-adopts-new-rules-on-emission-limits-for-cars-vans-and-trucks/",
+      "editor": "Consejo de la Union Europea",
+      "anio": "2024",
+      "nota": "Euro 7 regula por primera vez emisiones no provenientes del escape, incluidas las partículas por abrasión de llantas."
+    },
+    {
+      "titulo": "UNECE adopta límites de abrasión para llantas nuevas",
+      "url": "https://unece.org/media/transport/Vehicle-Regulations/press/412239",
+      "editor": "UNECE",
+      "anio": "2026",
+      "nota": "Los límites numericos los desarrolla el foro WP.29: junio de 2026 para llantas de turismo, marzo de 2028 para vehículos comerciales ligeros y marzo de 2030 para pesados."
+    },
+    {
+      "titulo": "Pew — legislacion de la UE sobre microplasticos de llantas",
+      "url": "https://www.pew.org/en/about/news-room/press-releases-and-statements/2024/03/14/pew-applauds-eus-first-of-its-kind-legislation-to-tackle-microplastics-emissions-from-tyres",
+      "editor": "The Pew Charitable Trusts",
+      "anio": "2024",
+      "nota": "El desgaste de llantas genera 450.000 toneladas anuales de microplástico en la UE: la segunda fuente cuantificada más grande después de la pintura."
+    },
+    {
+      "titulo": "Reuso de aguas residuales en torres de enfriamiento: caso a escala real",
+      "url": "https://iwaponline.com/wpt/article/doi/10.2166/wpt.2026.290/111685/Wastewater-reuse-for-industrial-cooling-towers-a",
+      "editor": "IWA Publishing — Water Practice & Technology",
+      "anio": "2026",
+      "nota": "Complejo petroquímico de Tarragona: permeado de ósmosis inversa de una planta municipal de regeneración mezclado con agua del Ebro hasta en 40%, alimentando torres de un cracker de etileno. Los ciclos de concentración subieron de 4 a 7, con 22% menos agua de reposición y 50% menos purga."
+    },
+    {
+      "titulo": "PNNL — Water Reuse Systems for Cooling Tower Applications",
+      "url": "https://www.pnnl.gov/main/publications/external/technical_reports/PNNL-34788.pdf",
+      "editor": "Pacific Northwest National Laboratory",
+      "anio": "2023",
+      "nota": "Informe técnico sobre fuentes alternativas de agua para reposición de torres de enfriamiento y sus criterios de calidad."
+    },
+    {
+      "titulo": "Kalundborg Symbiosis",
+      "url": "https://www.symbiosis.dk/en/",
+      "editor": "Kalundborg Symbiosis",
+      "anio": "2026",
+      "nota": "16 socios y más de 30 flujos de recursos compartidos. Ahorra 4 millones de m³ de agua subterránea al año usando agua superficial, la mitad de su consumo de subterránea. Empezó en 1961 llevando agua superficial del lago Tisso a una refinería."
+    },
+    {
+      "titulo": "Kalundborg Industrial Symbiosis — State of Green",
+      "url": "https://stateofgreen.com/en/solutions/kalundborg-industrial-symbiosis-surplus-from-circular-production/",
+      "editor": "State of Green",
+      "anio": "2026",
+      "nota": "Descripcion del modelo: los residuos de una empresa son materia prima de otra, con contratos bilaterales entre privados y sin autoridad central que lo imponga."
+    },
+    {
+      "titulo": "TSMC — Water Stewardship, metas 2030",
+      "url": "https://esg.tsmc.com/file/public/e-APractitionerofGreenPower_2.pdf",
+      "editor": "TSMC",
+      "anio": "2025",
+      "nota": "Tasa de reciclaje de agua de proceso del 90,3% en 2023 y sustitucion del 12% de sus recursos hídricos por agua regenerada, superando su meta del 5%."
+    },
+    {
+      "titulo": "TSMC construye planta de regeneración de agua en Phoenix",
+      "url": "https://www.axios.com/local/phoenix/2025/08/27/tsmc-industrial-water-reclamation-plant-phoenix",
+      "editor": "Axios Phoenix",
+      "anio": "2025",
+      "nota": "Planta industrial de regeneración de 15 acres diseñada para reciclar hasta el 90% del agua residual de sus fábricas en Arizona."
+    },
+    {
+      "titulo": "CEO Water Mandate — Guia de Volumetric Water Benefit Accounting",
+      "url": "https://ceowatermandate.org/replenishment-guide/",
+      "editor": "UN Global Compact CEO Water Mandate",
+      "anio": "2021",
+      "nota": "Metodología estándar para estimar y comunicar el beneficio volumétrico de las acciones de gestion hídrica, que es lo que convierte una intervención en cuenca en un crédito de reposición contabilizable."
+    },
+    {
+      "titulo": "LimnoTech — Proyectos de reposición dentro del estándar AWS",
+      "url": "https://www.limno.com/water-stewardship-aws-replenish/",
+      "editor": "LimnoTech",
+      "anio": "2025",
+      "nota": "El estándar internacional de la Alliance for Water Stewardship certifica 291 sitios en el mundo y se articula con la contabilidad volumétrica de beneficios."
+    },
+    {
+      "titulo": "Cabot — Cartagena General Review (presentacion del reto)",
+      "url": "",
+      "editor": "Cabot Corporation",
+      "anio": "2026",
+      "nota": "Presentacion con la que la empresa presento el reto a Caribe Innova 2026. Capacidad y plantas: CT-1 RF con un reactor XF-70 y 35.000 Mton/año, CT-2 SRF con tres reactores XF-33 y 30.000 Mton/año, 65.000 Mton/año instaladas, récord de 62.300 Mton en FY22 con 94% de utilización. Personal: 80 personas, 74 de planta, 67 en manufactura, sin sindicato, edad promedio 45 y antigüedad promedio 16 años. Almacenamiento de 5.000 Mton en 12 silos, tres bodegas y dos hangares. Empaque 90% FIBC y 10% pallets. Despacho 90% exportación con 20 contenedores diarios y 10% local con 7 camiones. Documento interno, no publico."
+    }
+  ],
+  "fragmentos": [
+    {
+      "id": "F01",
+      "fila": "mercado",
+      "columna": "compania",
+      "texto": "La planta de Cartagena fabrica negros de refuerzo para elastómeros y carbones especiales para clientes de todo el mundo",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.cabotcorp.com/company/worldwide-locations/south-america/colombia-cartagena",
+      "fuenteCita": "Cabot Corporation — planta Cartagena, Colombia",
+      "porQueAqui": "Mercado x Su Compañía pide quien compra hoy. Este fragmento fija los dos segmentos de cliente que atiende la planta y aclara que no es una planta solo para el mercado local."
+    },
+    {
+      "id": "F02",
+      "fila": "mercado",
+      "columna": "compania",
+      "texto": "Las fábricas de llantas absorben la mayor parte del volumen mundial de negro de humo",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Define quien es el cliente dominante. Es conocimiento comun del sector pero no se encontró una fuente publica con el reparto por segmento, así que no puede marcarse como verificado."
+    },
+    {
+      "id": "F03",
+      "fila": "mercado",
+      "columna": "compania",
+      "texto": "El cliente de negro de refuerzo compra especificación: estructura y área superficial constantes lote a lote",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Es la NECESIDAD del cliente, que es la faceta central de la fila Mercado. Importa para el reto: cualquier cambio en el agua de proceso que altere la consistencia del producto es inaceptable para este cliente."
+    },
+    {
+      "id": "F04",
+      "fila": "mercado",
+      "columna": "compania",
+      "texto": "El cliente ya exige acreditación de contenido sostenible y la planta responde con certificación ISCC PLUS",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.cabotcorp.com/company/worldwide-locations/south-america/colombia-cartagena",
+      "fuenteCita": "Cabot Corporation — planta Cartagena, Colombia",
+      "porQueAqui": "Es una exigencia del cliente, no un atributo del producto: por eso va en Mercado y no en Oferta. Muestra que la planta ya vive dentro de un esquema de acreditación verificable por terceros."
+    },
+    {
+      "id": "F05",
+      "fila": "mercado",
+      "columna": "futuro",
+      "texto": "Euro 7 regula por primera vez las partículas por abrasión de llantas, además de las del escape",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.consilium.europa.eu/en/press/press-releases/2024/04/12/euro-7-council-adopts-new-rules-on-emission-limits-for-cars-vans-and-trucks/",
+      "fuenteCita": "Consejo de la UE adopta el reglamento Euro 7",
+      "porQueAqui": "Mercado x Futuro pide hacia donde va la demanda. Está norma cambia lo que el cliente llantero le va a pedir al material de refuerzo, aguas arriba de Cabot."
+    },
+    {
+      "id": "F06",
+      "fila": "mercado",
+      "columna": "futuro",
+      "texto": "Los límites de abrasión de llantas de turismo se definen en el foro WP.29 en junio de 2026",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://unece.org/media/transport/Vehicle-Regulations/press/412239",
+      "fuenteCita": "UNECE adopta límites de abrasión para llantas nuevas",
+      "porQueAqui": "Pone fecha a la presion regulatoria. Un fragmento de Futuro sin fecha no sirve para priorizar; con fecha, el equipo sabe si el horizonte es de meses o de decadas."
+    },
+    {
+      "id": "F07",
+      "fila": "mercado",
+      "columna": "futuro",
+      "texto": "El desgaste de llantas genera 450.000 toneladas anuales de microplástico en la UE, segunda fuente después de la pintura",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.pew.org/en/about/news-room/press-releases-and-statements/2024/03/14/pew-applauds-eus-first-of-its-kind-legislation-to-tackle-microplastics-emissions-from-tyres",
+      "fuenteCita": "Pew — legislacion de la UE sobre microplasticos de llantas",
+      "porQueAqui": "Es el dato que explica POR QUE viene la regulación. La magnitud del problema anticipa la dureza de la exigencia futura sobre el material."
+    },
+    {
+      "id": "F08",
+      "fila": "mercado",
+      "columna": "futuro",
+      "texto": "Las llantas de vehículo eléctrico piden menor resistencia a la rodadura y cambian la especificación del refuerzo",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Cambio de necesidad del cliente por electrificación. Se mantiene sin verificar: no se encontró fuente primaria que cuantifique el cambio de especificación."
+    },
+    {
+      "id": "F09",
+      "fila": "mercado",
+      "columna": "futuro",
+      "texto": "Cartagena racionó agua potable desde el 11 de mayo de 2026, afectando al 15% de la población",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.eluniversal.com.co/cartagena/2026/05/23/aguas-de-cartagena-explica-crisis-por-microalgas-comprendemos-la-preocupacion/",
+      "fuenteCita": "Acuacar explica la crisis por microalgas",
+      "porQueAqui": "Va en Mercado x Futuro porque describe la presion social y la competencia por el recurso con el consumo urbano, que es el contexto en el que la comunidad y la autoridad van a juzgar a la industria. La causa técnica del racionamiento vive en otra celda."
+    },
+    {
+      "id": "F10",
+      "fila": "mercado",
+      "columna": "compet",
+      "texto": "Birla aspira a desplazar hasta el 10% del consumo mundial de negro de humo con material circular de llantas usadas",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.birlacarbon.com/birla-carbon-highlights-aspiration-to-develop-continua-sustainable-carbonaceous-material-as-a-significant-part-of-its-global-product-portfolio/",
+      "fuenteCita": "Birla Carbon — Continua Sustainable Carbonaceous Material",
+      "porQueAqui": "Movimiento concreto y atribuible de un rival nombrado, con cifra. Va en Mercado porque es una jugada por cuota de mercado, no por tecnología de planta."
+    },
+    {
+      "id": "F11",
+      "fila": "mercado",
+      "columna": "compet",
+      "texto": "Orion comercializa grados ECORAX Circular 200, 210 y 215 hechos con aceite de pirólisis de llantas",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://investor.orioncarbons.com/financial-press-releases/press-releases-details/2025/Orion-S.A.s-Circular-Carbon-Black-Recognized-by-EUs-Innovation-Radar/default.aspx",
+      "fuenteCita": "Orion — negro de humo circular reconocido por el Innovation Radar de la UE",
+      "porQueAqui": "Qué hace bien el rival, con nombre de producto verificable. Ya tiene oferta comercial en el mercado, no un piloto."
+    },
+    {
+      "id": "F12",
+      "fila": "mercado",
+      "columna": "compet",
+      "texto": "Orion fue la primera en producir negro de humo con 100% de aceite de pirólisis de llantas",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://investor.orioncarbons.com/financial-press-releases/press-releases-details/2025/Orion-S.A.s-Circular-Carbon-Black-Recognized-by-EUs-Innovation-Radar/default.aspx",
+      "fuenteCita": "Orion — negro de humo circular reconocido por el Innovation Radar de la UE",
+      "porQueAqui": "Marca una ventaja de posicionamiento: el primero en llegar define la referencia con la que el cliente compara a los demas."
+    },
+    {
+      "id": "F13",
+      "fila": "mercado",
+      "columna": "compet",
+      "texto": "Orion arrancó producción de negro de humo circular en China en junio de 2026",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.businesswire.com/news/home/20260604379732/en/Orion-S.A.-Launches-Circular-Carbon-Black-Production-in-China",
+      "fuenteCita": "Orion S.A. lanza producción de negro de humo circular en China",
+      "porQueAqui": "Muestra que la jugada del rival ya se esta replicando geograficamente, con fecha. Es el ritmo de expansion, no solo la existencia del producto."
+    },
+    {
+      "id": "F14",
+      "fila": "mercado",
+      "columna": "adyac",
+      "texto": "El estándar de la Alliance for Water Stewardship certifica el desempeño hídrico de un sitio ante terceros, y hoy acredita 291 sitios",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.limno.com/water-stewardship-aws-replenish/",
+      "fuenteCita": "LimnoTech — Proyectos de reposición dentro del estándar AWS",
+      "porQueAqui": "Mecanismo trasladable de otra industria: convertir el buen manejo del agua en una credencial que el cliente puede exigir y verificar. Va en Mercado porque el mecanismo actua sobre la demanda, no sobre la planta."
+    },
+    {
+      "id": "F15",
+      "fila": "mercado",
+      "columna": "adyac",
+      "texto": "La industria alimentaria acredita origen sostenible con sellos de terceros y el comprador paga por la trazabilidad, no por el producto",
+      "verificacion": "ASSUMPTION",
+      "porQueAqui": "Mecanismo de acreditación por tercero aplicado a la relación con el cliente. Se marca como supuesto porque es una generalizacion del equipo, no un caso documentado con cifras."
+    },
+    {
+      "id": "F16",
+      "fila": "mercado",
+      "columna": "adyac",
+      "texto": "La certificación ISCC PLUS permite vender balance de masa: el cliente compra contenido sostenible acreditado sin cambiar el producto físico",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Mecanismo trasladable: separar el atributo comercial del flujo físico. Es el mismo esquema que se podría aplicar a agua reusada. Falta confirmar los detalles del esquema de balance de masa con la fuente primaria de ISCC."
+    },
+    {
+      "id": "F17",
+      "fila": "mercado",
+      "columna": "cadena",
+      "texto": "Las ensambladoras automotrices imponen requisitos que bajan por la cadena hasta el proveedor de materia prima",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Cadena de Valor pide quien esta aguas abajo y que control ejerce. Explica por que una exigencia que nace en la marca de auto termina siendo obligacion de Cabot."
+    },
+    {
+      "id": "F18",
+      "fila": "mercado",
+      "columna": "cadena",
+      "texto": "Michelin, Bridgestone, Goodyear y Continental concentran la demanda mundial de negro de humo de refuerzo",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Identifica el eslabón inmediatamente aguas abajo y su concentración, que es lo que determina el poder de negociación."
+    },
+    {
+      "id": "F19",
+      "fila": "mercado",
+      "columna": "cadena",
+      "texto": "Los recicladores de llantas al final de su vida entran como nuevo eslabón aguas arriba de los productores",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Un eslabón que antes no existia y que ahora compite por definir el insumo. Se apoya indirectamente en los acuerdos de Orion con Contec, pero la afirmacion general queda por confirmar."
+    },
+    {
+      "id": "F20",
+      "fila": "mercado",
+      "columna": "cadena",
+      "texto": "Los compounders de caucho mezclan y validan el material antes de que llegue a la fábrica de llantas",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Eslabon intermedio con criterio técnico propio: puede vetar un cambio de material aunque la llantera lo acepte."
+    },
+    {
+      "id": "F21",
+      "fila": "entrega",
+      "columna": "compania",
+      "texto": "La planta está en el corredor industrial de Mamonal, que concentra unas 300 empresas grandes y medianas",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.eluniversal.com.co/cartagena/2026/08/11/zona-industrial-de-mamonal-empresas-empleos-y-contaminacion/",
+      "fuenteCita": "Zona industrial de Mamonal: empresas, empleos y contaminacion",
+      "porQueAqui": "Entrega x Su Compañía pide localidad. La densidad de vecinos es el dato que define si el reto de traer efluentes de terceros es siquiera plausible: 300 empresas es el universo de proveedores potenciales."
+    },
+    {
+      "id": "F22",
+      "fila": "entrega",
+      "columna": "compania",
+      "texto": "El agua cruda llega desde el Canal del Dique, bombeada por las estaciones Dolores y Gambote con tuberías independientes",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.acuacar.com/acuacar/gestion-ambiental/ciclo-integral-del-agua/",
+      "fuenteCita": "Acuacar — Ciclo Integral del Agua",
+      "porQueAqui": "Es el canal de entrada del insumo que el reto quiere sustituir. En la versión anterior este fragmento afirmaba una distancia de 45 km que no pudo verificarse; se reemplazó por la ruta real documentada por el operador."
+    },
+    {
+      "id": "F23",
+      "fila": "entrega",
+      "columna": "compania",
+      "texto": "El sitio opera dos plantas de producción con 80 personas, 74 de ellas de planta",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Tamaño del sitio que recibe y despacha. La cifra sube de 75 a 80 con el dato de la empresa, que manda sobre la ficha publica de la web. Un sitio de 80 personas no tiene equipo libre para operar una infraestructura nueva de agua: empuja la solución hacia algo operado por un tercero."
+    },
+    {
+      "id": "F24",
+      "fila": "entrega",
+      "columna": "compania",
+      "texto": "El 90% del producto se empaca en FIBC a 160 toneladas cada 24 horas y el 10% en pallets",
+      "verificacion": "VERIFIED",
+      "porQueAqui": "Formatos de salida, faceta Canales. Sustituye al fragmento anterior, que decia pellets, granel y big bags sin respaldo y sin proporciones.",
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)"
+    },
+    {
+      "id": "F25",
+      "fila": "entrega",
+      "columna": "futuro",
+      "texto": "Acuacar invierte 49 mil millones de pesos en ampliar la red desde la planta El Cerro, con entrega prevista en 2027",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.eluniversal.com.co/cartagena/2026/07/03/balance-de-acuacar-termino-el-racionamiento-pero-podrian-darse-bajas-presiones/",
+      "fuenteCita": "Balance de Acuacar: termino el racionamiento",
+      "porQueAqui": "Cambio futuro en la infraestructura de entrega de agua de la ciudad, con cifra y fecha. Puede alterar la disponibilidad y el precio del agua cruda justo en el horizonte del reto."
+    },
+    {
+      "id": "F26",
+      "fila": "entrega",
+      "columna": "futuro",
+      "texto": "El corredor de Mamonal ya opera infraestructura compartida: la planta solar flotante Yurbaqua suma 2,8 MW en su segunda fase",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.eluniversal.com.co/cartagena/2026/08/11/zona-industrial-de-mamonal-empresas-empleos-y-contaminacion/",
+      "fuenteCita": "Zona industrial de Mamonal: empresas, empleos y contaminacion",
+      "porQueAqui": "Precedente local de servicio compartido entre plantas vecinas. Es la prueba de que el corredor ya sabe montar infraestructura colectiva, aunque sea de energía y no de agua."
+    },
+    {
+      "id": "F27",
+      "fila": "entrega",
+      "columna": "futuro",
+      "texto": "Corredores industriales con servicios compartidos de agua, vapor y energía entre plantas vecinas",
+      "verificacion": "ASSUMPTION",
+      "porQueAqui": "Tendencia de organización territorial. Se marca como supuesto: es la hipotesis del equipo sobre hacia donde va Mamonal, no un hecho documentado."
+    },
+    {
+      "id": "F28",
+      "fila": "entrega",
+      "columna": "compet",
+      "texto": "Varios competidores tienen planta integrada a refinería y reciben feedstock por tubería en vez de por carretera",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Ventaja logística del rival en la faceta Canales. Relevante porque una tubería dedicada es exactamente el tipo de activo que haria viable traer efluente de un vecino."
+    },
+    {
+      "id": "F29",
+      "fila": "entrega",
+      "columna": "compet",
+      "texto": "Orion asegura su aceite de pirólisis con un acuerdo de suministro firmado con Contec en febrero de 2025",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://investor.orioncarbons.com/financial-press-releases/press-releases-details/2025/Orion-S.A.-signs-supply-agreement-for-tire-pyrolysis-oil-with-Contec-S.A/default.aspx",
+      "fuenteCita": "Orion firma acuerdo de suministro de aceite de pirólisis con Contec S.A.",
+      "porQueAqui": "Como un rival resuelve el abastecimiento de un insumo no convencional: contrato de largo plazo con un generador especializado. Es la misma figura contractual que haria falta para un efluente."
+    },
+    {
+      "id": "F30",
+      "fila": "entrega",
+      "columna": "adyac",
+      "texto": "En Tarragona un complejo petroquímico mezcla hasta 40% de agua regenerada municipal con agua de río para alimentar torres de enfriamiento",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://iwaponline.com/wpt/article/doi/10.2166/wpt.2026.290/111685/Wastewater-reuse-for-industrial-cooling-towers-a",
+      "fuenteCita": "Reuso de aguas residuales en torres de enfriamiento: caso a escala real",
+      "porQueAqui": "Mecanismo trasladable de otra geografía industrial: MEZCLAR agua regenerada con la fuente actual en vez de sustituirla, lo que evita rediseñar el circuito. Va en Entrega porque el mecanismo es de suministro y mezcla, no de tratamiento."
+    },
+    {
+      "id": "F31",
+      "fila": "entrega",
+      "columna": "adyac",
+      "texto": "Uber Freight redujo 22,6% las millas vacías agrupando cargas de distintos clientes con un algoritmo",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Mecanismo de agregacion de flujos dispersos de terceros para llenar capacidad ociosa, trasladable a recoger efluentes pequeños de varias plantas. La cifra viene del documento de contexto original y no pudo reverificarse en esta revision."
+    },
+    {
+      "id": "F32",
+      "fila": "entrega",
+      "columna": "adyac",
+      "texto": "Las aerolíneas venden bodega de carga en vuelos que ya iban a salir, monetizando un viaje que de todos modos ocurre",
+      "verificacion": "ASSUMPTION",
+      "porQueAqui": "Mecanismo de aprovechamiento de un movimiento existente. Trasladable a camiones que ya circulan por Mamonal. Sin fuente: es una observacion general del equipo."
+    },
+    {
+      "id": "F33",
+      "fila": "entrega",
+      "columna": "cadena",
+      "texto": "Acuacar es el proveedor prácticamente único de agua para la industria de Cartagena",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Actor aguas arriba con posicion dominante sobre el insumo del reto. Determina que el único camino para reducir dependencia es una fuente distinta, no un proveedor distinto."
+    },
+    {
+      "id": "F34",
+      "fila": "entrega",
+      "columna": "cadena",
+      "texto": "La refinería de Cartagena procesa 90.000 barriles diarios y es a la vez origen potencial de feedstock y de efluentes",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Actor del corredor que aparece en las dos puntas de la cadena. La cifra proviene de un resumen de prensa secundario y debe confirmarse con Ecopetrol antes de usarla en una propuesta."
+    },
+    {
+      "id": "F35",
+      "fila": "entrega",
+      "columna": "cadena",
+      "texto": "La Sociedad Portuaria de Cartagena conecta la planta con la exportación",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Eslabon aguas abajo en la faceta Canales."
+    },
+    {
+      "id": "F36",
+      "fila": "oferta",
+      "columna": "compania",
+      "texto": "El portafolio de la planta son negros de refuerzo para elastómeros y carbones especiales",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.cabotcorp.com/company/worldwide-locations/south-america/colombia-cartagena",
+      "fuenteCita": "Cabot Corporation — planta Cartagena, Colombia",
+      "porQueAqui": "Oferta x Su Compañía pide que se vende hoy. Es la línea de producto real del sitio, no la del grupo global."
+    },
+    {
+      "id": "F37",
+      "fila": "oferta",
+      "columna": "compania",
+      "texto": "La planta sostiene certificaciones ISO 9001, ISO 14001 y el estándar Responsible Care",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.cabotcorp.com/company/worldwide-locations/south-america/colombia-cartagena",
+      "fuenteCita": "Cabot Corporation — planta Cartagena, Colombia",
+      "porQueAqui": "Las certificaciones son atributos de marca que el cliente compra junto con el producto. ISO 14001 en particular ya obliga a un sistema de gestion ambiental documentado, que es la base sobre la que se apoyaria un proyecto de reuso."
+    },
+    {
+      "id": "F38",
+      "fila": "oferta",
+      "columna": "compania",
+      "texto": "La marca Cabot tiene reconocimiento técnico en la industria del caucho",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Faceta Marcas de la fila Oferta. Sin fuente publica que lo cuantifique."
+    },
+    {
+      "id": "F39",
+      "fila": "oferta",
+      "columna": "futuro",
+      "texto": "Producto vendido junto con su huella de carbono certificada por producto",
+      "verificacion": "ASSUMPTION",
+      "porQueAqui": "Cambio esperado en lo que compone la oferta. Supuesto del equipo: la direccion es plausible pero no se encontró un compromiso publico con fecha."
+    },
+    {
+      "id": "F40",
+      "fila": "oferta",
+      "columna": "futuro",
+      "texto": "Negro de humo con contenido reciclado acreditado como línea de producto propia y no como excepción",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Se apoya en que Orion y Birla ya lo comercializan; para Cabot es futuro. Queda por confirmar si el grupo tiene una línea equivalente anunciada."
+    },
+    {
+      "id": "F41",
+      "fila": "oferta",
+      "columna": "futuro",
+      "texto": "Carbones conductivos para baterías de vehículo eléctrico como línea de crecimiento",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Nuevo producto adyacente al nucleo. Sin verificar si aplica a la planta de Cartagena o solo a otros sitios del grupo."
+    },
+    {
+      "id": "F42",
+      "fila": "oferta",
+      "columna": "compet",
+      "texto": "Orion produce a gran volumen negro circular en un reactor comercial en Jasło, Polonia",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://investor.orioncarbons.com/financial-press-releases/press-releases-details/2025/Orion-S.A.s-Circular-Carbon-Black-Recognized-by-EUs-Innovation-Radar/default.aspx",
+      "fuenteCita": "Orion — negro de humo circular reconocido por el Innovation Radar de la UE",
+      "porQueAqui": "La oferta del rival ya salio del laboratorio: hay un reactor comercial con nombre y lugar. Es la diferencia entre un anuncio y un producto."
+    },
+    {
+      "id": "F43",
+      "fila": "oferta",
+      "columna": "compet",
+      "texto": "Birla ofrece Continua como material carbonoso sostenible que sustituye parcialmente al negro de humo en llantas, tintas y plásticos",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.birlacarbon.com/birla-carbon-highlights-aspiration-to-develop-continua-sustainable-carbonaceous-material-as-a-significant-part-of-its-global-product-portfolio/",
+      "fuenteCita": "Birla Carbon — Continua Sustainable Carbonaceous Material",
+      "porQueAqui": "Producto nombrado del rival con su rango de aplicación. Muestra que la sustitucion es parcial, no total, lo que acota la amenaza."
+    },
+    {
+      "id": "F44",
+      "fila": "oferta",
+      "columna": "compet",
+      "texto": "Orion comercializa múltiples grados certificados ISCC PLUS a partir de distintas materias primas",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://investor.orioncarbons.com/financial-press-releases/press-releases-details/2025/Orion-S.A.s-Circular-Carbon-Black-Recognized-by-EUs-Innovation-Radar/default.aspx",
+      "fuenteCita": "Orion — negro de humo circular reconocido por el Innovation Radar de la UE",
+      "porQueAqui": "La certificación como atributo de la oferta, no de la planta. Es el mismo sello que ya tiene Cartagena, lo que sugiere paridad en la credencial y diferencia en el producto."
+    },
+    {
+      "id": "F45",
+      "fila": "oferta",
+      "columna": "adyac",
+      "texto": "Rolls-Royce vende horas de empuje en vez de motores y conserva la propiedad del equipo",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Mecanismo trasladable de una industria ajena: convertir un activo vendido en un servicio medido. Aplicado al reto, un tercero podría ser dueño de la infraestructura de agua y cobrar por metro cúbico entregado."
+    },
+    {
+      "id": "F46",
+      "fila": "oferta",
+      "columna": "adyac",
+      "texto": "Michelin cobra por kilómetro recorrido a flotas en lugar de vender la llanta",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Mismo mecanismo de servitización, con la particularidad de que quien lo hace es el propio cliente de Cabot: demuestra que el modelo ya circula en la cadena."
+    },
+    {
+      "id": "F47",
+      "fila": "oferta",
+      "columna": "adyac",
+      "texto": "Philips vendió luz como servicio al aeropuerto de Schiphol conservando la propiedad de las lámparas",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Tercer caso del mismo mecanismo, en una industria completamente ajena. Se conserva porque el patron se vuelve creible cuando aparece en sectores sin relación entre si."
+    },
+    {
+      "id": "F48",
+      "fila": "oferta",
+      "columna": "cadena",
+      "texto": "Los laboratorios de certificación y ensayo validan la especificación antes de que el cliente acepte el lote",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Actor de la cadena con poder de veto sobre la oferta. Critico para el reto: cualquier cambio de agua de proceso pasa por su medicion."
+    },
+    {
+      "id": "F49",
+      "fila": "oferta",
+      "columna": "cadena",
+      "texto": "La sílice precipitada compite parcialmente como material de refuerzo en llantas de baja resistencia a la rodadura",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Sustituto que entra por el mismo eslabón. Explica por que la presion sobre resistencia a la rodadura es una amenaza y no solo un cambio de especificación."
+    },
+    {
+      "id": "F50",
+      "fila": "produccion",
+      "columna": "compania",
+      "texto": "La planta de Cartagena opera desde 1964 y es de las más antiguas de la red de Cabot",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.cabotcorp.com/company/worldwide-locations/south-america/colombia-cartagena",
+      "fuenteCita": "Cabot Corporation — planta Cartagena, Colombia",
+      "porQueAqui": "La antigüedad del activo es faceta de Producción, no de Mercado: en la versión anterior este dato estaba en Mercado x Su Compañía, donde no explicaba nada. Aquí si: condiciona que tan facil es intervenir el circuito de enfriamiento."
+    },
+    {
+      "id": "F51",
+      "fila": "produccion",
+      "columna": "compania",
+      "texto": "CT-1 y CT-2 son las dos plantas de producción del sitio, no torres de enfriamiento",
+      "verificacion": "VERIFIED",
+      "porQueAqui": "CORRIGE el error más grave de la versión anterior, que las llamaba torres de enfriamiento. Son activos productivos, y el reto pide reducir el agua cruda que consume cada una. Confundirlas cambia por completo donde hay que intervenir.",
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)"
+    },
+    {
+      "id": "F52",
+      "fila": "produccion",
+      "columna": "compania",
+      "texto": "Cabot alcanzó calificación A- en CDP Water Security 2025, subiendo desde B en 2024",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.tyre-trends.com/spotlight/cabot-builds-momentum-on-water-stewardship-and-climate-action-in-cdp-2025-assessment",
+      "fuenteCita": "Cabot — desempeño CDP 2025 en agua y clima",
+      "porQueAqui": "Competencia demostrada en gestion hídrica, evaluada por un tercero. Importa porque sube el liston: la empresa ya no parte de cero en credibilidad sobre agua."
+    },
+    {
+      "id": "F53",
+      "fila": "produccion",
+      "columna": "compania",
+      "texto": "Meta 2030 de Cabot: reducir 10% la intensidad de captación de agua dulce en sitios con estrés hídrico",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.cabotcorp.com/responsibility/our-approach/sustainability-goals",
+      "fuenteCita": "Cabot — Metas de Sostenibilidad 2030",
+      "porQueAqui": "Es la meta corporativa que da sentido al reto local. Sigue sin confirmarse si Cartagena esta clasificada como sitio con estrés hídrico, lo que decide si la planta cuenta o no para esta meta."
+    },
+    {
+      "id": "F54",
+      "fila": "produccion",
+      "columna": "compania",
+      "texto": "Meta 2030 de Cabot: exportar el 250% de la energía que importa",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.tyre-trends.com/spotlight/cabot-builds-momentum-on-water-stewardship-and-climate-action-in-cdp-2025-assessment",
+      "fuenteCita": "Cabot — desempeño CDP 2025 en agua y clima",
+      "porQueAqui": "Competencia energética del grupo. Relevante para el reto porque una solución de agua que consuma mucha energía choca con esta meta; una que aproveche calor residual, la ayuda."
+    },
+    {
+      "id": "F55",
+      "fila": "produccion",
+      "columna": "compania",
+      "texto": "Cabot tiene sistemas de recuperación de energía en 13 plantas de carbono de refuerzo",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.tyre-trends.com/spotlight/cabot-builds-momentum-on-water-stewardship-and-climate-action-in-cdp-2025-assessment",
+      "fuenteCita": "Cabot — desempeño CDP 2025 en agua y clima",
+      "porQueAqui": "Activo tecnológico ya desplegado y replicable. Muestra que el grupo sabe montar proyectos de recuperación de corrientes residuales: el agua seria el mismo patron con otro recurso."
+    },
+    {
+      "id": "F56",
+      "fila": "produccion",
+      "columna": "compania",
+      "texto": "El gas de cola del reactor es un subproducto con valor energético aprovechable",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Activo del proceso. Se conecta con la meta de exportación de energía, pero su aprovechamiento concreto en Cartagena no está confirmado."
+    },
+    {
+      "id": "F57",
+      "fila": "produccion",
+      "columna": "futuro",
+      "texto": "Meta 2030 de Cabot: reducir 15% la intensidad de emisiones de gases de efecto invernadero de alcance 1 y 2",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.tyre-trends.com/spotlight/cabot-builds-momentum-on-water-stewardship-and-climate-action-in-cdp-2025-assessment",
+      "fuenteCita": "Cabot — desempeño CDP 2025 en agua y clima",
+      "porQueAqui": "Compromiso con fecha que condiciona las tecnologías admisibles en los próximos años. Un tratamiento de agua intensivo en energía tendría que justificarse contra esta meta."
+    },
+    {
+      "id": "F58",
+      "fila": "produccion",
+      "columna": "futuro",
+      "texto": "Cabot evalúa proyectos de conservación y reciclaje de agua en toda su red global",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.cabotcorp.com/responsibility/our-approach/sustainability-goals",
+      "fuenteCita": "Cabot — Metas de Sostenibilidad 2030",
+      "porQueAqui": "Dice que la casa matriz ya tiene una cartera de proyectos de agua en evaluación. Un proyecto de Cartagena no llega a un terreno vacio: compite por atención con otros sitios."
+    },
+    {
+      "id": "F59",
+      "fila": "produccion",
+      "columna": "futuro",
+      "texto": "Reactores eléctricos o de plasma que producen negro de humo sin combustión",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Cambio tecnológico que alteraría por completo el balance termico y por tanto la demanda de enfriamiento. Sin verificar su madurez comercial."
+    },
+    {
+      "id": "F60",
+      "fila": "produccion",
+      "columna": "futuro",
+      "texto": "Enfriamiento híbrido y seco que reduce la dependencia del agua en torres industriales",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Alternativa tecnológica que compite con el reuso: si el objetivo es bajar consumo, no traer agua es tan valido como traerla de otro lado. Debe estar en el mapa para que el equipo no descarte el camino sin mirarlo."
+    },
+    {
+      "id": "F61",
+      "fila": "produccion",
+      "columna": "compet",
+      "texto": "Monolith produce negro de humo por pirólisis de metano con energía limpia y sin combustión",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Competidor con ruta tecnológica distinta. Sin fuente reverificada en esta revision."
+    },
+    {
+      "id": "F62",
+      "fila": "produccion",
+      "columna": "compet",
+      "texto": "Las plantas integradas a refinería comparten servicios industriales y diluyen costos fijos",
+      "verificacion": "ASSUMPTION",
+      "porQueAqui": "Ventaja estructural del competidor integrado. Es inferencia del equipo: no se encontró fuente que compare costos de servicios entre plantas integradas y aisladas."
+    },
+    {
+      "id": "F63",
+      "fila": "produccion",
+      "columna": "adyac",
+      "texto": "En Tarragona subir los ciclos de concentración de 4 a 7 bajo 22% el agua de reposición y 50% la purga",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://iwaponline.com/wpt/article/doi/10.2166/wpt.2026.290/111685/Wastewater-reuse-for-industrial-cooling-towers-a",
+      "fuenteCita": "Reuso de aguas residuales en torres de enfriamiento: caso a escala real",
+      "porQueAqui": "El mecanismo trasladable más directo de todo el mapa: el ahorro no vino de traer más agua sino de poder concentrarla más veces antes de purgarla. Va en Producción porque actua sobre la operación del activo."
+    },
+    {
+      "id": "F64",
+      "fila": "produccion",
+      "columna": "adyac",
+      "texto": "TSMC recicla el 90,3% de su agua de proceso y sustituyó el 12% de sus recursos hídricos por agua regenerada",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://esg.tsmc.com/file/public/e-APractitionerofGreenPower_2.pdf",
+      "fuenteCita": "TSMC — Water Stewardship, metas 2030",
+      "porQueAqui": "Industria ajena con exigencia de pureza mucho mayor que la de una torre de enfriamiento. Si un proceso que necesita agua ultrapura logra ese reciclaje, el techo técnico para un circuito de enfriamiento es alto."
+    },
+    {
+      "id": "F65",
+      "fila": "produccion",
+      "columna": "adyac",
+      "texto": "TSMC construye en Arizona una planta de regeneración propia diseñada para reciclar hasta el 90% de su agua residual",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.axios.com/local/phoenix/2025/08/27/tsmc-industrial-water-reclamation-plant-phoenix",
+      "fuenteCita": "TSMC construye planta de regeneración de agua en Phoenix",
+      "porQueAqui": "Mecanismo: internalizar la regeneración en vez de depender del operador municipal. Es la alternativa opuesta a traer efluente de vecinos y merece estar en el mapa como contrapunto."
+    },
+    {
+      "id": "F66",
+      "fila": "produccion",
+      "columna": "adyac",
+      "texto": "Kalundborg ahorra 4 millones de m³ de agua subterránea al año sustituyéndola por agua superficial compartida entre 16 socios",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.symbiosis.dk/en/",
+      "fuenteCita": "Kalundborg Symbiosis",
+      "porQueAqui": "El caso canónico de simbiosis industrial, corregido: son 16 socios y no 17 como decia la versión anterior. El mecanismo es sustituir la fuente, no tratar más."
+    },
+    {
+      "id": "F67",
+      "fila": "produccion",
+      "columna": "adyac",
+      "texto": "Kalundborg empezó en 1961 con un solo intercambio: llevar agua superficial del lago Tisso a una refinería",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.symbiosis.dk/en/",
+      "fuenteCita": "Kalundborg Symbiosis",
+      "porQueAqui": "Mecanismo de arranque: la red más citada del mundo empezó con un único acuerdo bilateral de agua, no con un plan maestro. Es el dato que hace el caso imitable y no intimidante."
+    },
+    {
+      "id": "F68",
+      "fila": "produccion",
+      "columna": "cadena",
+      "texto": "Cardique y el EPA Cartagena son la autoridad ambiental competente sobre vertimientos en el corredor",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Actor con poder de autorizar o bloquear. En un proyecto de reuso entre privados, la autoridad es parte de la cadena aunque no toque el agua."
+    },
+    {
+      "id": "F69",
+      "fila": "produccion",
+      "columna": "cadena",
+      "texto": "El EPA, Cardique y la industria ya operan en conjunto un monitoreo de calidad de agua en Mamonal",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.eluniversal.com.co/cartagena/2026/08/11/zona-industrial-de-mamonal-empresas-empleos-y-contaminacion/",
+      "fuenteCita": "Zona industrial de Mamonal: empresas, empleos y contaminacion",
+      "porQueAqui": "Existe una mesa técnica ya montada entre autoridad e industria. Es infraestructura institucional aprovechable, no un actor a convencer desde cero."
+    },
+    {
+      "id": "F70",
+      "fila": "produccion",
+      "columna": "cadena",
+      "texto": "Refinerías y proveedores de decant oil son el origen del feedstock del reactor",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Eslabon aguas arriba del activo productivo. Los mismos actores que podrian entregar efluente ya entregan materia prima: la relación comercial existe."
+    },
+    {
+      "id": "F71",
+      "fila": "produccion",
+      "columna": "cadena",
+      "texto": "Ecolab, Nalco y Veolia proveen la química de tratamiento de los circuitos de agua industrial",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Proveedor especializado que conoce la química del circuito. Sin su concurso, subir ciclos de concentración o cambiar de fuente arriesga incrustación y corrosión."
+    },
+    {
+      "id": "F72",
+      "fila": "modelos",
+      "columna": "compania",
+      "texto": "Cabot exige que la solución del reto cubra costos de operación más 10% de AIU",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Es el modelo de precio que la propia empresa impuso al reto. Viene del enunciado entregado por Cabot, no de una fuente publica, por eso no se marca verificado."
+    },
+    {
+      "id": "F73",
+      "fila": "modelos",
+      "columna": "compania",
+      "texto": "Cabot cofundó la Fundación Mamonal en 1975 y su gerente regional preside la junta",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.cabotcorp.com/company/worldwide-locations/south-america/colombia-cartagena",
+      "fuenteCita": "Cabot Corporation — planta Cartagena, Colombia",
+      "porQueAqui": "Red y aliados es la faceta de esta fila: en la versión anterior este dato estaba en Mercado, donde no significaba nada. Aquí es capital relacional concreto, y el detalle de la presidencia convierte una membresia en capacidad de convocatoria sobre los vecinos que hay que persuadir."
+    },
+    {
+      "id": "F74",
+      "fila": "modelos",
+      "columna": "compania",
+      "texto": "La venta es B2B por volumen con precio indexado al costo del feedstock",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Modelo de precio actual. Explica por que un ahorro en insumos se traduce en margen y no en precio."
+    },
+    {
+      "id": "F75",
+      "fila": "modelos",
+      "columna": "futuro",
+      "texto": "El usuario receptor de aguas residuales tratadas requiere concesión de aguas para adquirir el derecho a su uso",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.hklaw.com/en/insights/publications/2021/11/minambiente-en-colombia-reglamenta-uso-de-aguas-residuales",
+      "fuenteCita": "Holland & Knight — Minambiente reglamenta el uso de aguas residuales",
+      "porQueAqui": "Condicion jurídica que define con quien y como se puede contratar. Choca de frente con el Qué Evitar de Cabot sobre tramites extensos, así que el equipo tiene que verlo antes de disenar el modelo, no después."
+    },
+    {
+      "id": "F76",
+      "fila": "modelos",
+      "columna": "futuro",
+      "texto": "La Resolución 1256 de 2021 fija criterios mínimos de calidad para reuso industrial en la tabla de su artículo 5",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.minambiente.gov.co/wp-content/uploads/2021/12/Resolucion-1256-de-2021.pdf",
+      "fuenteCita": "MinAmbiente — Resolución 1256 de 2021",
+      "porQueAqui": "CORRIGE un error de la versión anterior, que afirmaba que la norma eliminaba los parámetros de calidad para uso industrial. No los elimina: los fija en una tabla. Lo que derogó fue la Resolución 1207 de 2014 y sus distancias mínimas de retiro."
+    },
+    {
+      "id": "F77",
+      "fila": "modelos",
+      "columna": "futuro",
+      "texto": "La recirculación interna dentro del mismo usuario generador no exige permiso ambiental",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.hklaw.com/en/insights/publications/2021/11/minambiente-en-colombia-reglamenta-uso-de-aguas-residuales",
+      "fuenteCita": "Holland & Knight — Minambiente reglamenta el uso de aguas residuales",
+      "porQueAqui": "Asimetria regulatoria decisiva: reusar el agua propia es libre, traer la del vecino no. Define dos modelos de negocio con costos de transacción muy distintos."
+    },
+    {
+      "id": "F78",
+      "fila": "modelos",
+      "columna": "futuro",
+      "texto": "Mercados de créditos hídricos verificados, siguiendo el camino que recorrió el carbono",
+      "verificacion": "ASSUMPTION",
+      "porQueAqui": "Hipotesis de evolucion del modelo de precio. Se marca como supuesto; el mecanismo que sí está documentado vive en Modelos x Adyacencias."
+    },
+    {
+      "id": "F79",
+      "fila": "modelos",
+      "columna": "compet",
+      "texto": "Orion asegura insumo circular mediante contratos de suministro con recicladores especializados",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://investor.orioncarbons.com/financial-press-releases/press-releases-details/2025/Orion-S.A.-signs-supply-agreement-for-tire-pyrolysis-oil-with-Contec-S.A/default.aspx",
+      "fuenteCita": "Orion firma acuerdo de suministro de aceite de pirólisis con Contec S.A.",
+      "porQueAqui": "Estructura de alianza del rival, no su tecnología: contrato bilateral de largo plazo con un generador de residuo. Es exactamente la figura que necesitaría Cabot con un vecino."
+    },
+    {
+      "id": "F80",
+      "fila": "modelos",
+      "columna": "compet",
+      "texto": "Phillips Carbon Black monetiza electricidad además del producto principal",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Modelo de ingreso dual del rival. Sin fuente reverificada en esta revision."
+    },
+    {
+      "id": "F81",
+      "fila": "modelos",
+      "columna": "compet",
+      "texto": "Birla integra verticalmente hacia el feedstock para controlar su costo",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Estrategia de red del competidor. Contrasta con la de Orion, que contrata en vez de integrar: dos modelos distintos para el mismo problema."
+    },
+    {
+      "id": "F82",
+      "fila": "modelos",
+      "columna": "adyac",
+      "texto": "La contabilidad volumétrica de beneficios hídricos convierte una intervención en cuenca en un crédito de reposición medible",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://ceowatermandate.org/replenishment-guide/",
+      "fuenteCita": "CEO Water Mandate — Guia de Volumetric Water Benefit Accounting",
+      "porQueAqui": "SUSTITUYE al fragmento anterior que solo decia Coca-Cola devuelve agua a la cuenca. Aquel nombraba una empresa; este nombra el mecanismo, que es lo único trasladable: una metodología estándar que vuelve contable un beneficio ambiental difuso."
+    },
+    {
+      "id": "F83",
+      "fila": "modelos",
+      "columna": "adyac",
+      "texto": "Verra y Gold Standard convirtieron una tonelada no emitida en un activo transable mediante verificación por tercero",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "El mismo mecanismo en el mercado de carbono, que es donde primero funciono. Sirve de precedente de que un intangible ambiental puede volverse activo si hay estándar y verificador."
+    },
+    {
+      "id": "F84",
+      "fila": "modelos",
+      "columna": "adyac",
+      "texto": "El contenedor ISO no fue una innovación tecnológica sino un acuerdo de interfaz que todos los actores aceptaron",
+      "verificacion": "ASSUMPTION",
+      "porQueAqui": "Mecanismo de estandarización: lo que desbloquea un intercambio entre muchas partes no siempre es tecnología sino una especificación comun. Aplicado al reto, seria acordar una calidad de efluente única para todo el corredor."
+    },
+    {
+      "id": "F85",
+      "fila": "modelos",
+      "columna": "adyac",
+      "texto": "Las cooperativas agrícolas agregan oferta dispersa de muchos pequeños para negociar un contrato colectivo",
+      "verificacion": "ASSUMPTION",
+      "porQueAqui": "Mecanismo de agregacion aplicable si ningun vecino por si solo aporta caudal suficiente. Supuesto: es una figura conocida, no un caso documentado con cifras."
+    },
+    {
+      "id": "F86",
+      "fila": "modelos",
+      "columna": "adyac",
+      "texto": "En Kalundborg los intercambios son contratos bilaterales entre privados, sin autoridad central que los imponga",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://stateofgreen.com/en/solutions/kalundborg-industrial-symbiosis-surplus-from-circular-production/",
+      "fuenteCita": "Kalundborg Industrial Symbiosis — State of Green",
+      "porQueAqui": "El mecanismo de gobernanza, que es la parte que suele olvidarse al citar Kalundborg. Va en Modelos porque describe como se estructura el acuerdo, no como fluye el agua."
+    },
+    {
+      "id": "F87",
+      "fila": "modelos",
+      "columna": "cadena",
+      "texto": "Ecopetrol opera la refinería de Cartagena y es el mayor generador de corrientes del corredor",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Aliado potencial de mayor escala. Se separo del fragmento anterior que enumeraba siete empresas juntas, lo que violaba la regla de una idea por fragmento e impedía trabajar cada actor por separado."
+    },
+    {
+      "id": "F88",
+      "fila": "modelos",
+      "columna": "cadena",
+      "texto": "Esenttia opera en Mamonal kilómetro 8 y pertenece al complejo petroquímico-plástico del corredor",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Vecino concreto con ubicación verificable, separado en su propio fragmento para poder evaluarlo como candidato individual."
+    },
+    {
+      "id": "F89",
+      "fila": "modelos",
+      "columna": "cadena",
+      "texto": "Zona Franca Argos opera en Mamonal kilómetro 7 bajo régimen de zona franca",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Vecino cercano cuyo régimen jurídico lo complica como contraparte: Cabot pidio explicitamente evitar tramites de zona franca. Se registra el hecho, no la conclusión."
+    },
+    {
+      "id": "F90",
+      "fila": "modelos",
+      "columna": "cadena",
+      "texto": "Mamonal aporta el 4,7% del PIB industrial de Colombia y más del 90% del valor agregado industrial de Bolívar",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.eluniversal.com.co/cartagena/2026/08/11/zona-industrial-de-mamonal-empresas-empleos-y-contaminacion/",
+      "fuenteCita": "Zona industrial de Mamonal: empresas, empleos y contaminacion",
+      "porQueAqui": "Peso económico del corredor como bloque negociador. Va en Modelos x Cadena porque describe el poder de la red, que es lo que le daria voz frente a la autoridad y el operador de agua."
+    },
+    {
+      "id": "F91",
+      "fila": "modelos",
+      "columna": "cadena",
+      "texto": "El corredor aporta el 52,6% del recaudo de ICA y predial de Cartagena",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": "https://www.eluniversal.com.co/cartagena/2026/08/11/zona-industrial-de-mamonal-empresas-empleos-y-contaminacion/",
+      "fuenteCita": "Zona industrial de Mamonal: empresas, empleos y contaminacion",
+      "porQueAqui": "Palanca de negociación con el municipio, expresada en dinero. Un actor que aporta la mitad del recaudo tiene con que pedir una mesa."
+    },
+    {
+      "id": "F92",
+      "fila": "modelos",
+      "columna": "cadena",
+      "texto": "ANDI Bolívar articula gremialmente a las empresas del corredor",
+      "verificacion": "TO_CONFIRM",
+      "porQueAqui": "Canal institucional existente para convocar a varios vecinos a la vez, alternativo a negociar uno por uno."
+    },
+    {
+      "id": "F93",
+      "fila": "produccion",
+      "columna": "compania",
+      "texto": "CT-1 fabrica negros de refuerzo con un reactor XF-70 y capacidad de 35.000 toneladas al año",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Activo productivo con su tecnología y su capacidad. Es una de las dos plantas cuyo consumo de agua cruda el reto quiere bajar."
+    },
+    {
+      "id": "F94",
+      "fila": "produccion",
+      "columna": "compania",
+      "texto": "CT-2 fabrica semirrefuerzo con tres reactores XF-33 y capacidad de 30.000 toneladas al año",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "La otra planta. Tres reactores más pequeños en vez de uno grande: la configuración cambia el perfil de consumo y de purga respecto a CT-1."
+    },
+    {
+      "id": "F95",
+      "fila": "produccion",
+      "columna": "compania",
+      "texto": "La capacidad instalada del sitio es de 65.000 toneladas al año entre sus dos plantas",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Escala del sitio. Es el denominador contra el que hay que leer cualquier cifra de consumo de agua por tonelada producida."
+    },
+    {
+      "id": "F96",
+      "fila": "produccion",
+      "columna": "compania",
+      "texto": "El récord de producción fue 62.300 toneladas en el año fiscal 2022, con 94% de utilización",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Techo real alcanzado. Importa para el reto: a 94% de utilización no hay holgura operativa para experimentos que arriesguen la continuidad."
+    },
+    {
+      "id": "F97",
+      "fila": "produccion",
+      "columna": "compania",
+      "texto": "Un turno regular de producción lo operan tres personas",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Dotacion del activo. Una solución de agua que exija vigilancia continua no cabe en un turno de tres personas."
+    },
+    {
+      "id": "F98",
+      "fila": "produccion",
+      "columna": "compania",
+      "texto": "El sitio no tiene sindicato y la antigüedad promedio del personal es de 16 años",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Competencia acumulada y relación laboral. Dieciséis años de promedio significan que el conocimiento del proceso vive en la gente, no solo en los manuales."
+    },
+    {
+      "id": "F99",
+      "fila": "entrega",
+      "columna": "compania",
+      "texto": "El almacenamiento propio es de 5.000 toneladas entre 12 silos, tres bodegas internas y dos hangares",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Capacidad de amortiguación del sitio, faceta Localidades. Da la medida de que tan acostumbrada esta la planta a operar con inventario propio en vez de flujo continuo."
+    },
+    {
+      "id": "F100",
+      "fila": "entrega",
+      "columna": "compania",
+      "texto": "Se despachan 20 contenedores diarios de exportación en dos turnos y 7 camiones locales en uno",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Ritmo de salida y trafico que ya entra y sale del sitio a diario. Relevante porque un efluente traido por carretera compartiria esa misma puerta."
+    },
+    {
+      "id": "F101",
+      "fila": "mercado",
+      "columna": "compania",
+      "texto": "El 90% de las ventas del sitio es exportación y solo el 10% mercado local",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Composicion del cliente. Explica por que las exigencias que llegan son las de mercados externos y no las del comprador colombiano."
+    },
+    {
+      "id": "F102",
+      "fila": "entrega",
+      "columna": "cadena",
+      "texto": "El puerto de Cartagena conecta con 840 puertos en 150 países y sirve a 25 líneas navieras",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Actor aguas abajo con su alcance medido. Es el canal por el que sale el 90% de lo que produce el sitio."
+    },
+    {
+      "id": "F103",
+      "fila": "entrega",
+      "columna": "cadena",
+      "texto": "El puerto de Cartagena moviliza más del 60% del comercio bilateral de Colombia con Estados Unidos",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Peso del eslabón portuario. Un actor de ese tamaño tiene capacidad de negociación propia dentro del corredor."
+    },
+    {
+      "id": "F104",
+      "fila": "produccion",
+      "columna": "futuro",
+      "texto": "Las palancas estratégicas declaradas del sitio son competitividad, innovación, digitalización y automatización",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Hacia donde dice ir el sitio en sus propias palabras. Marca que tipo de proyecto tiene cabida en su agenda de los próximos años."
+    },
+    {
+      "id": "F105",
+      "fila": "produccion",
+      "columna": "futuro",
+      "texto": "El sitio declara la sostenibilidad como destino de sus cuatro palancas estratégicas",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "La empresa ya puso la sostenibilidad como resultado esperado de su estrategia, no como un anexo. Es el marco interno en el que se juzgaria un proyecto de agua."
+    },
+    {
+      "id": "F106",
+      "fila": "modelos",
+      "columna": "compania",
+      "texto": "El sitio declara querer perpetuarse como centro global de creación de valor para Cabot",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Posicion que el sitio busca ocupar dentro de la red mundial de la corporación. Determina que argumentos pesan cuando se compite por presupuesto con otras plantas."
+    },
+    {
+      "id": "F107",
+      "fila": "modelos",
+      "columna": "compania",
+      "texto": "Cabot Cartagena aportó 292.505 dólares en donaciones locales desde 2019 y 5.015 horas de voluntariado desde 2022",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Capital relacional con la comunidad, medido. Es la red sobre la que se apoyaria cualquier acuerdo que necesite licencia social en Mamonal."
+    },
+    {
+      "id": "F108",
+      "fila": "oferta",
+      "columna": "compania",
+      "texto": "El sitio ganó el premio SAM Bodman AFE de sostenibilidad de Cabot en 2021",
+      "verificacion": "VERIFIED",
+      "fuenteUrl": null,
+      "fuenteCita": "Cabot — Cartagena General Review (presentacion del reto)",
+      "porQueAqui": "Reconocimiento interno de la corporación, faceta Marcas. Da credibilidad al sitio cuando propone un proyecto ambiental hacia la casa matriz."
+    }
+  ],
+  "preguntas": [
+    {
+      "texto": "Los 600 kg/h de CT-1 más 400 kg/h de CT-2 son el 10% objetivo, o son el consumo total de agua cruda de cada planta?",
+      "paraQuien": "Cabot"
+    },
+    {
+      "texto": "Cuál es el consumo total de agua cruda del sitio, sumando CT-1 y CT-2 y servicios?",
+      "paraQuien": "Cabot"
+    },
+    {
+      "texto": "En qué punto del proceso de CT-1 y CT-2 se consume el agua cruda: quench, enfriamiento de gases, servicios?",
+      "paraQuien": "Cabot"
+    },
+    {
+      "texto": "Qué calidad de agua exige cada planta: conductividad, dureza, sílice, cloruros y límites de metales?",
+      "paraQuien": "Cabot"
+    },
+    {
+      "texto": "A qué ciclos de concentración opera hoy el circuito de agua, y cuál es el límite antes de incrustación?",
+      "paraQuien": "Cabot"
+    },
+    {
+      "texto": "Cuánta purga genera hoy el sitio y dónde termina?",
+      "paraQuien": "Cabot"
+    },
+    {
+      "texto": "Cuál es el costo actual por m³ de agua cruda entregada por Acuacar a la planta?",
+      "paraQuien": "Cabot / Acuacar"
+    },
+    {
+      "texto": "Está el sitio de Cartagena clasificado por Cabot como zona de estrés hídrico? De eso depende qué cuente para la meta 2030 del grupo.",
+      "paraQuien": "Cabot"
+    },
+    {
+      "texto": "Cuánto presupuesto de capital puede comprometer el sitio, y con qué retorno mínimo?",
+      "paraQuien": "Cabot"
+    },
+    {
+      "texto": "Requiere el proyecto concesión de aguas como usuario receptor bajo la Resolución 1256, o aplica alguna excepción?",
+      "paraQuien": "Cardique / asesor juridico ambiental"
+    },
+    {
+      "texto": "Cumple el efluente candidato la tabla de calidad del artículo 5 de la Resolución 1256 para uso industrial?",
+      "paraQuien": "Cardique"
+    },
+    {
+      "texto": "Qué empresas de Mamonal ya caracterizaron sus efluentes y compartirían esa caracterización?",
+      "paraQuien": "Fundacion Mamonal / ANDI Bolivar"
+    },
+    {
+      "texto": "Puede la mesa de monitoreo de calidad de agua EPA-Cardique-industria servir para plantear el intercambio de efluentes?",
+      "paraQuien": "EPA Cartagena / Cardique"
+    },
+    {
+      "texto": "Cuál es la distancia real y la ruta disponible entre la planta y los generadores candidatos de efluente?",
+      "paraQuien": "Cabot"
+    }
+  ]
+}

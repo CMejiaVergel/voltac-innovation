@@ -172,10 +172,13 @@ async function executeRun(runId: string): Promise<void> {
         colId: frag.columna,
         text: frag.texto.trim(),
         position,
-        // Si dice VERIFIED pero no trae URL, se degrada. La disciplina de
-        // verificacion la impone el codigo, no la buena voluntad del modelo.
+        // Si dice VERIFIED sin identificar contra que, se degrada. Vale una
+        // URL o una cita documental: lo que no vale es afirmar verificacion a
+        // secas. La disciplina la impone el codigo, no la buena voluntad del
+        // modelo.
         verification:
-          frag.verificacion === "VERIFIED" && !frag.fuenteUrl
+          frag.verificacion === "VERIFIED" &&
+          !(frag.fuenteUrl?.trim() || frag.fuenteCita?.trim())
             ? "TO_CONFIRM"
             : frag.verificacion,
         reviewState: "PROPOSED",

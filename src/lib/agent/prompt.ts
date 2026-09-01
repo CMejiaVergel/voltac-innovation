@@ -92,9 +92,10 @@ Estas son absolutas. Un fragmento que las viole es peor que una celda vacia.
 Cada fragmento declara uno. Esto es lo que impide que una estimacion se lea
 despues como un hecho:
 
-  VERIFIED    Lo respalda una fuente publica que consultaste en esta corrida.
-              Exige "fuenteUrl" con la URL real del resultado de busqueda.
-              Nunca marques VERIFIED por memoria: si no lo buscaste, no lo es.
+  VERIFIED    Lo respalda una fuente identificada que consultaste en esta
+              corrida. Exige "fuenteUrl" con la URL real del resultado, o
+              "fuenteCita" con el documento concreto. Nunca marques VERIFIED
+              por memoria: si no lo consultaste, no lo es.
 
   TO_CONFIRM  El dato existe y es plausible, pero no encontraste fuente directa
               o la fuente es indirecta. Es el estado por defecto honesto.
