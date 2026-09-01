@@ -87,6 +87,95 @@ export async function updateBrief(slug: string, formData: FormData): Promise<voi
   revalidatePath(`/proyectos/${slug}`);
 }
 
+/** Renombrar el proyecto y sus datos de cabecera. El slug NO cambia: es la URL
+ *  que el equipo ya tiene guardada y compartida. */
+export async function updateProjectInfo(slug: string, formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const project = await prisma.project.findUnique({ where: { slug } });
+  if (!project) throw new Error("El proyecto no existe.");
+
+  const access = await getProjectRole(user, project.id);
+  if (!canAdminProject(access?.role)) {
+    throw new Error("Solo el responsable puede cambiar los datos del proyecto.");
+  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) throw new Error("El proyecto necesita un nombre.");
+
+  await prisma.project.update({
+    where: { id: project.id },
+    data: {
+      name,
+      company: String(formData.get("company") ?? "").trim() || null,
+      program: String(formData.get("program") ?? "").trim() || null,
+    },
+  });
+
+  revalidatePath(`/proyectos/${slug}`);
+  revalidatePath("/proyectos");
+}
+
+/**
+ * Manda el proyecto a la papelera. No borra nada: cambia su estado y guarda
+ * cuando se tiro. Sale de la lista, pero se puede restaurar entero.
+ */
+export async function trashProject(slug: string): Promise<void> {
+  const user = await requireUser();
+  const project = await prisma.project.findUnique({ where: { slug } });
+  if (!project) throw new Error("El proyecto no existe.");
+
+  const access = await getProjectRole(user, project.id);
+  if (!canAdminProject(access?.role)) {
+    throw new Error("Solo el responsable puede enviar el proyecto a la papelera.");
+  }
+
+  await prisma.project.update({
+    where: { id: project.id },
+    data: { status: "TRASHED", trashedAt: new Date() },
+  });
+
+  revalidatePath("/proyectos");
+  redirect("/proyectos");
+}
+
+export async function restoreProject(slug: string): Promise<void> {
+  const user = await requireUser();
+  const project = await prisma.project.findUnique({ where: { slug } });
+  if (!project) throw new Error("El proyecto no existe.");
+
+  const access = await getProjectRole(user, project.id);
+  if (!canAdminProject(access?.role)) throw new Error("Sin permiso.");
+
+  await prisma.project.update({
+    where: { id: project.id },
+    data: { status: "ACTIVE", trashedAt: null },
+  });
+
+  revalidatePath("/proyectos");
+  revalidatePath("/proyectos/papelera");
+}
+
+/**
+ * Borrado real. Solo alcanza proyectos que YA estan en la papelera: es el
+ * segundo acto deliberado que exige destruir el trabajo de meses. La cascada
+ * se lleva mapa, fragmentos, historial, bibliografia y preguntas.
+ */
+export async function deleteProjectForever(slug: string): Promise<void> {
+  const user = await requireUser();
+  const project = await prisma.project.findUnique({ where: { slug } });
+  if (!project) throw new Error("El proyecto no existe.");
+  if (project.status !== "TRASHED") {
+    throw new Error("Solo se pueden borrar proyectos que esten en la papelera.");
+  }
+
+  const access = await getProjectRole(user, project.id);
+  if (!canAdminProject(access?.role)) throw new Error("Sin permiso.");
+
+  await prisma.project.delete({ where: { id: project.id } });
+  revalidatePath("/proyectos/papelera");
+  revalidatePath("/proyectos");
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Agente
 // ─────────────────────────────────────────────────────────────────────────────

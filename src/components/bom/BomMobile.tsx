@@ -31,6 +31,7 @@ export function BomMobile({
   onAdd,
   onEditText,
   onSetVerification,
+  onSetHidden,
   onDelete,
   onReview,
   onMove,
@@ -45,6 +46,7 @@ export function BomMobile({
   onAdd: (rowId: string, colId: string) => void;
   onEditText: (id: string, text: string) => void;
   onSetVerification: (id: string, v: Verification) => void;
+  onSetHidden: (id: string, hidden: boolean) => void;
   onDelete: (id: string) => void;
   onReview: (id: string, decision: "ACCEPT" | "REJECT") => void;
   onMove: (id: string, rowId: string, colId: string) => void;
@@ -131,6 +133,7 @@ export function BomMobile({
                     showOrigin={showOrigin}
                     onEditText={onEditText}
                     onSetVerification={onSetVerification}
+                    onSetHidden={onSetHidden}
                     onDelete={onDelete}
                     onReview={onReview}
                     onMove={onMove}
@@ -166,6 +169,7 @@ function MobileNote({
   showOrigin,
   onEditText,
   onSetVerification,
+  onSetHidden,
   onDelete,
   onReview,
   onMove,
@@ -178,6 +182,7 @@ function MobileNote({
   showOrigin: boolean;
   onEditText: (id: string, text: string) => void;
   onSetVerification: (id: string, v: Verification) => void;
+  onSetHidden: (id: string, hidden: boolean) => void;
   onDelete: (id: string) => void;
   onReview: (id: string, decision: "ACCEPT" | "REJECT") => void;
   onMove: (id: string, rowId: string, colId: string) => void;
@@ -297,6 +302,17 @@ function MobileNote({
               ))}
             </select>
           </label>
+
+          <button
+            type="button"
+            onClick={() => {
+              onSetHidden(fragment.id, !fragment.hidden);
+              setMenu(false);
+            }}
+            className="rounded-[3px] border border-black/15 bg-white/60 px-3 py-2 font-ui text-[12px] font-semibold text-noteInk"
+          >
+            {fragment.hidden ? "Devolver al mapa" : "Ocultar del mapa"}
+          </button>
 
           <button
             type="button"

@@ -19,6 +19,9 @@ export default async function ProjectsPage() {
           </h1>
         </div>
         <div className="flex-1" />
+        <Link href="/proyectos/papelera" className="btn">
+          Papelera
+        </Link>
         <Link href="/proyectos/nuevo" className="btn btn-primary">
           Nuevo proyecto
         </Link>

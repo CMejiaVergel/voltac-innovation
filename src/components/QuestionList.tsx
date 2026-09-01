@@ -59,6 +59,16 @@ export function QuestionList({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Sugerencias, no opciones cerradas: varias preguntas las resolvemos
+          nosotros investigando, no preguntandole a la empresa. */}
+      <datalist id="responsables-pregunta">
+        <option value="Equipo Voltac (investigacion propia)" />
+        <option value="Cabot" />
+        <option value="Acuacar" />
+        <option value="Cardique / EPA Cartagena" />
+        <option value="Fundacion Mamonal / ANDI Bolivar" />
+        <option value="Asesor juridico ambiental" />
+      </datalist>
       {error && (
         <p className="rounded-[3px] border border-[rgba(142,51,36,0.5)] bg-[rgba(142,51,36,0.15)] px-3 py-2 text-[12px] text-[#e8a99c]">
           {error}
@@ -85,7 +95,9 @@ export function QuestionList({
                 {QUESTION_STATUS_LABEL[q.status]}
               </span>
               {q.askedTo && !editando && (
-                <span className="font-mono text-[9.5px] text-[#4d5a58]">→ {q.askedTo}</span>
+                <span className="font-mono text-[9.5px] text-[#4d5a58]">
+                  resuelve: {q.askedTo}
+                </span>
               )}
               {q.origin === "AGENT" && (
                 <span className="font-mono text-[9.5px] text-[#4d5a58]">via agente</span>
@@ -165,7 +177,8 @@ export function QuestionList({
                   <input
                     name="askedTo"
                     defaultValue={q.askedTo}
-                    placeholder="Para quien"
+                    list="responsables-pregunta"
+                    placeholder="Quien la resuelve"
                     className="field flex-1 text-[12px]"
                   />
                   <select name="status" defaultValue={q.status} className="field w-44 text-[12px]">

@@ -5,20 +5,24 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  closestCenter,
   useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
 import { THIN_CELL_THRESHOLD } from "@/lib/gimi";
 import { VERIFICATION_META, type Verification } from "@/lib/enums";
 import {
   createFragment,
   deleteFragment,
-  moveFragment,
   reviewFragment,
+  setCellOrder,
+  setFragmentHidden,
   setVerification,
   updateFragmentText,
 } from "@/app/actions/fragments";
@@ -26,6 +30,8 @@ import {
 import { Note } from "./Note";
 import { BomMobile } from "./BomMobile";
 import type { BoardFragment, BoardProps } from "./types";
+
+const cellKey = (rowId: string, colId: string) => `${rowId}|${colId}`;
 
 /**
  * El tablero.
@@ -38,6 +44,8 @@ import type { BoardFragment, BoardProps } from "./types";
 export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
   const [items, setItems] = useState<BoardFragment[]>(fragments);
   const [dragging, setDragging] = useState<BoardFragment | null>(null);
+  // Copia previa al arrastre, para poder revertir si el guardado falla.
+  const [antesDelDrag, setAntesDelDrag] = useState<BoardFragment[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showGaps, setShowGaps] = useState(true);
   const [showVerification, setShowVerification] = useState(true);
@@ -45,6 +53,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
   // Apagado por defecto: la marca de origen no se muestra en el tablero. El
   // dato sigue guardado y viaja en el historial y en la exportacion.
   const [showOrigin, setShowOrigin] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
   const [showProposals, setShowProposals] = useState(true);
   const [, startTransition] = useTransition();
 
@@ -53,29 +62,29 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
   );
 
   const visible = useMemo(
-    () => items.filter((f) => f.reviewState === "ACCEPTED" || (showProposals && f.reviewState === "PROPOSED")),
-    [items, showProposals],
+    () =>
+      items.filter(
+        (f) =>
+          (f.reviewState === "ACCEPTED" || (showProposals && f.reviewState === "PROPOSED")) &&
+          (showHidden || !f.hidden),
+      ),
+    [items, showProposals, showHidden],
   );
 
   const byCell = useMemo(() => {
     const m = new Map<string, BoardFragment[]>();
     for (const f of visible) {
-      const k = `${f.rowId}|${f.colId}`;
+      const k = cellKey(f.rowId, f.colId);
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(f);
     }
-    for (const list of m.values()) {
-      list.sort(
-        (a, b) =>
-          Number(a.reviewState === "PROPOSED") - Number(b.reviewState === "PROPOSED") ||
-          a.position - b.position,
-      );
-    }
+    for (const list of m.values()) list.sort((a, b) => a.position - b.position);
     return m;
   }, [visible]);
 
-  const acceptedCount = items.filter((f) => f.reviewState === "ACCEPTED").length;
+  const acceptedCount = items.filter((f) => f.reviewState === "ACCEPTED" && !f.hidden).length;
   const proposedCount = items.filter((f) => f.reviewState === "PROPOSED").length;
+  const hiddenCount = items.filter((f) => f.hidden).length;
 
   // ── Mutaciones con reversion en caso de fallo ──────────────────────────────
 
@@ -107,6 +116,15 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
       () => setItems((s) => s.map((f) => (f.id === id ? { ...f, verification: v } : f))),
       () => setItems((s) => s.map((f) => (f.id === id ? { ...f, verification: before } : f))),
       () => setVerification(id, v),
+    );
+  }
+
+  function handleHidden(id: string, hidden: boolean) {
+    const before = items;
+    run(
+      () => setItems((s) => s.map((f) => (f.id === id ? { ...f, hidden } : f))),
+      () => setItems(before),
+      () => setFragmentHidden(id, hidden),
     );
   }
 
@@ -145,6 +163,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
       verification: "TO_CONFIRM",
       reviewState: "ACCEPTED",
       origin: "HUMAN",
+      hidden: false,
       sourceUrl: null,
       sourceCitation: null,
       agentRationale: null,
@@ -162,28 +181,102 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
     }
   }
 
-  function handleDragStart(e: DragStartEvent) {
-    setDragging(items.find((f) => f.id === e.active.id) ?? null);
-  }
-
+  /** Mover desde la vista movil, que no tiene arrastre. */
   function handleMove(id: string, rowId: string, colId: string) {
     const fragment = items.find((f) => f.id === id);
     if (!fragment || (fragment.rowId === rowId && fragment.colId === colId)) return;
+
+    const destino = (byCell.get(cellKey(rowId, colId)) ?? []).map((f) => f.id);
+    const orden = [...destino, id];
     const before = items;
+
     run(
-      () => setItems((s) => s.map((f) => (f.id === id ? { ...f, rowId, colId, position: 9999 } : f))),
+      () =>
+        setItems((s) =>
+          s.map((f) => (f.id === id ? { ...f, rowId, colId, position: orden.length - 1 } : f)),
+        ),
       () => setItems(before),
-      () => moveFragment(id, rowId, colId),
+      () => setCellOrder(mapId, rowId, colId, orden),
     );
   }
 
-  function handleDragEnd(e: DragEndEvent) {
-    setDragging(null);
-    const overId = e.over?.id;
-    if (!overId || typeof overId !== "string") return;
+  // ── Arrastre ordenable ─────────────────────────────────────────────────────
+  // El identificador de un contenedor es "fila|columna". El de un fragmento es
+  // su id. `celdaDe` resuelve cualquiera de los dos a una celda.
 
-    const [rowId, colId] = overId.split("|");
-    handleMove(String(e.active.id), rowId, colId);
+  function celdaDe(id: string): string | null {
+    if (id.includes("|")) return id;
+    const f = items.find((x) => x.id === id);
+    return f ? cellKey(f.rowId, f.colId) : null;
+  }
+
+  function handleDragStart(e: DragStartEvent) {
+    setAntesDelDrag(items);
+    setDragging(items.find((f) => f.id === e.active.id) ?? null);
+  }
+
+  /** Mientras se arrastra por encima de otra celda, el fragmento se traslada
+   *  en el estado local para que el hueco se abra donde va a caer. */
+  function handleDragOver(e: DragOverEvent) {
+    const activeId = String(e.active.id);
+    const overId = e.over ? String(e.over.id) : null;
+    if (!overId) return;
+
+    const origen = celdaDe(activeId);
+    const destino = celdaDe(overId);
+    if (!origen || !destino || origen === destino) return;
+
+    const [rowId, colId] = destino.split("|");
+    setItems((s) => s.map((f) => (f.id === activeId ? { ...f, rowId, colId } : f)));
+  }
+
+  function handleDragEnd(e: DragEndEvent) {
+    const activeId = String(e.active.id);
+    const overId = e.over ? String(e.over.id) : null;
+    setDragging(null);
+
+    const previo = antesDelDrag;
+    setAntesDelDrag(null);
+    if (!overId || !previo) return;
+
+    const destino = celdaDe(overId);
+    if (!destino) return;
+    const [rowId, colId] = destino.split("|");
+
+    // Orden final de la celda destino: se toma el estado actual y, si se solto
+    // sobre otro fragmento, se coloca el arrastrado en esa posicion.
+    const enCelda = items
+      .filter((f) => cellKey(f.rowId, f.colId) === destino)
+      .sort((a, b) => a.position - b.position)
+      .map((f) => f.id);
+
+    const sinActivo = enCelda.filter((id) => id !== activeId);
+    const indice = overId.includes("|") ? sinActivo.length : sinActivo.indexOf(overId);
+    const orden = [...sinActivo];
+    orden.splice(indice < 0 ? sinActivo.length : indice, 0, activeId);
+
+    const sinCambios =
+      orden.length === enCelda.length && orden.every((id, i) => id === enCelda[i]);
+    const mismaCelda = celdaDe(activeId) === (previo.find((f) => f.id === activeId)
+      ? cellKey(
+          previo.find((f) => f.id === activeId)!.rowId,
+          previo.find((f) => f.id === activeId)!.colId,
+        )
+      : null);
+    if (sinCambios && mismaCelda) return;
+
+    run(
+      () =>
+        setItems((s) =>
+          s.map((f) =>
+            orden.includes(f.id)
+              ? { ...f, rowId, colId, position: orden.indexOf(f.id) }
+              : f,
+          ),
+        ),
+      () => setItems(previo),
+      () => setCellOrder(mapId, rowId, colId, orden),
+    );
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -225,6 +318,16 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
         >
           Origen
         </button>
+        {hiddenCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowHidden((v) => !v)}
+            className={`btn ${showHidden ? "btn-primary" : ""}`}
+            title="Trae de vuelta a la vista los fragmentos ocultos, atenuados"
+          >
+            Ocultos ({hiddenCount})
+          </button>
+        )}
         {proposedCount > 0 && (
           <button
             type="button"
@@ -262,19 +365,19 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
         onAdd={handleAdd}
         onEditText={handleEditText}
         onSetVerification={handleVerification}
+        onSetHidden={handleHidden}
         onDelete={handleDelete}
         onReview={handleReview}
         onMove={handleMove}
       />
 
       {/* Rejilla completa: escritorio e impresion. */}
-      {/* El id explicito evita un aviso de hidratacion: sin el, dnd-kit numera
-          sus descripciones de accesibilidad con un contador que no coincide
-          entre el render del servidor y el del cliente. */}
       <DndContext
         id="bom"
         sensors={sensors}
+        collisionDetection={closestCenter}
         onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
         <div className="board-shell mt-4 hidden md:block print:block">
@@ -292,7 +395,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
               </div>
               {shape.cols.map((c) => {
                 const n = shape.rows.reduce(
-                  (a, r) => a + (byCell.get(`${r.id}|${c.id}`)?.length ?? 0),
+                  (a, r) => a + (byCell.get(cellKey(r.id, c.id))?.length ?? 0),
                   0,
                 );
                 return (
@@ -310,7 +413,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
             {/* Filas */}
             {shape.rows.map((r) => {
               const total = shape.cols.reduce(
-                (a, c) => a + (byCell.get(`${r.id}|${c.id}`)?.length ?? 0),
+                (a, c) => a + (byCell.get(cellKey(r.id, c.id))?.length ?? 0),
                 0,
               );
               return (
@@ -340,7 +443,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
                       rowId={r.id}
                       colId={c.id}
                       hint={c.hint}
-                      fragments={byCell.get(`${r.id}|${c.id}`) ?? []}
+                      fragments={byCell.get(cellKey(r.id, c.id)) ?? []}
                       editable={editable}
                       showGaps={showGaps}
                       showVerification={showVerification}
@@ -349,6 +452,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
                       onAdd={handleAdd}
                       onEditText={handleEditText}
                       onSetVerification={handleVerification}
+                      onSetHidden={handleHidden}
                       onDelete={handleDelete}
                       onReview={handleReview}
                     />
@@ -419,6 +523,7 @@ function Cell({
   onAdd,
   onEditText,
   onSetVerification,
+  onSetHidden,
   onDelete,
   onReview,
 }: {
@@ -434,12 +539,17 @@ function Cell({
   onAdd: (rowId: string, colId: string) => void;
   onEditText: (id: string, text: string) => void;
   onSetVerification: (id: string, v: Verification) => void;
+  onSetHidden: (id: string, hidden: boolean) => void;
   onDelete: (id: string) => void;
   onReview: (id: string, decision: "ACCEPT" | "REJECT") => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `${rowId}|${colId}` });
+  const id = cellKey(rowId, colId);
+  // La celda es zona de caida ademas de contenedor ordenable: sin esto, una
+  // celda vacia no aceptaria fragmentos porque no tendria ningun hijo sobre el
+  // que soltar.
+  const { setNodeRef, isOver } = useDroppable({ id });
 
-  const accepted = fragments.filter((f) => f.reviewState === "ACCEPTED").length;
+  const accepted = fragments.filter((f) => f.reviewState === "ACCEPTED" && !f.hidden).length;
   const thin = showGaps && accepted < THIN_CELL_THRESHOLD;
 
   return (
@@ -447,20 +557,23 @@ function Cell({
       ref={setNodeRef}
       className={`board-cell ${thin ? "is-thin" : ""} ${isOver ? "is-over" : ""}`}
     >
-      {fragments.map((f) => (
-        <Note
-          key={f.id}
-          fragment={f}
-          editable={editable}
-          showVerification={showVerification}
-          showSource={showSource}
-          showOrigin={showOrigin}
-          onEditText={onEditText}
-          onSetVerification={onSetVerification}
-          onDelete={onDelete}
-          onReview={onReview}
-        />
-      ))}
+      <SortableContext items={fragments.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+        {fragments.map((f) => (
+          <Note
+            key={f.id}
+            fragment={f}
+            editable={editable}
+            showVerification={showVerification}
+            showSource={showSource}
+            showOrigin={showOrigin}
+            onEditText={onEditText}
+            onSetVerification={onSetVerification}
+            onSetHidden={onSetHidden}
+            onDelete={onDelete}
+            onReview={onReview}
+          />
+        ))}
+      </SortableContext>
 
       {editable && (
         <button

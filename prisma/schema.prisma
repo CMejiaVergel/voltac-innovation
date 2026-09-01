@@ -108,7 +108,13 @@ model Project {
   company String?
   /// Programa o convocatoria (ej. "Caribe Innova 2026")
   program String?
-  status  String @default("ACTIVE") // ACTIVE | ARCHIVED
+  /// ACTIVE | ARCHIVED | TRASHED
+  ///
+  /// Borrar un proyecto destruye meses de trabajo del equipo, asi que la
+  /// interfaz solo lo manda a la papelera. El borrado real exige vaciarla, que
+  /// es un segundo acto deliberado.
+  status    String    @default("ACTIVE")
+  trashedAt DateTime?
 
   /// Modelo de OpenRouter que usa el agente en este proyecto. Vacio = el que
   /// diga OPENROUTER_MODEL en el entorno.
@@ -245,8 +251,13 @@ model Fragment {
   colId String
 
   text String
-  /// Orden dentro de la celda.
+  /// Orden dentro de la celda. Lo fija el equipo arrastrando: dentro de una
+  /// celda el orden es una decision de lectura, no un detalle.
   position Int @default(0)
+
+  /// Fuera de la vista sin borrarse. Para fragmentos que no aportan a la
+  /// conversacion de hoy pero que el equipo no quiere perder.
+  hidden Boolean @default(false)
 
   /// VERIFIED | TO_CONFIRM | ASSUMPTION
   verification String @default("TO_CONFIRM")

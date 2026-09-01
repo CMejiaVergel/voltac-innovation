@@ -42,6 +42,7 @@ export default async function BomPage({ params }: { params: Promise<{ slug: stri
     verification: asEnum(VERIFICATIONS, f.verification, "TO_CONFIRM"),
     reviewState: asEnum(REVIEW_STATES, f.reviewState, "ACCEPTED"),
     origin: f.origin === "AGENT" ? "AGENT" : "HUMAN",
+    hidden: f.hidden,
     sourceUrl: f.sourceUrl,
     sourceCitation: f.sourceCitation,
     agentRationale: f.agentRationale,

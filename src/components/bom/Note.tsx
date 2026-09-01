@@ -1,6 +1,7 @@
 "use client";
 
-import { useDraggable } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useRef, useState } from "react";
 
 import { VERIFICATION_META, VERIFICATIONS, type Verification } from "@/lib/enums";
@@ -9,10 +10,13 @@ import type { BoardFragment } from "./types";
 /**
  * Un post-it.
  *
+ * Es ORDENABLE, no solo arrastrable: al soltarlo, el equipo decide a la vez en
+ * que celda cae y en que posicion dentro de ella. Dentro de una celda el orden
+ * es una decision de lectura.
+ *
  * Editar exige DOBLE clic. Con un solo clic, un arrastre que empieza despacio
- * entraba en modo edicion sin querer: el umbral de 8px del sensor no alcanza
- * cuando el gesto arranca corto. El doble clic separa las dos intenciones sin
- * ambiguedad. Mientras se edita, el arrastre queda desactivado del todo.
+ * entraba en modo edicion sin querer. Mientras se edita, el arrastre queda
+ * desactivado del todo.
  */
 export function Note({
   fragment,
@@ -22,6 +26,7 @@ export function Note({
   showOrigin,
   onEditText,
   onSetVerification,
+  onSetHidden,
   onDelete,
   onReview,
 }: {
@@ -32,6 +37,7 @@ export function Note({
   showOrigin: boolean;
   onEditText: (id: string, text: string) => void;
   onSetVerification: (id: string, v: Verification) => void;
+  onSetHidden: (id: string, hidden: boolean) => void;
   onDelete: (id: string) => void;
   onReview?: (id: string, decision: "ACCEPT" | "REJECT") => void;
 }) {
@@ -41,7 +47,7 @@ export function Note({
 
   const isProposal = fragment.reviewState === "PROPOSED";
 
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: fragment.id,
     disabled: !editable || editing,
   });
@@ -71,9 +77,10 @@ export function Note({
   return (
     <div
       ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
       className={`note group ${isProposal ? "note-proposed" : ""} ${
-        isDragging ? "opacity-30" : ""
-      } ${editable && !editing ? "cursor-grab" : ""}`}
+        isDragging ? "z-50 opacity-40" : ""
+      } ${fragment.hidden ? "note-hidden" : ""} ${editable && !editing ? "cursor-grab" : ""}`}
       {...(editable && !editing ? listeners : {})}
       {...attributes}
       onDoubleClick={() => {
@@ -153,6 +160,15 @@ export function Note({
           </span>
         )}
 
+        {fragment.hidden && (
+          <span
+            title="Oculto del mapa. Sigue guardado."
+            className="font-ui text-[9px] uppercase tracking-[0.08em] text-noteInk/55"
+          >
+            oculto
+          </span>
+        )}
+
         <span className="flex-1" />
 
         {editable && isProposal && onReview && (
@@ -177,19 +193,34 @@ export function Note({
         )}
 
         {editable && !isProposal && (
-          <button
-            type="button"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => {
-              if (menu) onDelete(fragment.id);
-              else setMenu(true);
-            }}
-            onMouseLeave={() => setMenu(false)}
-            className="font-ui text-[10px] leading-none text-noteInk/45 opacity-0 transition group-hover:opacity-100 hover:text-danger"
-            title={menu ? "Confirmar: eliminar el fragmento" : "Eliminar"}
-          >
-            {menu ? "eliminar?" : "×"}
-          </button>
+          <span className="flex items-center gap-1.5 opacity-0 transition group-hover:opacity-100">
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onSetHidden(fragment.id, !fragment.hidden)}
+              className="font-ui text-[9px] uppercase tracking-[0.08em] text-noteInk/50 hover:text-noteInk"
+              title={
+                fragment.hidden
+                  ? "Devolver al mapa"
+                  : "Ocultar del mapa sin borrarlo. Se recupera con el boton Ocultos."
+              }
+            >
+              {fragment.hidden ? "mostrar" : "ocultar"}
+            </button>
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => {
+                if (menu) onDelete(fragment.id);
+                else setMenu(true);
+              }}
+              onMouseLeave={() => setMenu(false)}
+              className="font-ui text-[10px] leading-none text-noteInk/45 hover:text-danger"
+              title={menu ? "Confirmar: eliminar el fragmento" : "Eliminar"}
+            >
+              {menu ? "eliminar?" : "×"}
+            </button>
+          </span>
         )}
       </div>
     </div>

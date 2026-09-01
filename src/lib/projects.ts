@@ -53,8 +53,12 @@ export async function requireProject(user: SessionUser, slug: string) {
 
 /** Proyectos visibles para el usuario, con conteos para la lista. */
 export async function listProjectsFor(user: SessionUser) {
+  // La papelera se consulta aparte: un proyecto tirado no debe aparecer en la
+  // lista de trabajo.
   const where =
-    user.role === "ADMIN" ? {} : { members: { some: { userId: user.id } } };
+    user.role === "ADMIN"
+      ? { status: { not: "TRASHED" } }
+      : { status: { not: "TRASHED" }, members: { some: { userId: user.id } } };
 
   return prisma.project.findMany({
     where,
@@ -67,6 +71,23 @@ export async function listProjectsFor(user: SessionUser) {
           _count: { select: { fragments: true } },
         },
       },
+    },
+  });
+}
+
+/** Proyectos en la papelera, con cuanto trabajo se perderia al vaciarla. */
+export async function listTrashedProjects(user: SessionUser) {
+  const where =
+    user.role === "ADMIN"
+      ? { status: "TRASHED" }
+      : { status: "TRASHED", members: { some: { userId: user.id } } };
+
+  return prisma.project.findMany({
+    where,
+    orderBy: { trashedAt: "desc" },
+    include: {
+      _count: { select: { sources: true, openQuestions: true } },
+      maps: { select: { _count: { select: { fragments: true } } } },
     },
   });
 }

@@ -115,6 +115,11 @@
     transform: rotate(0.6deg);
   }
 
+  /* Oculto pero visible mientras el interruptor Ocultos este encendido. */
+  .note-hidden {
+    @apply opacity-45 grayscale;
+  }
+
   .note-proposed {
     @apply bg-[#FFE9A8] text-[#3B2F0B] shadow-[1px_2px_3px_rgba(0,0,0,0.16)];
     transform: none;

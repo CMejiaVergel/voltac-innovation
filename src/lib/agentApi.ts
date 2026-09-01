@@ -84,6 +84,12 @@ export async function getProjectContext(user: SessionUser, slug: string) {
     include: { source: { select: { title: true, url: true } } },
   });
 
+  const preguntas = await prisma.openQuestion.findMany({
+    where: { projectId: project.id },
+    orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+    select: { id: true, text: true, askedTo: true, status: true, answer: true },
+  });
+
   const parseList = (raw: string) => {
     try {
       const v = JSON.parse(raw);
@@ -136,6 +142,15 @@ export async function getProjectContext(user: SessionUser, slug: string) {
       })),
     },
     celdas,
+    // Se incluye el banco para que un agente no vuelva a anotar una pregunta
+    // que ya esta escrita con otras palabras.
+    preguntas: preguntas.map((q) => ({
+      id: q.id,
+      texto: q.text,
+      resuelve: q.askedTo,
+      estado: q.status,
+      respuesta: q.answer,
+    })),
     fragmentos: fragments.map((f) => ({
       id: f.id,
       fila: f.rowId,

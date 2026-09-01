@@ -10,6 +10,7 @@ export type BoardFragment = {
   verification: Verification;
   reviewState: ReviewState;
   origin: "HUMAN" | "AGENT";
+  hidden: boolean;
   sourceUrl: string | null;
   sourceCitation: string | null;
   agentRationale: string | null;

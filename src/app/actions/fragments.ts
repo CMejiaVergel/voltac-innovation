@@ -183,6 +183,83 @@ export async function setFragmentSource(
   touch(projectSlug);
 }
 
+/**
+ * Fija el contenido y el orden EXACTO de una celda.
+ *
+ * Sustituye al par mover-y-poner-al-final: al arrastrar, el equipo decide a la
+ * vez en que celda cae el fragmento y en que posicion dentro de ella. Recibe la
+ * lista ordenada de ids que debe quedar en la celda y la escribe tal cual.
+ */
+export async function setCellOrder(
+  mapId: string,
+  rowId: string,
+  colId: string,
+  orderedIds: string[],
+): Promise<void> {
+  const { userId, projectSlug } = await guardMap(mapId);
+
+  const map = await prisma.bomMap.findUniqueOrThrow({
+    where: { id: mapId },
+    include: { template: true },
+  });
+  const shape = parseShape(map.template.rows, map.template.cols);
+  if (!isValidCoord(shape, rowId, colId)) throw new Error("Celda destino invalida.");
+
+  // Solo se tocan fragmentos de ESTE mapa: la lista viene del navegador.
+  const validos = await prisma.fragment.findMany({
+    where: { id: { in: orderedIds }, mapId },
+    select: { id: true, rowId: true, colId: true, position: true },
+  });
+  const porId = new Map(validos.map((f) => [f.id, f]));
+
+  for (const [i, id] of orderedIds.entries()) {
+    const actual = porId.get(id);
+    if (!actual) continue;
+    if (actual.rowId === rowId && actual.colId === colId && actual.position === i) continue;
+
+    await prisma.fragment.update({
+      where: { id },
+      data: { rowId, colId, position: i },
+    });
+
+    const cambioDeCelda = actual.rowId !== rowId || actual.colId !== colId;
+    await prisma.fragmentRevision.create({
+      data: {
+        mapId,
+        fragmentId: id,
+        action: cambioDeCelda ? "MOVE" : "EDIT",
+        rowId,
+        colId,
+        note: cambioDeCelda
+          ? `De ${actual.rowId}|${actual.colId} a ${rowId}|${colId}, posicion ${i + 1}`
+          : `Reordenado a la posicion ${i + 1}`,
+        editedById: userId,
+      },
+    });
+  }
+
+  touch(projectSlug);
+}
+
+/** Saca un fragmento de la vista sin borrarlo, o lo devuelve. */
+export async function setFragmentHidden(fragmentId: string, hidden: boolean): Promise<void> {
+  const { user, fragment, projectSlug } = await guardFragment(fragmentId);
+  if (fragment.hidden === hidden) return;
+
+  await prisma.fragment.update({ where: { id: fragmentId }, data: { hidden } });
+  await prisma.fragmentRevision.create({
+    data: {
+      mapId: fragment.mapId,
+      fragmentId,
+      action: "EDIT",
+      note: hidden ? "Ocultado del mapa" : "Devuelto al mapa",
+      editedById: user.id,
+    },
+  });
+
+  touch(projectSlug);
+}
+
 /** Mueve un fragmento a otra celda y lo deja al final de esa celda. */
 export async function moveFragment(
   fragmentId: string,

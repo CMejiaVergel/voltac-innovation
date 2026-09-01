@@ -33,8 +33,9 @@ export default async function SourcesPage({ params }: { params: Promise<{ slug: 
       <section>
         <h2 className="kicker mb-2">Banco de preguntas</h2>
         <p className="hint mb-5">
-          Lo que no se pudo verificar vive aqui, no como dato en el mapa. El agente escribe en
-          esta lista cuando encuentra un vacio en vez de rellenarlo con una estimacion.
+          Lo que no se pudo verificar vive aqui, no como dato en el mapa. No todas son para la
+          empresa: varias las resuelve el propio equipo investigando, y por eso cada una dice
+          quien deberia responderla.
         </p>
 
         {editable && (
@@ -49,9 +50,18 @@ export default async function SourcesPage({ params }: { params: Promise<{ slug: 
             <div className="flex gap-3">
               <input
                 name="askedTo"
+                list="responsables-alta"
                 className="field flex-1"
-                placeholder="Para quien (ej. Cabot, Acuacar)"
+                placeholder="Quien la resuelve (ej. Equipo Voltac, Cabot, Cardique)"
               />
+              <datalist id="responsables-alta">
+                <option value="Equipo Voltac (investigacion propia)" />
+                <option value="Cabot" />
+                <option value="Acuacar" />
+                <option value="Cardique / EPA Cartagena" />
+                <option value="Fundacion Mamonal / ANDI Bolivar" />
+                <option value="Asesor juridico ambiental" />
+              </datalist>
               <button type="submit" className="btn btn-primary">
                 Agregar
               </button>

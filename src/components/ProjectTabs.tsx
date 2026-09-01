@@ -10,6 +10,7 @@ const TABS = [
   { href: "/agente", label: "Agente investigador" },
   { href: "/fuentes", label: "Fuentes y preguntas" },
   { href: "/equipo", label: "Equipo" },
+  { href: "/ajustes", label: "Ajustes" },
 ];
 
 export function ProjectTabs({ slug }: { slug: string }) {
