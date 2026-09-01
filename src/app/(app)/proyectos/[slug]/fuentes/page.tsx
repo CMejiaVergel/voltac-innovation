@@ -1,8 +1,9 @@
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireProject } from "@/lib/projects";
-import { canEdit, QUESTION_STATUS_LABEL, asEnum, QUESTION_STATUSES } from "@/lib/enums";
-import { addOpenQuestion, addSource, answerOpenQuestion } from "@/app/actions/projects";
+import { canEdit, asEnum, QUESTION_STATUSES } from "@/lib/enums";
+import { addOpenQuestion, addSource } from "@/app/actions/projects";
+import { QuestionList } from "@/components/QuestionList";
 
 export default async function SourcesPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -18,7 +19,8 @@ export default async function SourcesPage({ params }: { params: Promise<{ slug: 
     }),
     prisma.openQuestion.findMany({
       where: { projectId: project.id },
-      orderBy: [{ status: "asc" }, { createdAt: "asc" }],
+      // El orden lo fija el equipo: las flechas de la lista escriben `position`.
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     }),
   ]);
 
@@ -57,52 +59,18 @@ export default async function SourcesPage({ params }: { params: Promise<{ slug: 
           </form>
         )}
 
-        <ul className="flex flex-col gap-3">
-          {questions.map((q) => {
-            const status = asEnum(QUESTION_STATUSES, q.status, "OPEN");
-            const answer = answerOpenQuestion.bind(null, slug, q.id);
-            return (
-              <li
-                key={q.id}
-                className="rounded-[4px] border border-[rgba(232,227,216,0.1)] bg-panel p-4"
-              >
-                <div className="flex items-baseline gap-2">
-                  <span
-                    className={`font-mono text-[9.5px] uppercase tracking-[0.12em] ${
-                      status === "OPEN" ? "text-warn" : "text-accent"
-                    }`}
-                  >
-                    {QUESTION_STATUS_LABEL[status]}
-                  </span>
-                  {q.askedTo && (
-                    <span className="font-mono text-[9.5px] text-[#4d5a58]">→ {q.askedTo}</span>
-                  )}
-                  {q.origin === "AGENT" && (
-                    <span className="font-mono text-[9.5px] text-[#4d5a58]">via agente</span>
-                  )}
-                </div>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-[#d5dcda]">{q.text}</p>
-
-                {editable ? (
-                  <form action={answer} className="mt-3 flex gap-2">
-                    <input
-                      name="answer"
-                      defaultValue={q.answer}
-                      className="field flex-1 text-[12px]"
-                      placeholder="Respuesta de la empresa"
-                    />
-                    <button type="submit" className="btn">
-                      Guardar
-                    </button>
-                  </form>
-                ) : (
-                  q.answer && <p className="mt-2 text-[12px] text-[#8b9a97]">{q.answer}</p>
-                )}
-              </li>
-            );
-          })}
-          {questions.length === 0 && <p className="hint">No hay preguntas registradas.</p>}
-        </ul>
+        <QuestionList
+          slug={slug}
+          editable={editable}
+          questions={questions.map((q) => ({
+            id: q.id,
+            text: q.text,
+            askedTo: q.askedTo,
+            status: asEnum(QUESTION_STATUSES, q.status, "OPEN"),
+            answer: q.answer,
+            origin: q.origin === "AGENT" ? ("AGENT" as const) : ("HUMAN" as const),
+          }))}
+        />
       </section>
 
       {/* ── Bibliografia ─────────────────────────────────────────────────── */}

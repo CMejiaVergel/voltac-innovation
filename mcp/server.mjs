@@ -156,6 +156,30 @@ const TOOLS = [
       api(`/api/agent/fragmentos/${encodeURIComponent(id)}`, { method: "DELETE" }),
   },
   {
+    name: "actualizar_brief",
+    description:
+      "Corrige campos de la etapa Configurar (el brief) de un proyecto. Solo escribe los campos que envies: corregir el reto no borra la meta. Usalo cuando la investigacion contradiga lo que dice el brief, o cuando la empresa entregue informacion nueva.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        slug: { type: "string" },
+        reto: { type: "string", description: "Reto textual entregado por la empresa, literal." },
+        problema: { type: "string" },
+        porQueMotivante: { type: "string" },
+        meta: { type: "string", description: "Brecha a cerrar y para cuando." },
+        queHacer: { type: "array", items: { type: "string" } },
+        queEvitar: { type: "array", items: { type: "string" } },
+        restricciones: { type: "string" },
+        brechaCrecimiento: { type: "string" },
+        priorizarEnBusqueda: { type: "string" },
+        excluirDeBusqueda: { type: "string" },
+      },
+      required: ["slug"],
+    },
+    run: ({ slug, ...patch }) =>
+      api(`${slugPath(slug)}/brief`, { method: "PATCH", body: patch }),
+  },
+  {
     name: "registrar_preguntas",
     description:
       "Anota preguntas para la empresa. Es donde va lo que NO pudiste verificar: un dato que falta se pregunta, no se inventa como fragmento.",

@@ -161,34 +161,100 @@ export async function addOpenQuestion(slug: string, formData: FormData): Promise
   const text = String(formData.get("text") ?? "").trim();
   if (!text) return;
 
+  const ultima = await prisma.openQuestion.findFirst({
+    where: { projectId: project.id },
+    orderBy: { position: "desc" },
+    select: { position: true },
+  });
+
   await prisma.openQuestion.create({
     data: {
       projectId: project.id,
       text,
       askedTo: String(formData.get("askedTo") ?? "").trim(),
       origin: "HUMAN",
+      position: (ultima?.position ?? -1) + 1,
     },
   });
   revalidatePath(`/proyectos/${slug}/fuentes`);
 }
 
-export async function answerOpenQuestion(
+export async function updateOpenQuestion(
   slug: string,
   questionId: string,
   formData: FormData,
 ): Promise<void> {
+  const { question } = await guardQuestion(slug, questionId);
+
+  const text = String(formData.get("text") ?? "").trim();
+  if (!text) throw new Error("La pregunta no puede quedar vacia.");
+
+  const answer = String(formData.get("answer") ?? question.answer).trim();
+  await prisma.openQuestion.update({
+    where: { id: questionId },
+    data: {
+      text,
+      askedTo: String(formData.get("askedTo") ?? question.askedTo).trim(),
+      answer,
+      status: String(formData.get("status") ?? (answer ? "ANSWERED" : "OPEN")),
+    },
+  });
+  revalidatePath(`/proyectos/${slug}/fuentes`);
+}
+
+export async function deleteOpenQuestion(slug: string, questionId: string): Promise<void> {
+  await guardQuestion(slug, questionId);
+  await prisma.openQuestion.delete({ where: { id: questionId } });
+  revalidatePath(`/proyectos/${slug}/fuentes`);
+}
+
+/**
+ * Sube o baja una pregunta. Intercambia posiciones con la vecina en lugar de
+ * renumerar todo: es una sola escritura y no depende de que las posiciones
+ * sean consecutivas.
+ */
+export async function moveOpenQuestion(
+  slug: string,
+  questionId: string,
+  direction: "UP" | "DOWN",
+): Promise<void> {
+  const { question, projectId } = await guardQuestion(slug, questionId);
+
+  const hermanas = await prisma.openQuestion.findMany({
+    where: { projectId },
+    orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+  });
+
+  const i = hermanas.findIndex((q) => q.id === questionId);
+  const j = direction === "UP" ? i - 1 : i + 1;
+  if (i === -1 || j < 0 || j >= hermanas.length) return;
+
+  // Las posiciones pueden venir todas en 0 de antes de esta funcion: se
+  // normalizan por indice antes de intercambiar.
+  await prisma.$transaction([
+    ...hermanas.map((q, k) =>
+      prisma.openQuestion.update({ where: { id: q.id }, data: { position: k } }),
+    ),
+    prisma.openQuestion.update({ where: { id: hermanas[i].id }, data: { position: j } }),
+    prisma.openQuestion.update({ where: { id: hermanas[j].id }, data: { position: i } }),
+  ]);
+
+  void question;
+  revalidatePath(`/proyectos/${slug}/fuentes`);
+}
+
+async function guardQuestion(slug: string, questionId: string) {
   const user = await requireUser();
   const question = await prisma.openQuestion.findUnique({ where: { id: questionId } });
   if (!question) throw new Error("La pregunta no existe.");
-  const access = await getProjectRole(user, question.projectId);
+
+  const project = await prisma.project.findUnique({ where: { slug } });
+  if (!project || project.id !== question.projectId) throw new Error("La pregunta no existe.");
+
+  const access = await getProjectRole(user, project.id);
   if (!canEdit(access?.role)) throw new Error("Sin permiso.");
 
-  const answer = String(formData.get("answer") ?? "").trim();
-  await prisma.openQuestion.update({
-    where: { id: questionId },
-    data: { answer, status: answer ? "ANSWERED" : "OPEN" },
-  });
-  revalidatePath(`/proyectos/${slug}/fuentes`);
+  return { question, projectId: project.id };
 }
 
 export async function addSource(slug: string, formData: FormData): Promise<void> {

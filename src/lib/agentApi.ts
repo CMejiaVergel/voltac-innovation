@@ -369,6 +369,61 @@ export async function deleteFragmentById(user: SessionUser, id: string) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Brief (etapa Configurar)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type BriefPatch = Partial<{
+  reto: string;
+  problema: string;
+  porQueMotivante: string;
+  meta: string;
+  queHacer: string[];
+  queEvitar: string[];
+  restricciones: string;
+  brechaCrecimiento: string;
+  priorizarEnBusqueda: string;
+  excluirDeBusqueda: string;
+}>;
+
+/**
+ * Actualiza el brief. Solo escribe los campos presentes en el parche: el
+ * agente corrige lo que investigo sin borrar lo que el equipo escribio a mano.
+ */
+export async function updateBriefFields(user: SessionUser, slug: string, patch: BriefPatch) {
+  const project = await loadProject(user, slug, true);
+
+  const data: Record<string, string> = {};
+  const texto: Array<[keyof BriefPatch, string]> = [
+    ["reto", "challengeText"],
+    ["problema", "problema"],
+    ["porQueMotivante", "porQueMotivante"],
+    ["meta", "meta"],
+    ["restricciones", "restricciones"],
+    ["brechaCrecimiento", "brechaCrecimiento"],
+    ["priorizarEnBusqueda", "agentHints"],
+    ["excluirDeBusqueda", "agentExclude"],
+  ];
+  for (const [entrada, columna] of texto) {
+    const v = patch[entrada];
+    if (typeof v === "string") data[columna] = v.trim();
+  }
+  if (Array.isArray(patch.queHacer)) data.queHacer = JSON.stringify(patch.queHacer);
+  if (Array.isArray(patch.queEvitar)) data.queEvitar = JSON.stringify(patch.queEvitar);
+
+  if (Object.keys(data).length === 0) {
+    throw new AgentApiError("El parche no trae ningun campo reconocido.", 400);
+  }
+
+  await prisma.brief.upsert({
+    where: { projectId: project.id },
+    update: data,
+    create: { projectId: project.id, ...data },
+  });
+
+  return { actualizados: Object.keys(data) };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Preguntas y fuentes
 // ─────────────────────────────────────────────────────────────────────────────
 

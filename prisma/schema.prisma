@@ -353,6 +353,9 @@ model OpenQuestion {
   answer  String @default("")
   /// HUMAN | AGENT
   origin  String @default("HUMAN")
+  /// Orden manual dentro del banco. El equipo decide que preguntar primero:
+  /// no todas valen lo mismo en una reunion de media hora con la empresa.
+  position Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
