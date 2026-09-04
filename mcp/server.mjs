@@ -69,13 +69,47 @@ const TOOLS = [
   {
     name: "leer_proyecto",
     description:
-      "Contexto completo de un proyecto: el reto, el brief (que hacer / que evitar / restricciones), la plantilla del mapa con la REGLA de cada columna, el conteo por celda, todos los fragmentos que ya existen (con su id, que es lo que se usa para conectar puntos en Combinar) y los insights ya escritos. Leelo ANTES de proponer nada: contiene las reglas que debes respetar y los fragmentos que no debes repetir.",
+      "Contexto del proyecto. Trae SOLO las secciones que pidas: cada llamada completa cuesta decenas de miles de tokens y agota la sesion en pocas lecturas. Por defecto vienen brief, plantilla, celdas y fragmentos en modo resumen, que es lo que hace falta para proponer. Pide 'preguntas' o 'insights' solo si los vas a tocar, y detalle 'completo' solo al revisar propuestas (añade verificacion, fuentes y porQueAqui). Devuelve una 'firma': si no cambio desde tu ultima lectura, el contexto que ya tienes sirve y no hace falta releer.",
     inputSchema: {
       type: "object",
-      properties: { slug: { type: "string", description: "Slug del proyecto." } },
+      properties: {
+        slug: { type: "string", description: "Slug del proyecto." },
+        incluir: {
+          type: "array",
+          items: {
+            type: "string",
+            enum: ["brief", "plantilla", "celdas", "preguntas", "fragmentos", "insights"],
+          },
+          description:
+            "Secciones a traer. Vacio = brief, plantilla, celdas y fragmentos.",
+        },
+        detalle: {
+          type: "string",
+          enum: ["resumen", "completo"],
+          description:
+            "resumen (por defecto) trae lo indispensable. completo añade verificacion, fuentes, porQueAqui y el desglose entero de los insights; pesa unas tres veces mas.",
+        },
+      },
       required: ["slug"],
     },
-    run: ({ slug }) => api(slugPath(slug)),
+    run: ({ slug, incluir, detalle }) => {
+      const q = new URLSearchParams();
+      if (incluir?.length) q.set("incluir", incluir.join(","));
+      if (detalle) q.set("detalle", detalle);
+      const cola = q.toString();
+      return api(`${slugPath(slug)}${cola ? `?${cola}` : ""}`);
+    },
+  },
+  {
+    name: "estado_proyecto",
+    description:
+      "La lectura BARATA: conteos, celdas con menos de tres fragmentos, cuantos quedan sin clasificar y una firma del estado. Unas pocas lineas. Empieza SIEMPRE por aqui: si la firma coincide con la de tu ultima lectura, no hace falta volver a leer el proyecto.",
+    inputSchema: {
+      type: "object",
+      properties: { slug: { type: "string" } },
+      required: ["slug"],
+    },
+    run: ({ slug }) => api(`${slugPath(slug)}/estado`),
   },
   {
     name: "proponer_fragmentos",

@@ -79,31 +79,157 @@ export async function listProjects(user: SessionUser) {
   }));
 }
 
-/** Todo lo que un agente necesita saber antes de proponer nada. */
-export async function getProjectContext(user: SessionUser, slug: string) {
+/**
+ * Firma del estado de un proyecto.
+ *
+ * Sirve para responder "¿cambio algo desde la ultima vez?" sin traerse el
+ * proyecto entero. Se calcula con lo que cambia cuando alguien toca algo: los
+ * conteos y la fecha de la ultima modificacion. Si la firma es la misma, el
+ * contexto que ya se tenia sigue valiendo y no hay que volver a leer.
+ */
+async function firmaDe(projectId: string, mapId: string) {
+  const [nFrag, nIns, nPreg, nFuentes, ultimoFrag, ultimoIns, proyecto] = await Promise.all([
+    prisma.fragment.count({ where: { mapId } }),
+    prisma.insight.count({ where: { projectId } }),
+    prisma.openQuestion.count({ where: { projectId } }),
+    prisma.source.count({ where: { projectId } }),
+    prisma.fragment.findFirst({
+      where: { mapId },
+      orderBy: { updatedAt: "desc" },
+      select: { updatedAt: true },
+    }),
+    prisma.insight.findFirst({
+      where: { projectId },
+      orderBy: { updatedAt: "desc" },
+      select: { updatedAt: true },
+    }),
+    prisma.project.findUnique({ where: { id: projectId }, select: { updatedAt: true } }),
+  ]);
+
+  const partes = [
+    nFrag,
+    nIns,
+    nPreg,
+    nFuentes,
+    ultimoFrag?.updatedAt.getTime() ?? 0,
+    ultimoIns?.updatedAt.getTime() ?? 0,
+    proyecto?.updatedAt.getTime() ?? 0,
+  ].join("|");
+
+  // Hash corto y determinista. No es criptografia: solo tiene que cambiar
+  // cuando cambia el contenido.
+  let h = 0;
+  for (let i = 0; i < partes.length; i++) h = (Math.imul(31, h) + partes.charCodeAt(i)) | 0;
+  return {
+    firma: (h >>> 0).toString(36),
+    conteos: {
+      fragmentos: nFrag,
+      insights: nIns,
+      preguntas: nPreg,
+      fuentes: nFuentes,
+    },
+  };
+}
+
+/**
+ * Estado del proyecto en unas pocas lineas.
+ *
+ * Es la lectura barata: dice cuanto hay, que celdas estan flacas, cuanto queda
+ * sin clasificar y una firma del estado. Con eso se decide si hace falta leer
+ * el proyecto entero — que cuesta cien veces mas— o si el contexto que ya se
+ * tenia sigue siendo valido.
+ */
+export async function projectDigest(user: SessionUser, slug: string) {
   const project = await loadProject(user, slug, false);
   const { map, shape } = await loadMap(project.id);
 
-  const fragments = await prisma.fragment.findMany({
-    where: { mapId: map.id, reviewState: { in: ["ACCEPTED", "PROPOSED"] } },
-    orderBy: [{ rowId: "asc" }, { colId: "asc" }, { position: "asc" }],
-    include: { source: { select: { title: true, url: true } } },
+  const frags = await prisma.fragment.findMany({
+    where: { mapId: map.id },
+    select: { rowId: true, colId: true, reviewState: true, hidden: true, items: true },
   });
 
-  const preguntas = await prisma.openQuestion.findMany({
-    where: { projectId: project.id },
-    orderBy: [{ position: "asc" }, { createdAt: "asc" }],
-    select: { id: true, text: true, askedTo: true, status: true, answer: true },
-  });
+  const { firma, conteos } = await firmaDe(project.id, map.id);
 
-  const insights = await prisma.insight.findMany({
-    where: { projectId: project.id },
-    orderBy: [{ position: "asc" }, { createdAt: "asc" }],
-    include: {
-      dots: { orderBy: { position: "asc" } },
-      ideas: { orderBy: { position: "asc" } },
+  const porCelda = new Map<string, number>();
+  for (const f of frags) {
+    if (f.reviewState !== "ACCEPTED" || f.hidden) continue;
+    const k = `${f.rowId}|${f.colId}`;
+    porCelda.set(k, (porCelda.get(k) ?? 0) + 1);
+  }
+
+  const flacas: string[] = [];
+  for (const r of shape.rows) {
+    for (const c of shape.cols) {
+      const n = porCelda.get(`${r.id}|${c.id}`) ?? 0;
+      if (n < 3) flacas.push(`${r.id}|${c.id}:${n}`);
+    }
+  }
+
+  return {
+    proyecto: { slug: project.slug, nombre: project.name },
+    firma,
+    conteos: {
+      ...conteos,
+      aceptados: frags.filter((f) => f.reviewState === "ACCEPTED").length,
+      propuestos: frags.filter((f) => f.reviewState === "PROPOSED").length,
+      ocultos: frags.filter((f) => f.hidden).length,
+      sinClasificar: frags.filter((f) => parseItems(f.items).length === 0).length,
     },
-  });
+    /// Celdas con menos de tres fragmentos aceptados: donde hay que trabajar.
+    celdasFlacas: flacas,
+    filas: shape.rows.map((r) => r.id),
+    columnas: shape.cols.map((c) => c.id),
+  };
+}
+
+export type SeccionContexto =
+  | "brief"
+  | "plantilla"
+  | "celdas"
+  | "preguntas"
+  | "fragmentos"
+  | "insights";
+
+const SECCIONES_POR_DEFECTO: SeccionContexto[] = [
+  "brief",
+  "plantilla",
+  "celdas",
+  "fragmentos",
+];
+
+/**
+ * Contexto del proyecto, con lo que se pida y nada mas.
+ *
+ * Antes devolvia SIEMPRE todo: brief, plantilla, celdas, preguntas, los cien y
+ * pico fragmentos con su justificacion, y los insights con el texto completo de
+ * cada punto. Unos 29.000 tokens por llamada, la mayoria de los cuales no se
+ * usaban para la tarea concreta. Con un mapa mediano eso agota una sesion en
+ * unas pocas lecturas.
+ *
+ * Ahora hay dos palancas:
+ *
+ *   `incluir`  que secciones vienen. Por defecto las cuatro que hacen falta
+ *              para proponer fragmentos; las preguntas y los insights solo si
+ *              se van a tocar.
+ *   `detalle`  "resumen" trae lo indispensable de cada elemento; "completo"
+ *              añade verificacion, fuentes y el `porQueAqui`, que por si solo
+ *              era el 17% del peso y solo importa al revisar propuestas.
+ *
+ * Los puntos de un insight ya no repiten el texto del fragmento en modo
+ * resumen: ese texto viene en `fragmentos` y bastaba con el id para cruzarlo.
+ */
+export async function getProjectContext(
+  user: SessionUser,
+  slug: string,
+  opciones: { incluir?: SeccionContexto[]; detalle?: "resumen" | "completo" } = {},
+) {
+  const project = await loadProject(user, slug, false);
+  const { map, shape } = await loadMap(project.id);
+
+  const quiere = new Set(
+    opciones.incluir?.length ? opciones.incluir : SECCIONES_POR_DEFECTO,
+  );
+  const completo = opciones.detalle === "completo";
 
   const parseList = (raw: string) => {
     try {
@@ -114,105 +240,153 @@ export async function getProjectContext(user: SessionUser, slug: string) {
     }
   };
 
-  const celdas = shape.rows.flatMap((r) =>
-    shape.cols.map((c) => {
-      const items = fragments.filter((f) => f.rowId === r.id && f.colId === c.id);
-      return {
-        fila: r.id,
-        columna: c.id,
-        nombre: `${r.name} × ${c.name}`,
-        aceptados: items.filter((f) => f.reviewState === "ACCEPTED").length,
-        propuestos: items.filter((f) => f.reviewState === "PROPOSED").length,
-      };
-    }),
-  );
+  const { firma } = await firmaDe(project.id, map.id);
 
-  return {
-    proyecto: {
-      slug: project.slug,
-      nombre: project.name,
-      empresa: project.company,
-      programa: project.program,
-    },
-    brief: project.brief && {
+  const salida: Record<string, unknown> = {
+    proyecto: { slug: project.slug, nombre: project.name, empresa: project.company },
+    // Se devuelve siempre: es lo que permite saltarse la proxima lectura.
+    firma,
+  };
+
+  if (quiere.has("brief") && project.brief) {
+    salida.brief = {
       reto: project.brief.challengeText,
       problema: project.brief.problema,
-      porQueMotivante: project.brief.porQueMotivante,
       meta: project.brief.meta,
       queHacer: parseList(project.brief.queHacer),
       queEvitar: parseList(project.brief.queEvitar),
       restricciones: project.brief.restricciones,
-      brechaCrecimiento: project.brief.brechaCrecimiento,
-      priorizarEnBusqueda: project.brief.agentHints,
-      excluirDeBusqueda: project.brief.agentExclude,
-    },
-    plantilla: {
+      ...(completo
+        ? {
+            porQueMotivante: project.brief.porQueMotivante,
+            brechaCrecimiento: project.brief.brechaCrecimiento,
+            priorizarEnBusqueda: project.brief.agentHints,
+            excluirDeBusqueda: project.brief.agentExclude,
+          }
+        : {}),
+    };
+  }
+
+  if (quiere.has("plantilla")) {
+    salida.plantilla = {
       key: map.template.key,
       filas: shape.rows.map((r) => ({
         id: r.id,
         nombre: r.name,
-        facetas: r.facets,
         // Numerados: es el indice lo que se escribe en `items`, no el nombre.
         items: itemsDeFila(r.facets),
       })),
       columnas: shape.cols.map((c) => ({
         id: c.id,
         nombre: c.name,
-        pregunta: c.question,
-        regla: c.hint,
+        ...(completo ? { pregunta: c.question, regla: c.hint } : {}),
       })),
-    },
-    celdas,
-    // Se incluye el banco para que un agente no vuelva a anotar una pregunta
-    // que ya esta escrita con otras palabras.
-    preguntas: preguntas.map((q) => ({
+    };
+  }
+
+  const necesitaFragmentos = quiere.has("fragmentos") || quiere.has("celdas");
+  const fragments = necesitaFragmentos
+    ? await prisma.fragment.findMany({
+        where: { mapId: map.id, reviewState: { in: ["ACCEPTED", "PROPOSED"] } },
+        orderBy: [{ rowId: "asc" }, { colId: "asc" }, { position: "asc" }],
+        ...(completo ? { include: { source: { select: { title: true, url: true } } } } : {}),
+      })
+    : [];
+
+  if (quiere.has("celdas")) {
+    salida.celdas = shape.rows.flatMap((r) =>
+      shape.cols.map((c) => {
+        const items = fragments.filter((f) => f.rowId === r.id && f.colId === c.id);
+        return {
+          celda: `${r.id}|${c.id}`,
+          aceptados: items.filter((f) => f.reviewState === "ACCEPTED").length,
+          propuestos: items.filter((f) => f.reviewState === "PROPOSED").length,
+        };
+      }),
+    );
+  }
+
+  if (quiere.has("fragmentos")) {
+    salida.fragmentos = fragments.map((f) => {
+      const base = {
+        id: f.id,
+        fila: f.rowId,
+        columna: f.colId,
+        texto: f.text,
+        items: parseItems(f.items),
+      };
+      if (!completo) return base;
+      const conFuente = f as typeof f & {
+        source?: { title: string | null; url: string | null } | null;
+      };
+      return {
+        ...base,
+        verificacion: f.verification,
+        estado: f.reviewState,
+        origen: f.origin,
+        fuenteUrl: f.sourceUrl ?? conFuente.source?.url ?? null,
+        fuenteCita: f.sourceCitation ?? conFuente.source?.title ?? null,
+        porQueAqui: f.agentRationale,
+      };
+    });
+  }
+
+  if (quiere.has("preguntas")) {
+    const preguntas = await prisma.openQuestion.findMany({
+      where: { projectId: project.id },
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+      select: { id: true, text: true, askedTo: true, status: true, answer: true },
+    });
+    salida.preguntas = preguntas.map((q) => ({
       id: q.id,
       texto: q.text,
       resuelve: q.askedTo,
-      estado: q.status,
-      respuesta: q.answer,
-    })),
-    fragmentos: fragments.map((f) => ({
-      id: f.id,
-      fila: f.rowId,
-      columna: f.colId,
-      texto: f.text,
-      items: parseItems(f.items),
-      verificacion: f.verification,
-      estado: f.reviewState,
-      origen: f.origin,
-      fuenteUrl: f.sourceUrl ?? f.source?.url ?? null,
-      fuenteCita: f.sourceCitation ?? f.source?.title ?? null,
-      porQueAqui: f.agentRationale,
-    })),
-    // Etapa Combinar. Se incluyen para que un agente no proponga de nuevo un
-    // insight que ya existe, y para que pueda corregir uno en vez de duplicarlo.
-    insights: insights.map((i) => ({
+      ...(completo || q.status !== "OPEN" ? { estado: q.status, respuesta: q.answer } : {}),
+    }));
+  }
+
+  if (quiere.has("insights")) {
+    const insights = await prisma.insight.findMany({
+      where: { projectId: project.id },
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+      include: {
+        dots: { orderBy: { position: "asc" } },
+        ideas: completo ? { orderBy: { position: "asc" } } : false,
+        _count: { select: { ideas: true } },
+      },
+    });
+    salida.insights = insights.map((i) => ({
       id: i.id,
-      etiqueta: i.tag,
       color: i.color,
       enunciado: i.statement,
-      hecho: i.fact,
-      contraparte: i.counterpart,
-      giro: i.shift,
-      ofreceQuien: i.offerWho,
-      ofrecePrueba: i.offerProof,
-      pagaQuien: i.payWho,
-      pagaPrueba: i.payProof,
-      negocio: i.business,
-      limite: i.limitNote,
       estado: i.reviewState,
-      origen: i.origin,
-      puntos: i.dots.map((d) => ({
-        fragmentoId: d.fragmentId,
-        texto: d.textSnapshot,
-        fila: d.rowId,
-        columna: d.colId,
-        papel: d.role,
-      })),
-      ideas: i.ideas.map((n) => n.text),
-    })),
-  };
+      // En resumen solo el id del punto: su texto ya viene en `fragmentos` y
+      // repetirlo aqui era el 16% de esta seccion.
+      puntos: i.dots.map((d) =>
+        completo
+          ? { fragmentoId: d.fragmentId, texto: d.textSnapshot, papel: d.role }
+          : { fragmentoId: d.fragmentId, papel: d.role },
+      ),
+      ...(completo
+        ? {
+            etiqueta: i.tag,
+            hecho: i.fact,
+            contraparte: i.counterpart,
+            giro: i.shift,
+            ofreceQuien: i.offerWho,
+            ofrecePrueba: i.offerProof,
+            pagaQuien: i.payWho,
+            pagaPrueba: i.payProof,
+            negocio: i.business,
+            limite: i.limitNote,
+            origen: i.origin,
+            ideas: (i.ideas as { text: string }[]).map((n) => n.text),
+          }
+        : { ideas: i._count.ideas }),
+    }));
+  }
+
+  return salida;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -274,7 +448,7 @@ export async function createFragments(
     nextPos.set(k, Math.max(nextPos.get(k) ?? -1, f.position));
   }
 
-  const creados: Array<{ id: string; fila: string; columna: string; texto: string }> = [];
+  const creados: Array<{ id: string; celda: string }> = [];
   const rechazados: Array<{ texto: string; motivo: string }> = [];
 
   for (const item of items) {
@@ -353,10 +527,12 @@ export async function createFragments(
       },
     });
 
-    creados.push({ id: created.id, fila: item.fila, columna: item.columna, texto });
+    creados.push({ id: created.id, celda: `${item.fila}|${item.columna}` });
   }
 
-  return { creados: creados.length, rechazados, detalle: creados };
+  // Se devuelven los ids y la celda, no el texto: el texto acaba de enviarlo
+  // quien llama, y repetirselo duplicaba el peso de cada escritura.
+  return { creados: creados.length, rechazados, ids: creados };
 }
 
 export async function updateFragment(
@@ -438,7 +614,7 @@ export async function updateFragment(
     },
   });
 
-  return { id, fila: rowId, columna: colId, texto };
+  return { id, celda: `${rowId}|${colId}`, movido: moved };
 }
 
 export async function deleteFragmentById(user: SessionUser, id: string) {

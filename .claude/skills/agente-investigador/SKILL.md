@@ -44,7 +44,8 @@ de Claude Code no cargó `.mcp.json`: hay que reiniciarla y aprobar el servidor.
 | Herramienta | Para qué |
 |---|---|
 | `listar_proyectos` | Obtener el slug. **Empieza siempre por aquí.** |
-| `leer_proyecto` | Reto, brief, plantilla con la regla de cada columna, conteo por celda y fragmentos existentes. **Obligatorio antes de proponer.** |
+| `estado_proyecto` | Conteos, celdas flacas y una **firma** del estado. ~140 tokens. **Empieza siempre por aquí.** |
+| `leer_proyecto` | Contexto, con las secciones que pidas. Sin argumentos trae lo justo para proponer. |
 | `proponer_fragmentos` | Escribir en el mapa. Por defecto quedan en la cola de revisión. |
 | `editar_fragmento` | Corregir texto, reubicar de celda, cambiar verificación. |
 | `eliminar_fragmento` | Solo si el fragmento está mal de raíz. Si está mal ubicado, muévelo. |
@@ -57,6 +58,29 @@ de Claude Code no cargó `.mcp.json`: hay que reiniciarla y aprobar el servidor.
 | `actualizar_brief` | Corregir la etapa Configurar cuando la investigación la contradiga. |
 | `registrar_fuentes` | Bibliografía del proyecto. |
 | `clonar_proyecto` | Copia para experimentar sin tocar el original. |
+
+## Leer sin quemar la sesión
+
+`leer_proyecto` devolvía siempre todo y costaba ~29.000 tokens por llamada.
+Con eso, tres o cuatro lecturas agotan una sesión y no queda margen para
+trabajar. Ahora se pide lo que hace falta:
+
+1. **Empieza por `estado_proyecto`.** Son ~140 tokens y te dice cuánto hay,
+   qué celdas están flacas, cuánto queda sin clasificar y una **firma**.
+2. **Si la firma coincide** con la de tu lectura anterior en esta sesión, nada
+   cambió: el contexto que ya tienes sirve. No vuelvas a leer.
+3. **Si cambió**, llama a `leer_proyecto` pidiendo solo lo tuyo:
+
+   | Tarea | Qué pedir | Coste |
+   |---|---|---|
+   | Proponer fragmentos | sin argumentos (brief, plantilla, celdas, fragmentos) | ~6.000 |
+   | Clasificar ítems | `incluir: ["plantilla","fragmentos"]` | ~5.500 |
+   | Curar preguntas | `incluir: ["preguntas"]` | ~1.200 |
+   | Combinar | `incluir: ["brief","fragmentos","insights"]` | ~6.500 |
+   | Revisar propuestas | `detalle: "completo"` | ~18.000 |
+
+`detalle: "completo"` solo al revisar: añade verificación, fuentes y
+`porQueAqui`, que por sí solo era el 17% del peso.
 
 ## Antes de correr: lo que hay que preguntar
 

@@ -89,7 +89,7 @@ export async function createInsights(
 
   let posicion = (await ultimaPosicion(project.id)) + 1;
 
-  const creados: { id: string; enunciado: string }[] = [];
+  const creados: string[] = [];
   const rechazados: { enunciado: string; motivo: string }[] = [];
 
   for (const item of items) {
@@ -158,10 +158,11 @@ export async function createInsights(
     });
 
     yaEscritos.add(normalizar(enunciado));
-    creados.push({ id: insight.id, enunciado: insight.statement });
+    creados.push(insight.id);
   }
 
-  return { creados: creados.length, rechazados, insights: creados };
+  // Solo los ids: el enunciado acaba de enviarlo quien llama.
+  return { creados: creados.length, rechazados, ids: creados };
 }
 
 /** Corrige un insight existente: campos, puntos e ideas. */
@@ -251,7 +252,6 @@ export async function updateInsightById(
 
   return {
     id: actualizado.id,
-    enunciado: actualizado.statement,
     puntos: actualizado.dots.length,
     ideas: actualizado.ideas.length,
   };
