@@ -37,6 +37,7 @@ const ARCHIVOS = {
   fuentes: "fuentes.json",
   preguntas: "preguntas.json",
   insights: "insights.json",
+  conceptos: "conceptos.json",
   corridas: "corridas.json",
   leeme: "LEEME.txt",
 } as const;
@@ -62,6 +63,8 @@ QUE HAY EN CADA ARCHIVO
   preguntas.json    El banco de preguntas abiertas.
   insights.json     Los insights de la etapa Combinar, con los puntos que
                     conectan y las ideas que abren.
+  conceptos.json    Los conceptos de Convergir, con su puntuacion, las ideas
+                    de las que salen y los supuestos de los que dependen.
   corridas.json     Las ejecuciones del agente investigador y su costo.
 
 COMO SE RESTAURA
@@ -125,6 +128,16 @@ export async function crearRespaldo(projectId: string) {
     orderBy: { position: "asc" },
   });
 
+  const conceptos = await prisma.concept.findMany({
+    where: { projectId },
+    include: {
+      origenes: { orderBy: { createdAt: "asc" } },
+      supuestos: { orderBy: { position: "asc" } },
+      author: { select: { email: true } },
+    },
+    orderBy: { position: "asc" },
+  });
+
   const manifiesto = {
     formato: "voltac-innovacion/respaldo",
     version: VERSION_RESPALDO,
@@ -136,6 +149,7 @@ export async function crearRespaldo(projectId: string) {
       fuentes: project.sources.length,
       preguntas: project.openQuestions.length,
       insights: insights.length,
+      conceptos: conceptos.length,
       corridas: project.researchRuns.length,
     },
   };
@@ -246,7 +260,49 @@ export async function crearRespaldo(projectId: string) {
             role: d.role,
             position: d.position,
           })),
-          ideas: i.ideas.map((n) => ({ text: n.text, position: n.position, origin: n.origin })),
+          // Con su id: los conceptos de Convergir apuntan a estas ideas y al
+          // restaurar hay que poder reenlazarlos.
+          ideas: i.ideas.map((n) => ({
+            id: n.id,
+            text: n.text,
+            position: n.position,
+            origin: n.origin,
+          })),
+        })),
+      ),
+    },
+    {
+      nombre: ARCHIVOS.conceptos,
+      contenido: json(
+        conceptos.map((c) => ({
+          title: c.title,
+          statement: c.statement,
+          description: c.description,
+          color: c.color,
+          impDemanda: c.impDemanda,
+          impImplementar: c.impImplementar,
+          impEscalar: c.impEscalar,
+          fitProblema: c.fitProblema,
+          fitEquipo: c.fitEquipo,
+          fitMetas: c.fitMetas,
+          reviewState: c.reviewState,
+          origin: c.origin,
+          hidden: c.hidden,
+          position: c.position,
+          authorEmail: c.author?.email ?? null,
+          origenes: c.origenes.map((o) => ({
+            ideaId: o.ideaId,
+            textSnapshot: o.textSnapshot,
+            insightId: o.insightId,
+          })),
+          supuestos: c.supuestos.map((a) => ({
+            text: a.text,
+            likelihood: a.likelihood,
+            status: a.status,
+            note: a.note,
+            position: a.position,
+            origin: a.origin,
+          })),
         })),
       ),
     },
@@ -316,6 +372,7 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
   const fuentes = leer(zip, ARCHIVOS.fuentes) ?? [];
   const preguntas = leer(zip, ARCHIVOS.preguntas) ?? [];
   const insights = leer(zip, ARCHIVOS.insights) ?? [];
+  const conceptos = leer(zip, ARCHIVOS.conceptos) ?? [];
 
   // Los autores se reconectan por correo. Si esa persona no existe en esta
   // instalacion, el campo queda vacio y el nombre sobrevive en el historial.
@@ -474,8 +531,11 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
     });
   }
 
+  // Mapeo de ideas viejas a nuevas, para reenlazar los conceptos despues.
+  const idIdea = new Map<string, string>();
+
   for (const i of insights) {
-    await prisma.insight.create({
+    const insightCreado = await prisma.insight.create({
       data: {
         projectId: nuevo.id,
         tag: i.tag ?? "",
@@ -507,11 +567,61 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
             position: Number(d.position ?? 0),
           })),
         },
-        ideas: {
-          create: (i.ideas ?? []).map((n: Record<string, unknown>) => ({
-            text: String(n.text ?? ""),
-            position: Number(n.position ?? 0),
-            origin: String(n.origin ?? "HUMAN"),
+      },
+      select: { id: true },
+    });
+
+    for (const n of (i.ideas ?? []) as Record<string, unknown>[]) {
+      const creada = await prisma.insightIdea.create({
+        data: {
+          insightId: insightCreado.id,
+          text: String(n.text ?? ""),
+          position: Number(n.position ?? 0),
+          origin: String(n.origin ?? "HUMAN"),
+        },
+        select: { id: true },
+      });
+      if (n.id) idIdea.set(String(n.id), creada.id);
+    }
+  }
+
+  // ── Conceptos de Convergir ────────────────────────────────────────────────
+  for (const c of conceptos) {
+    await prisma.concept.create({
+      data: {
+        projectId: nuevo.id,
+        title: c.title,
+        statement: c.statement ?? "",
+        description: c.description ?? "",
+        color: c.color ?? "",
+        impDemanda: c.impDemanda ?? 0,
+        impImplementar: c.impImplementar ?? 0,
+        impEscalar: c.impEscalar ?? 0,
+        fitProblema: c.fitProblema ?? 0,
+        fitEquipo: c.fitEquipo ?? 0,
+        fitMetas: c.fitMetas ?? 0,
+        reviewState: c.reviewState ?? "ACCEPTED",
+        origin: c.origin ?? "HUMAN",
+        hidden: c.hidden ?? false,
+        position: c.position ?? 0,
+        authorId: c.authorEmail ? (porCorreo.get(c.authorEmail) ?? null) : null,
+        origenes: {
+          create: (c.origenes ?? []).map((o: Record<string, unknown>) => ({
+            // Si la idea no se pudo reenlazar queda en null y el concepto la
+            // muestra como huerfana, que es exactamente lo que es.
+            ideaId: o.ideaId ? (idIdea.get(String(o.ideaId)) ?? null) : null,
+            textSnapshot: String(o.textSnapshot ?? ""),
+            insightId: String(o.insightId ?? ""),
+          })),
+        },
+        supuestos: {
+          create: (c.supuestos ?? []).map((a: Record<string, unknown>) => ({
+            text: String(a.text ?? ""),
+            likelihood: Number(a.likelihood ?? 3),
+            status: String(a.status ?? "OPEN"),
+            note: String(a.note ?? ""),
+            position: Number(a.position ?? 0),
+            origin: String(a.origin ?? "HUMAN"),
           })),
         },
       },
@@ -527,6 +637,7 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
       fuentes: idFuente.size,
       preguntas: preguntas.length,
       insights: insights.length,
+      conceptos: conceptos.length,
     },
   };
 }

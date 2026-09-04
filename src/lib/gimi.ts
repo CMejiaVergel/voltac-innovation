@@ -74,8 +74,8 @@ export const IDEX: IdexStage[] = [
     name: "Convergir",
     purpose: "Priorizar ideas",
     hats: ["AZUL", "NEGRO", "BLANCO"],
-    implemented: false,
-    route: null,
+    implemented: true,
+    route: "convergir",
   },
   {
     key: "actuar",

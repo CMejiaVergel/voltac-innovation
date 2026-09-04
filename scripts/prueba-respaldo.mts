@@ -43,6 +43,7 @@ async function contar(projectId: string) {
     fuentes: await prisma.source.count({ where: { projectId } }),
     preguntas: await prisma.openQuestion.count({ where: { projectId } }),
     insights: await prisma.insight.count({ where: { projectId } }),
+    conceptos: await prisma.concept.count({ where: { projectId } }),
   };
 }
 
@@ -145,6 +146,44 @@ if (insA.length > 0) {
   console.log(
     `${mismoTexto ? "ok    " : "FALLA "} insights (enunciado, puntos con su papel, ideas)`,
   );
+}
+
+// Los conceptos apuntan a las ideas de Combinar por id. Al restaurar hay que
+// remapearlos, y si eso falla el concepto aparece sin procedencia — en silencio.
+const conConc = {
+  include: { origenes: { orderBy: { createdAt: "asc" } }, supuestos: { orderBy: { position: "asc" } } },
+  orderBy: { position: "asc" },
+} as const;
+const cA = await prisma.concept.findMany({ where: { projectId: original.id }, ...conConc });
+const cB = await prisma.concept.findMany({ where: { projectId: copia!.id }, ...conConc });
+
+if (cA.length > 0) {
+  const ideasB = new Set(
+    (await prisma.insightIdea.findMany({
+      where: { insight: { projectId: copia!.id } },
+      select: { id: true },
+    })).map((i) => i.id),
+  );
+  let ok = 0, rotos = 0;
+  for (const c of cB) {
+    for (const o of c.origenes) {
+      if (o.ideaId && ideasB.has(o.ideaId)) ok++;
+      else rotos++;
+    }
+  }
+  const resumen = (l: typeof cA) =>
+    JSON.stringify(
+      l.map((c) => [
+        c.title, c.statement,
+        [c.impDemanda, c.impImplementar, c.impEscalar, c.fitProblema, c.fitEquipo, c.fitMetas],
+        c.origenes.map((o) => o.textSnapshot),
+        c.supuestos.map((a) => [a.text, a.likelihood, a.status]),
+      ]),
+    );
+  const igual = resumen(cA) === resumen(cB);
+  if (rotos > 0 || !igual || cA.length !== cB.length) fallas++;
+  console.log(`${rotos === 0 ? "ok    " : "FALLA "} ideas de origen reenlazadas: ${ok} enlazadas, ${rotos} rotas`);
+  console.log(`${igual ? "ok    " : "FALLA "} conceptos (nombre, puntuacion, origenes, supuestos)`);
 }
 
 // ── 4. Limpiar ───────────────────────────────────────────────────────────────

@@ -52,6 +52,7 @@ model User {
   researchRuns  ResearchRun[]
   reviewedFrags Fragment[]         @relation("FragmentReviewer")
   insights      Insight[]          @relation("InsightAuthor")
+  concepts      Concept[]          @relation("ConceptAuthor")
 }
 
 /// Token de acceso para agentes externos (MCP, scripts, integraciones).
@@ -148,6 +149,7 @@ model Project {
   openQuestions OpenQuestion[]
   researchRuns  ResearchRun[]
   insights      Insight[]
+  concepts      Concept[]
 }
 
 model Membership {
@@ -396,6 +398,9 @@ model OpenQuestion {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// Supuestos de Convergir que esperan esta respuesta.
+  supuestos Assumption[]
+
   @@index([projectId, status])
 }
 
@@ -568,5 +573,128 @@ model InsightIdea {
 
   createdAt DateTime @default(now())
 
+  /// Conceptos de Convergir que salieron de esta idea.
+  usadaEn ConceptSource[]
+
   @@index([insightId])
+}
+
+// -----------------------------------------------------------------------------
+// Etapa 4 — Convergir (Converge: "Prioritize + Refine Solutions")
+// -----------------------------------------------------------------------------
+
+/// Un concepto de solucion: lo que el equipo se plantea hacer de verdad.
+///
+/// DE DONDE SALE. De las ideas que abrieron los insights de Combinar. Un
+/// concepto puede recoger VARIAS ideas —fusionarlas es media etapa de
+/// Convergir, la tecnica que el libro llama "Best of All Worlds"— o nacer de
+/// una sola. Igual que un Insight apunta a los fragmentos, un Concept apunta a
+/// las ideas: Combinar no sabe que Convergir existe.
+///
+/// LA META son 4 a 5 conceptos (CB.pdf p3). No es un limite tecnico, es la
+/// disciplina de la etapa: convergir significa estrechar, y un tablero con
+/// quince conceptos no ha convergido nada.
+model Concept {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  /// Nombre corto, para poder senalarlo en una discusion.
+  title       String
+  /// Que es, en una frase.
+  statement   String @default("")
+  /// Desarrollo: como funcionaria, que hace falta.
+  description String @default("")
+
+  /// Puntuacion 1-5 de los seis subcriterios (CV.pdf p4). 0 = sin puntuar.
+  ///
+  /// Se guardan los seis y no dos promedios a proposito: cuando el equipo
+  /// discrepa sobre un concepto, discrepa sobre UNO de estos, y con solo el
+  /// promedio no hay donde senalar.
+  impDemanda     Int @default(0)
+  impImplementar Int @default(0)
+  impEscalar     Int @default(0)
+  fitProblema    Int @default(0)
+  fitEquipo      Int @default(0)
+  fitMetas       Int @default(0)
+
+  /// Color en la matriz. Vacio = el de la paleta segun posicion.
+  color String @default("")
+
+  /// ACCEPTED | PROPOSED | REJECTED
+  reviewState String  @default("ACCEPTED")
+  /// HUMAN | AGENT
+  origin      String  @default("HUMAN")
+  hidden      Boolean @default(false)
+  position    Int     @default(0)
+
+  authorId String?
+  author   User?   @relation("ConceptAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  origenes  ConceptSource[]
+  supuestos Assumption[]
+
+  @@index([projectId, reviewState])
+}
+
+/// De que idea de Combinar sale un concepto.
+///
+/// `ideaId` es opcional por el mismo motivo que en InsightDot: si alguien borra
+/// la idea, el concepto no pierde su procedencia en silencio. El texto
+/// sobrevive en `textSnapshot` y la interfaz lo marca como huerfano.
+model ConceptSource {
+  id        String  @id @default(cuid())
+  conceptId String
+  concept   Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  ideaId String?
+  idea   InsightIdea? @relation(fields: [ideaId], references: [id], onDelete: SetNull)
+
+  textSnapshot String @default("")
+  /// Insight del que venia la idea, para poder rastrear el origen entero.
+  insightId    String @default("")
+
+  createdAt DateTime @default(now())
+
+  @@unique([conceptId, ideaId])
+  @@index([conceptId])
+}
+
+/// Que tendria que ser cierto para que el concepto funcione.
+///
+/// Es la tecnica de "Reverse Engineering" del libro: en vez de defender el
+/// concepto, se listan los supuestos de los que depende y se ordenan de
+/// improbable a muy probable. Los improbables son el trabajo real — lo que hay
+/// que ir a verificar antes de comprometerse.
+///
+/// Un supuesto puede mandarse al banco de preguntas, y entonces guarda a cual:
+/// asi la respuesta que traiga el equipo vuelve al concepto que la necesitaba.
+model Assumption {
+  id        String  @id @default(cuid())
+  conceptId String
+  concept   Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  text       String
+  /// 1 = muy improbable ... 5 = muy probable. Lo bajo es lo que importa.
+  likelihood Int    @default(3)
+  /// OPEN | CONFIRMED | REFUTED
+  status     String @default("OPEN")
+  /// Que se averiguo. Se llena al confirmar o refutar.
+  note       String @default("")
+
+  /// Pregunta del banco que se creo para resolverlo, si se creo.
+  questionId String?
+  question   OpenQuestion? @relation(fields: [questionId], references: [id], onDelete: SetNull)
+
+  position Int    @default(0)
+  /// HUMAN | AGENT
+  origin   String @default("HUMAN")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([conceptId])
 }

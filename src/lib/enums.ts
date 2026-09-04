@@ -186,3 +186,69 @@ export const PALETA_TRAZOS = [
 export function colorDeTrazo(color: string, posicion: number): string {
   return color || PALETA_TRAZOS[posicion % PALETA_TRAZOS.length];
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Etapa Convergir
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Los seis subcriterios de priorizacion, en su eje (CV.pdf p4). */
+export const SUBCRITERIOS = [
+  { campo: "impDemanda", eje: "impacto", label: "Tiene mas demanda" },
+  { campo: "impImplementar", eje: "impacto", label: "Facil de implementar" },
+  { campo: "impEscalar", eje: "impacto", label: "Facil de escalar" },
+  { campo: "fitProblema", eje: "fit", label: "Resuelve el problema" },
+  { campo: "fitEquipo", eje: "fit", label: "Atractivo para el equipo" },
+  { campo: "fitMetas", eje: "fit", label: "Ayuda a alcanzar las metas" },
+] as const;
+
+export type CampoSubcriterio = (typeof SUBCRITERIOS)[number]["campo"];
+
+/**
+ * Promedio de un eje. Los subcriterios sin puntuar (0) NO cuentan.
+ *
+ * Contarlos como cero hundiria un concepto a medio evaluar y lo mandaria al
+ * cuadrante de descarte por no haberlo terminado de mirar, que es justo la
+ * decision que la matriz no debe tomar sola.
+ */
+export function promedioEje(
+  c: Record<CampoSubcriterio, number>,
+  eje: "impacto" | "fit",
+): number | null {
+  const vals = SUBCRITERIOS.filter((s) => s.eje === eje)
+    .map((s) => c[s.campo])
+    .filter((n) => n > 0);
+  if (vals.length === 0) return null;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+/** Cuantos de los seis estan puntuados. */
+export function puntuados(c: Record<CampoSubcriterio, number>): number {
+  return SUBCRITERIOS.filter((s) => c[s.campo] > 0).length;
+}
+
+export const ASSUMPTION_STATUSES = ["OPEN", "CONFIRMED", "REFUTED"] as const;
+export type AssumptionStatus = (typeof ASSUMPTION_STATUSES)[number];
+
+export const ASSUMPTION_STATUS_META: Record<
+  AssumptionStatus,
+  { label: string; color: string }
+> = {
+  OPEN: { label: "Por verificar", color: "#C9A94E" },
+  CONFIRMED: { label: "Confirmado", color: "#2F7D5F" },
+  REFUTED: { label: "Refutado", color: "#8E3324" },
+};
+
+/**
+ * Escala de probabilidad de un supuesto.
+ *
+ * Lo util esta abajo: un supuesto muy improbable del que depende un concepto
+ * atractivo es exactamente lo que hay que ir a verificar antes de comprometer
+ * nada. Por eso la escala se lee de improbable a probable y no al reves.
+ */
+export const PROBABILIDAD = [
+  { n: 1, label: "Muy improbable", color: "#8E3324" },
+  { n: 2, label: "Improbable", color: "#B4623A" },
+  { n: 3, label: "Incierto", color: "#C9A94E" },
+  { n: 4, label: "Probable", color: "#6E9A5E" },
+  { n: 5, label: "Muy probable", color: "#2F7D5F" },
+] as const;
