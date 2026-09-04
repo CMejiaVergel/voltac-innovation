@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { requireUser } from "@/lib/auth";
 import { listProjectsFor } from "@/lib/projects";
+import { ImportBackup } from "@/components/ImportBackup";
 
 export const metadata = { title: "Proyectos — Voltac Innovacion" };
 
@@ -19,6 +20,7 @@ export default async function ProjectsPage() {
           </h1>
         </div>
         <div className="flex-1" />
+        <ImportBackup />
         <Link href="/proyectos/papelera" className="btn">
           Papelera
         </Link>

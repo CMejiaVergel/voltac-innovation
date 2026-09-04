@@ -38,12 +38,14 @@ const ICONS = {
   folder: "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z",
   users: "M16 19v-1a4 4 0 00-4-4H7a4 4 0 00-4 4v1M9.5 7.5a3 3 0 106 0 3 3 0 00-6 0M21 19v-1a4 4 0 00-3-3.87",
   help: "M12 17h.01M9.1 9a3 3 0 015.8 1c0 2-3 2.5-3 4M12 21a9 9 0 100-18 9 9 0 000 18z",
+  link: "M5.5 17.5 10 11l4.5 3.5L19 6M5.5 17.5a1.6 1.6 0 100-3.2 1.6 1.6 0 000 3.2zM10 12.6a1.6 1.6 0 100-3.2 1.6 1.6 0 000 3.2zM14.5 16.1a1.6 1.6 0 100-3.2 1.6 1.6 0 000 3.2zM19 7.6a1.6 1.6 0 100-3.2 1.6 1.6 0 000 3.2z",
 };
 
 function projectTabs(slug: string): Tab[] {
   const base = `/proyectos/${slug}`;
   return [
     { href: `${base}/bom`, label: "Mapa", icon: <Icon d={ICONS.grid} /> },
+    { href: `${base}/combinar`, label: "Combinar", icon: <Icon d={ICONS.link} /> },
     { href: `${base}/brief`, label: "Reto", icon: <Icon d={ICONS.target} /> },
     { href: `${base}/agente`, label: "Agente", icon: <Icon d={ICONS.robot} /> },
     { href: `${base}/fuentes`, label: "Fuentes", icon: <Icon d={ICONS.book} /> },

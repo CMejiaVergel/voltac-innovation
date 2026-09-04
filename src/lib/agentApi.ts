@@ -2,7 +2,7 @@ import "server-only";
 
 import { prisma } from "@/lib/db";
 import { canEdit, asEnum, VERIFICATIONS, REVIEW_STATES } from "@/lib/enums";
-import { getProjectRole } from "@/lib/projects";
+import { getProjectRole, slugify } from "@/lib/projects";
 import { parseShape, isValidCoord, type TemplateShape } from "@/lib/templates";
 import type { SessionUser } from "@/lib/auth";
 
@@ -90,6 +90,15 @@ export async function getProjectContext(user: SessionUser, slug: string) {
     select: { id: true, text: true, askedTo: true, status: true, answer: true },
   });
 
+  const insights = await prisma.insight.findMany({
+    where: { projectId: project.id },
+    orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+    include: {
+      dots: { orderBy: { position: "asc" } },
+      ideas: { orderBy: { position: "asc" } },
+    },
+  });
+
   const parseList = (raw: string) => {
     try {
       const v = JSON.parse(raw);
@@ -162,6 +171,32 @@ export async function getProjectContext(user: SessionUser, slug: string) {
       fuenteUrl: f.sourceUrl ?? f.source?.url ?? null,
       fuenteCita: f.sourceCitation ?? f.source?.title ?? null,
       porQueAqui: f.agentRationale,
+    })),
+    // Etapa Combinar. Se incluyen para que un agente no proponga de nuevo un
+    // insight que ya existe, y para que pueda corregir uno en vez de duplicarlo.
+    insights: insights.map((i) => ({
+      id: i.id,
+      etiqueta: i.tag,
+      enunciado: i.statement,
+      hecho: i.fact,
+      contraparte: i.counterpart,
+      giro: i.shift,
+      ofreceQuien: i.offerWho,
+      ofrecePrueba: i.offerProof,
+      pagaQuien: i.payWho,
+      pagaPrueba: i.payProof,
+      negocio: i.business,
+      limite: i.limitNote,
+      estado: i.reviewState,
+      origen: i.origin,
+      puntos: i.dots.map((d) => ({
+        fragmentoId: d.fragmentId,
+        texto: d.textSnapshot,
+        fila: d.rowId,
+        columna: d.colId,
+        papel: d.role,
+      })),
+      ideas: i.ideas.map((n) => n.text),
     })),
   };
 }
@@ -581,14 +616,7 @@ export async function cloneProject(
   const sufijo = opts.sufijo ?? "(prueba)";
   const nombre = `${origin.name} ${sufijo}`;
 
-  const base =
-    nombre
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 48) || "proyecto";
+  const base = slugify(nombre);
   let nuevoSlug = base;
   let i = 2;
   while (await prisma.project.findUnique({ where: { slug: nuevoSlug } })) {

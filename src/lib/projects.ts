@@ -105,16 +105,34 @@ export async function getPrimaryMap(projectId: string) {
   return { map, shape };
 }
 
+/**
+ * Convierte un nombre en un slug legible.
+ *
+ * El recorte va ANTES de quitar los guiones de los extremos. Al reves —que es
+ * como estaba— cortar a 48 caracteres puede caer en mitad de una palabra y
+ * dejar un guion colgando: "Cabot Cartagena (v2)" salia como
+ * "...-cabot-cartagena-prueba-". Ademas se corta en el ultimo guion completo
+ * para no partir palabras.
+ */
+export function slugify(name: string, max = 48): string {
+  const limpio = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // quita tildes
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  if (limpio.length <= max) return limpio || "proyecto";
+
+  const cortado = limpio.slice(0, max);
+  const ultimoGuion = cortado.lastIndexOf("-");
+  const final = ultimoGuion > max / 2 ? cortado.slice(0, ultimoGuion) : cortado;
+  return final.replace(/-+$/g, "") || "proyecto";
+}
+
 /** Genera un slug unico a partir del nombre del proyecto. */
 export async function uniqueSlug(name: string): Promise<string> {
-  const base =
-    name
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "") // quita tildes
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 48) || "proyecto";
+  const base = slugify(name);
 
   let slug = base;
   let n = 2;

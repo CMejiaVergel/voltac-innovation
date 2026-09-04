@@ -122,3 +122,43 @@ export function asEnum<T extends readonly string[]>(
 ): T[number] {
   return values.includes(value as T[number]) ? (value as T[number]) : fallback;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Etapa Combinar
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Papel que juega un punto dentro del insight que ayuda a sostener. */
+export const DOT_ROLES = ["HECHO", "CONTRAPARTE", "APOYO"] as const;
+export type DotRole = (typeof DOT_ROLES)[number];
+
+export const DOT_ROLE_META: Record<DotRole, { label: string; help: string; color: string }> = {
+  HECHO: {
+    label: "Hecho",
+    help: "La necesidad o particularidad verificable. La primera punta del intercambio.",
+    color: "#2F5D8C",
+  },
+  CONTRAPARTE: {
+    label: "Contraparte",
+    help: "La conducta de mercado ya observada que responde a esa necesidad. La segunda punta.",
+    color: "#8E5324",
+  },
+  APOYO: {
+    label: "Apoyo",
+    help: "Dato que refuerza o matiza, sin ser ninguna de las dos puntas.",
+    color: "#5E7370",
+  },
+};
+
+/**
+ * Minimo de puntos para que un insight sea una combinacion y no una glosa.
+ *
+ * Con uno solo no se combina nada: se esta comentando un fragmento. Por eso
+ * DOS es el limite duro que la plataforma rechaza.
+ *
+ * TRES es la recomendacion del taller —un insight con tres puntos casi siempre
+ * es mas rico— pero se queda en aviso: forzarlo llevaria al equipo a inflar
+ * conexiones para pasar la validacion, que es justo lo que la metodologia
+ * prohibe cuando habla de no rellenar por cuota.
+ */
+export const DOTS_MINIMO = 2;
+export const DOTS_RECOMENDADO = 3;

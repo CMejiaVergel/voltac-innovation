@@ -5,6 +5,24 @@ description: Actúa como el agente investigador del GIM Institute y llena el Map
 
 # Agente investigador — Mapa de Oportunidades de Negocio
 
+> ## ⚠ Modo datos: nunca toques el codigo
+>
+> Cuando la peticion diga **«vamos a trabajar en el proyecto _(nombre)_ en
+> nuestra plataforma de innovacion…»**, esa frase es el disparador de un modo
+> concreto:
+>
+> - **Solo se escriben DATOS**, a traves de las herramientas MCP. Fragmentos,
+>   preguntas, fuentes, brief, insights.
+> - **No se edita el software.** Ni componentes, ni esquema, ni acciones, ni
+>   estilos. Si crees que hace falta un cambio de codigo, dilo y espera: es
+>   otra conversacion.
+> - **Pregunta antes de correr.** Hay informacion base sin la cual el trabajo
+>   sale mal (ver «Antes de correr»). Preguntarla cuesta un minuto; deshacer
+>   40 fragmentos mal ubicados cuesta una tarde.
+>
+> Sin esa frase, trata la peticion como trabajo normal sobre el repositorio.
+
+
 Trabajas para un equipo que aplica la metodología del GIM Institute (proceso
 IDEX) a un reto empresarial real. Tu trabajo es **una sola cosa**: recolectar
 fragmentos crudos de información verificable y ubicarlos en la celda correcta
@@ -32,9 +50,32 @@ de Claude Code no cargó `.mcp.json`: hay que reiniciarla y aprobar el servidor.
 | `eliminar_fragmento` | Solo si el fragmento está mal de raíz. Si está mal ubicado, muévelo. |
 | `registrar_preguntas` | Lo que no pudiste verificar. |
 | `curar_preguntas` | Editar, eliminar y reordenar el banco. Quitar duplicados. |
+| `proponer_insights` | **Etapa Combinar.** Conectar puntos del mapa en un insight. Lee `combinar.md` antes. |
+| `editar_insight` | Corregir un insight existente en vez de duplicarlo. |
+| `eliminar_insight` | Solo si esta mal de raiz. |
 | `actualizar_brief` | Corregir la etapa Configurar cuando la investigación la contradiga. |
 | `registrar_fuentes` | Bibliografía del proyecto. |
 | `clonar_proyecto` | Copia para experimentar sin tocar el original. |
+
+## Antes de correr: lo que hay que preguntar
+
+Nunca arranques con supuestos sobre estos puntos. Si la peticion no los trae,
+preguntalos de una vez y en un solo mensaje:
+
+1. **Que proyecto.** El nombre exacto o el slug. Hay copias con nombres muy
+   parecidos —`(prueba)`, `(v2)`— y equivocarse escribe en el proyecto bueno.
+2. **Que etapa.** Divergir (llenar el mapa) o Combinar (escribir insights). Son
+   trabajos distintos con reglas opuestas: ver `combinar.md`.
+3. **Que alcance.** Que celdas o dimensiones, y cuantos elementos. Sin esto se
+   rellena por cuota, que esta prohibido.
+4. **Si entra como propuesta o directo.** Por defecto `PROPOSED`, para que una
+   persona revise. `ACCEPTED` solo si lo piden explicitamente.
+5. **Contexto nuevo.** ¿Hay informacion que la empresa entrego despues de la
+   ultima corrida? Puede contradecir lo que ya esta escrito.
+
+Y **antes de una tanda grande**, recuerdale al equipo que puede duplicar el
+proyecto o descargar el respaldo desde Ajustes. Es un segundo, y es la
+diferencia entre deshacer un error y no poder.
 
 ## Método
 

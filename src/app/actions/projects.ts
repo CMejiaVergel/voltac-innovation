@@ -8,6 +8,8 @@ import { prisma } from "@/lib/db";
 import { canEdit, canAdminProject } from "@/lib/enums";
 import { getProjectRole, uniqueSlug } from "@/lib/projects";
 import { startResearchRun } from "@/lib/agent/run";
+import { cloneProject } from "@/lib/agentApi";
+import { restaurarRespaldo } from "@/lib/backup";
 import type { AgentScope } from "@/lib/agent/prompt";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -113,6 +115,58 @@ export async function updateProjectInfo(slug: string, formData: FormData): Promi
 
   revalidatePath(`/proyectos/${slug}`);
   revalidatePath("/proyectos");
+}
+
+/**
+ * Duplica un proyecto entero.
+ *
+ * Es la forma segura de versionar: antes de una tanda de cambios grandes —o
+ * antes de soltarle el agente encima— se saca una copia y se trabaja sobre
+ * ella. El original queda intacto y sirve para comparar.
+ */
+export async function duplicateProject(slug: string, formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const project = await prisma.project.findUnique({ where: { slug } });
+  if (!project) throw new Error("El proyecto no existe.");
+
+  const access = await getProjectRole(user, project.id);
+  if (!access) throw new Error("El proyecto no existe.");
+
+  const sufijo = String(formData.get("sufijo") ?? "").trim() || "(copia)";
+  const incluir = formData.get("incluirFragmentos") !== "no";
+
+  const copia = await cloneProject(user, slug, {
+    sufijo,
+    incluirFragmentos: incluir,
+  });
+
+  revalidatePath("/proyectos");
+  redirect(`/proyectos/${copia.slug}/bom`);
+}
+
+/**
+ * Importa un respaldo ZIP.
+ *
+ * SIEMPRE crea un proyecto nuevo, nunca pisa uno existente. Un respaldo puede
+ * ser mas viejo de lo que uno cree, y sobrescribir con el destruiria justo el
+ * trabajo que se queria proteger. Recuperar es importar al lado y comparar.
+ */
+export async function importProjectBackup(formData: FormData): Promise<void> {
+  const user = await requireUser();
+
+  const archivo = formData.get("archivo");
+  if (!(archivo instanceof File) || archivo.size === 0) {
+    throw new Error("Elige el archivo .zip del respaldo.");
+  }
+  if (archivo.size > 64 * 1024 * 1024) {
+    throw new Error("El respaldo pesa mas de 64 MB. Escribe si necesitas subir uno mayor.");
+  }
+
+  const buf = Buffer.from(await archivo.arrayBuffer());
+  const { slug } = await restaurarRespaldo(user, buf);
+
+  revalidatePath("/proyectos");
+  redirect(`/proyectos/${slug}/bom`);
 }
 
 /**

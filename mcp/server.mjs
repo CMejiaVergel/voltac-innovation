@@ -69,7 +69,7 @@ const TOOLS = [
   {
     name: "leer_proyecto",
     description:
-      "Contexto completo de un proyecto: el reto, el brief (que hacer / que evitar / restricciones), la plantilla del mapa con la REGLA de cada columna, el conteo por celda y todos los fragmentos que ya existen. Leelo ANTES de proponer nada: contiene las reglas que debes respetar y los fragmentos que no debes repetir.",
+      "Contexto completo de un proyecto: el reto, el brief (que hacer / que evitar / restricciones), la plantilla del mapa con la REGLA de cada columna, el conteo por celda, todos los fragmentos que ya existen (con su id, que es lo que se usa para conectar puntos en Combinar) y los insights ya escritos. Leelo ANTES de proponer nada: contiene las reglas que debes respetar y los fragmentos que no debes repetir.",
     inputSchema: {
       type: "object",
       properties: { slug: { type: "string", description: "Slug del proyecto." } },
@@ -241,6 +241,122 @@ const TOOLS = [
     },
     run: ({ slug, ...body }) =>
       api(`${slugPath(slug)}/preguntas/gestion`, { method: "POST", body }),
+  },
+  {
+    name: "proponer_insights",
+    description:
+      "Etapa COMBINAR. Crea insights conectando puntos (fragmentos) del mapa. Un insight NO es un dato reencuadrado: la frase debe sostenerse en hechos de las DOS puntas del intercambio —una necesidad o particularidad verificable, y una conducta de mercado YA observada que responde a ella—. Prohibido afirmar disposicion ('estarian dispuestos a'): solo vale lo que ya hicieron y consta en un fragmento. Los ids de los puntos salen de leer_proyecto. Por defecto entran como PROPOSED para que una persona los revise.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        slug: { type: "string" },
+        estado: {
+          type: "string",
+          enum: ["PROPOSED", "ACCEPTED"],
+          description:
+            "PROPOSED (por defecto) deja el insight en revision. ACCEPTED solo si la persona lo pidio.",
+        },
+        insights: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              enunciado: {
+                type: "string",
+                description:
+                  "La frase concluyente, que debe leerse sola. Cinco piezas: hecho con cifra + conector causal + conducta de mercado observada con actor nombrado + concesion + porque.",
+              },
+              puntos: {
+                type: "array",
+                description: "Minimo 2, recomendado 3. En el orden del recorrido.",
+                items: {
+                  type: "object",
+                  properties: {
+                    fragmentoId: { type: "string", description: "id de fragmento de leer_proyecto." },
+                    papel: {
+                      type: "string",
+                      enum: ["HECHO", "CONTRAPARTE", "APOYO"],
+                      description: "HECHO es la primera punta; CONTRAPARTE la segunda.",
+                    },
+                  },
+                  required: ["fragmentoId"],
+                },
+              },
+              etiqueta: { type: "string", description: "Nombre corto, ej. 'Calor'." },
+              hecho: { type: "string" },
+              contraparte: { type: "string", description: "La conducta ya observada. Sin esto es un dato, no un insight." },
+              giro: { type: "string" },
+              ofreceQuien: { type: "string" },
+              ofrecePrueba: { type: "string", description: "La evidencia de que ya lo hace." },
+              pagaQuien: { type: "string" },
+              pagaPrueba: { type: "string", description: "La evidencia de que ya lo paga." },
+              negocio: { type: "string" },
+              limite: { type: "string", description: "Que NO se puede afirmar con estos puntos. Obligatorio en la practica." },
+              ideas: { type: "array", items: { type: "string" } },
+            },
+            required: ["enunciado", "puntos"],
+          },
+        },
+        orden: {
+          type: "array",
+          items: { type: "string" },
+          description: "Opcional: ids de insight en el orden final del tablero.",
+        },
+      },
+      required: ["slug"],
+    },
+    run: ({ slug, ...body }) =>
+      api(`${slugPath(slug)}/insights`, { method: "POST", body }),
+  },
+  {
+    name: "editar_insight",
+    description:
+      "Corrige un insight existente: su frase, su desglose, sus puntos o sus ideas. Si envias 'puntos' o 'ideas' se reemplazan enteros, no se fusionan. Usalo en vez de crear uno nuevo cuando el insight ya existe pero esta mal planteado.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        enunciado: { type: "string" },
+        etiqueta: { type: "string" },
+        hecho: { type: "string" },
+        contraparte: { type: "string" },
+        giro: { type: "string" },
+        ofreceQuien: { type: "string" },
+        ofrecePrueba: { type: "string" },
+        pagaQuien: { type: "string" },
+        pagaPrueba: { type: "string" },
+        negocio: { type: "string" },
+        limite: { type: "string" },
+        estado: { type: "string", enum: ["ACCEPTED", "PROPOSED", "REJECTED"] },
+        puntos: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              fragmentoId: { type: "string" },
+              papel: { type: "string", enum: ["HECHO", "CONTRAPARTE", "APOYO"] },
+            },
+            required: ["fragmentoId"],
+          },
+        },
+        ideas: { type: "array", items: { type: "string" } },
+      },
+      required: ["id"],
+    },
+    run: ({ id, ...patch }) =>
+      api(`/api/agent/insights/${encodeURIComponent(id)}`, { method: "PATCH", body: patch }),
+  },
+  {
+    name: "eliminar_insight",
+    description:
+      "Borra un insight y sus conexiones. Los fragmentos del mapa NO se tocan: un insight apunta a ellos, no los contiene.",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+    run: ({ id }) =>
+      api(`/api/agent/insights/${encodeURIComponent(id)}`, { method: "DELETE" }),
   },
   {
     name: "registrar_fuentes",

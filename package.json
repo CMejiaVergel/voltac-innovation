@@ -16,7 +16,8 @@
     "token:crear": "tsx scripts/token.ts crear",
     "token:listar": "tsx scripts/token.ts listar",
     "token:revocar": "tsx scripts/token.ts revocar",
-    "mcp": "node mcp/server.mjs"
+    "mcp": "node mcp/server.mjs",
+    "respaldo:probar": "tsx scripts/prueba-respaldo.mts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
