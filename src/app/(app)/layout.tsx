@@ -36,9 +36,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
           <div className="flex-1" />
 
-          <span className="hidden font-mono text-[11px] text-[#5e7370] sm:inline">
+          <Link
+            href="/cuenta"
+            title="Tu cuenta y tu clave de OpenRouter"
+            className="hidden font-mono text-[11px] text-[#5e7370] transition hover:text-white sm:inline"
+          >
             {user.name}
-          </span>
+          </Link>
           <form action={logoutAction}>
             <button type="submit" className="btn px-2.5 py-1 text-[11px] md:px-3 md:py-1.5 md:text-[12px]">
               Salir

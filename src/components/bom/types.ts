@@ -11,6 +11,8 @@ export type BoardFragment = {
   reviewState: ReviewState;
   origin: "HUMAN" | "AGENT";
   hidden: boolean;
+  /** Indices de los items de su fila a los que pertenece. */
+  items: number[];
   sourceUrl: string | null;
   sourceCitation: string | null;
   agentRationale: string | null;

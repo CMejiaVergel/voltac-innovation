@@ -181,6 +181,7 @@ export async function crearRespaldo(projectId: string) {
           text: f.text,
           position: f.position,
           hidden: f.hidden,
+          items: f.items,
           verification: f.verification,
           reviewState: f.reviewState,
           origin: f.origin,
@@ -220,6 +221,7 @@ export async function crearRespaldo(projectId: string) {
       contenido: json(
         insights.map((i) => ({
           tag: i.tag,
+          color: i.color,
           statement: i.statement,
           fact: i.fact,
           counterpart: i.counterpart,
@@ -423,6 +425,7 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
           text: f.text,
           position: f.position ?? 0,
           hidden: f.hidden ?? false,
+          items: f.items ?? "[]",
           verification: f.verification ?? "TO_CONFIRM",
           reviewState: f.reviewState ?? "ACCEPTED",
           origin: f.origin ?? "HUMAN",
@@ -476,6 +479,7 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
       data: {
         projectId: nuevo.id,
         tag: i.tag ?? "",
+        color: i.color ?? "",
         statement: i.statement,
         fact: i.fact ?? "",
         counterpart: i.counterpart ?? "",

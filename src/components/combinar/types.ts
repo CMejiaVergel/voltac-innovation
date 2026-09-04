@@ -27,6 +27,8 @@ export type IdeaVista = { id: string; text: string; origin: "HUMAN" | "AGENT" };
 export type InsightVista = {
   id: string;
   tag: string;
+  /** Color del trazo. Vacio = el de la paleta segun `position`. */
+  color: string;
   statement: string;
   fact: string;
   counterpart: string;

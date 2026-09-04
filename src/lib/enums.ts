@@ -162,3 +162,27 @@ export const DOT_ROLE_META: Record<DotRole, { label: string; help: string; color
  */
 export const DOTS_MINIMO = 2;
 export const DOTS_RECOMENDADO = 3;
+
+/**
+ * Colores de los trazos del mapa de puntos.
+ *
+ * Con varios insights encima del mismo mapa, el color es lo unico que separa
+ * un recorrido de otro: son ocho tonos elegidos para distinguirse entre si
+ * sobre fondo oscuro, no una rampa. El equipo puede cambiar el de cada insight;
+ * mientras no lo haga, se asigna por posicion.
+ */
+export const PALETA_TRAZOS = [
+  "#E0567F", // magenta
+  "#5AC8D8", // cian
+  "#E8A33D", // ambar
+  "#8FD14F", // verde
+  "#B085F5", // violeta
+  "#FF7A5C", // coral
+  "#4DA3FF", // azul
+  "#F2E14C", // amarillo
+] as const;
+
+/** Color de un insight: el suyo si lo eligio, o el de la paleta por posicion. */
+export function colorDeTrazo(color: string, posicion: number): string {
+  return color || PALETA_TRAZOS[posicion % PALETA_TRAZOS.length];
+}

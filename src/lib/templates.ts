@@ -190,3 +190,45 @@ export function isValidCoord(shape: TemplateShape, rowId: string, colId: string)
     shape.rows.some((r) => r.id === rowId) && shape.cols.some((c) => c.id === colId)
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Items de una dimension
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Las facetas de una fila, ya separadas.
+ *
+ * Cada dimension del mapa se compone de varias: Mercado son Clientes,
+ * Necesidades y Experiencias. Vienen juntas en un texto porque asi se pintan
+ * en la franja de color, pero para marcar a cual pertenece un fragmento hacen
+ * falta sueltas. El numero varia por fila —Modelos de Negocio solo tiene dos—
+ * asi que nada puede asumir que siempre son tres.
+ */
+export function itemsDeFila(facets: string): string[] {
+  return facets
+    .split("·")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Colores de los items, por posicion dentro de su fila.
+ *
+ * Son oscuros a proposito: se pintan sobre el papel claro del post-it, no
+ * sobre el fondo del tablero.
+ */
+export const COLORES_ITEM = ["#2F5D8C", "#8E5324", "#2F7D5F", "#7A3E8E"] as const;
+
+export function colorDeItem(i: number): string {
+  return COLORES_ITEM[i % COLORES_ITEM.length];
+}
+
+/** Lee el JSON de items de un fragmento sin reventar si viene mal escrito. */
+export function parseItems(raw: string): number[] {
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v.map(Number).filter((n) => Number.isInteger(n) && n >= 0) : [];
+  } catch {
+    return [];
+  }
+}

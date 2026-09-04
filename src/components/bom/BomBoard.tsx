@@ -18,6 +18,7 @@ import {
 import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
 import { THIN_CELL_THRESHOLD } from "@/lib/gimi";
+import { itemsDeFila, colorDeItem } from "@/lib/templates";
 import { VERIFICATION_META, type Verification } from "@/lib/enums";
 import {
   createFragment,
@@ -25,6 +26,7 @@ import {
   reviewFragment,
   setCellOrder,
   setFragmentHidden,
+  setFragmentItems,
   setVerification,
   updateFragmentText,
 } from "@/app/actions/fragments";
@@ -149,6 +151,18 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
     );
   }
 
+  /** Marca o desmarca las facetas de la fila a las que pertenece el fragmento. */
+  function handleItems(id: string, indices: number[]) {
+    // `items` es el estado del tablero; el parametro se llama `indices` para no
+    // taparlo dentro de esta funcion.
+    const before = items;
+    run(
+      () => setItems((s) => s.map((f) => (f.id === id ? { ...f, items: indices } : f))),
+      () => setItems(before),
+      () => setFragmentItems(id, indices),
+    );
+  }
+
   function handleDelete(id: string) {
     const before = items;
     run(
@@ -185,6 +199,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
       reviewState: "ACCEPTED",
       origin: "HUMAN",
       hidden: false,
+      items: [],
       sourceUrl: null,
       sourceCitation: null,
       agentRationale: null,
@@ -419,6 +434,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
         onEditText={handleEditText}
         onSetVerification={handleVerification}
         onSetHidden={handleHidden}
+        onSetItems={handleItems}
         onDelete={handleDelete}
         onReview={handleReview}
         onMove={handleMove}
@@ -482,9 +498,20 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
                     <span className="text-[17px] font-bold leading-none tracking-[-0.02em]">
                       {r.name}
                     </span>
-                    <span className="mt-1.5 text-[10px] leading-snug text-white/80">
-                      {r.facets}
-                    </span>
+                    <ul className="mt-1.5 flex flex-col gap-0.5">
+                      {itemsDeFila(r.facets).map((nombre, i) => (
+                        <li
+                          key={nombre}
+                          className="flex items-center gap-1.5 text-[10px] leading-snug text-white/85"
+                        >
+                          <span
+                            className="h-[7px] w-[7px] flex-none rounded-full ring-1 ring-white/50"
+                            style={{ background: colorDeItem(i) }}
+                          />
+                          {nombre}
+                        </li>
+                      ))}
+                    </ul>
                     <span className="mt-auto pt-2 font-mono text-[9.5px] text-white/65">
                       {total}
                     </span>
@@ -497,6 +524,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
                       colId={c.id}
                       hint={c.hint}
                       fragments={byCell.get(cellKey(r.id, c.id)) ?? []}
+                      items={itemsDeFila(r.facets)}
                       editable={editable}
                       showGaps={showGaps}
                       showVerification={showVerification}
@@ -506,6 +534,7 @@ export function BomBoard({ mapId, shape, fragments, editable }: BoardProps) {
                       onEditText={handleEditText}
                       onSetVerification={handleVerification}
                       onSetHidden={handleHidden}
+                      onSetItems={handleItems}
                       onDelete={handleDelete}
                       onReview={handleReview}
                     />
@@ -568,6 +597,7 @@ function Cell({
   colId,
   hint,
   fragments,
+  items,
   editable,
   showGaps,
   showVerification,
@@ -577,6 +607,7 @@ function Cell({
   onEditText,
   onSetVerification,
   onSetHidden,
+  onSetItems,
   onDelete,
   onReview,
 }: {
@@ -584,6 +615,7 @@ function Cell({
   colId: string;
   hint: string;
   fragments: BoardFragment[];
+  items: string[];
   editable: boolean;
   showGaps: boolean;
   showVerification: boolean;
@@ -593,6 +625,7 @@ function Cell({
   onEditText: (id: string, text: string) => void;
   onSetVerification: (id: string, v: Verification) => void;
   onSetHidden: (id: string, hidden: boolean) => void;
+  onSetItems: (id: string, items: number[]) => void;
   onDelete: (id: string) => void;
   onReview: (id: string, decision: "ACCEPT" | "REJECT") => void;
 }) {
@@ -615,6 +648,7 @@ function Cell({
           <Note
             key={f.id}
             fragment={f}
+            items={items}
             editable={editable}
             showVerification={showVerification}
             showSource={showSource}
@@ -622,6 +656,7 @@ function Cell({
             onEditText={onEditText}
             onSetVerification={onSetVerification}
             onSetHidden={onSetHidden}
+            onSetItems={onSetItems}
             onDelete={onDelete}
             onReview={onReview}
           />

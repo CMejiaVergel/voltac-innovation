@@ -8,6 +8,7 @@ import {
   openRouterIsConfigured,
   OpenRouterNotConfigured,
 } from "@/lib/agent/openrouter";
+import { claveDelAgente } from "@/lib/claveAgente";
 import { parseShape, isValidCoord } from "@/lib/templates";
 import { buildSystemPrompt, buildUserPrompt, type AgentScope } from "@/lib/agent/prompt";
 import { parseAgentOutput, type AgentFragment } from "@/lib/agent/schema";
@@ -23,8 +24,10 @@ import { parseAgentOutput, type AgentFragment } from "@/lib/agent/schema";
  * Nada de lo que produce el agente entra al mapa directamente: todo aterriza
  * como PROPOSED y espera revision humana.
  *
- * El proveedor es OpenRouter: una sola clave da acceso a cientos de modelos y
- * el equipo elige cual usar por proyecto, sin tocar codigo ni redesplegar.
+ * El proveedor es OpenRouter, y la clave la pone QUIEN LANZA la corrida (ver
+ * `claveDelAgente`): cada persona gasta sus propios creditos. El modelo, en
+ * cambio, se elige por proyecto, porque es una decision del equipo sobre el
+ * trabajo, no sobre quien paga.
  */
 
 const STALE_AFTER_MS = 25 * 60 * 1000;
@@ -47,7 +50,9 @@ export async function startResearchRun(params: {
   userId: string;
   scope: AgentScope;
 }): Promise<string> {
-  if (!agentIsConfigured()) throw new OpenRouterNotConfigured();
+  // Se comprueba ANTES de crear la corrida: si la persona no tiene clave, no
+  // tiene sentido dejar una fila en ERROR para algo que nunca iba a arrancar.
+  await claveDelAgente(params.userId);
 
   const project = await prisma.project.findUniqueOrThrow({
     where: { id: params.projectId },
@@ -103,8 +108,11 @@ async function executeRun(runId: string): Promise<void> {
   const model = resolveModel(run.project.agentModel);
   const maxResults = Number(process.env.AGENT_MAX_WEB_RESULTS ?? 8);
 
+  const { clave } = await claveDelAgente(run.requestedById);
+
   const completion = await chat({
     model,
+    apiKey: clave,
     system: buildSystemPrompt(shape),
     user: buildUserPrompt(run.project, run.project.brief, shape, scope, existing),
     maxTokens: 8000,

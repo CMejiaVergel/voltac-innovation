@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { canEdit, VERIFICATIONS, asEnum } from "@/lib/enums";
 import { getProjectRole } from "@/lib/projects";
-import { parseShape, isValidCoord } from "@/lib/templates";
+import { parseShape, isValidCoord, itemsDeFila } from "@/lib/templates";
 
 /**
  * Mutaciones sobre fragmentos.
@@ -416,4 +416,53 @@ export async function acceptRun(runId: string): Promise<number> {
 
   touch(run.project.slug);
   return pending.length;
+}
+
+/**
+ * Marca a que items de su fila pertenece un fragmento.
+ *
+ * Un fragmento puede estar en varios —o en ninguno, mientras nadie lo haya
+ * clasificado—. Se validan contra la plantilla: un indice fuera de rango
+ * pintaria un punto de color que no corresponde a ninguna faceta.
+ */
+export async function setFragmentItems(fragmentId: string, items: number[]): Promise<void> {
+  const { userId, fragment, projectSlug, shape } = await guardFragmentConPlantilla(fragmentId);
+
+  const fila = shape.rows.find((r) => r.id === fragment.rowId);
+  const cuantos = fila ? itemsDeFila(fila.facets).length : 0;
+  const limpios = [...new Set(items)].filter((n) => Number.isInteger(n) && n >= 0 && n < cuantos);
+  limpios.sort((a, b) => a - b);
+
+  await prisma.fragment.update({
+    where: { id: fragmentId },
+    data: { items: JSON.stringify(limpios) },
+  });
+
+  // Sin revision en el historial: clasificar no cambia lo que el fragmento
+  // dice, y una fila por cada clic ahogaria los cambios que si importan.
+  void userId;
+  revalidatePath(`/proyectos/${projectSlug}/bom`);
+}
+
+async function guardFragmentConPlantilla(fragmentId: string) {
+  const user = await requireUser();
+  const fragment = await prisma.fragment.findUnique({
+    where: { id: fragmentId },
+    include: {
+      map: {
+        include: { template: true, project: { select: { id: true, slug: true } } },
+      },
+    },
+  });
+  if (!fragment) throw new Error("El fragmento no existe.");
+
+  const access = await getProjectRole(user, fragment.map.project.id);
+  if (!canEdit(access?.role)) throw new Error("No tienes permiso para editar este proyecto.");
+
+  return {
+    userId: user.id,
+    fragment,
+    projectSlug: fragment.map.project.slug,
+    shape: parseShape(fragment.map.template.rows, fragment.map.template.cols),
+  };
 }

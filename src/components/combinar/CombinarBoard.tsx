@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { DOTS_MINIMO } from "@/lib/enums";
+import { DOTS_MINIMO, colorDeTrazo } from "@/lib/enums";
 import { createInsight } from "@/app/actions/insights";
 import { DotMap } from "./DotMap";
 import { InsightCard } from "./InsightCard";
@@ -35,6 +35,7 @@ export function CombinarBoard({ slug, shape, puntos, insights, editable }: Combi
   const [modo, setModo] = useState<"leer" | "conectar">("leer");
   const [seleccion, setSeleccion] = useState<string[]>([]);
   const [resaltado, setResaltado] = useState<string | null | "todos">("todos");
+  const [mostrarTextos, setMostrarTextos] = useState(false);
 
   const visibles = insights.filter((i) => !i.hidden);
   const propuestos = visibles.filter((i) => i.reviewState === "PROPOSED").length;
@@ -73,8 +74,14 @@ export function CombinarBoard({ slug, shape, puntos, insights, editable }: Combi
                   setModo(m);
                   setSeleccion([]);
                   setError(null);
-                  if (m === "conectar") setResaltado(null);
-                  else setResaltado("todos");
+                  if (m === "conectar") {
+                    setResaltado(null);
+                    // Al conectar hay que LEER para decidir: los textos se
+                    // encienden solos, que era el trabajo tedioso de antes.
+                    setMostrarTextos(true);
+                  } else {
+                    setResaltado("todos");
+                  }
                 }}
                 className={`px-3 py-1.5 text-[12px] transition ${
                   modo === m
@@ -91,6 +98,18 @@ export function CombinarBoard({ slug, shape, puntos, insights, editable }: Combi
         {editable && puntos.length >= 4 && (
           <InsightAgent slug={slug} dimensiones={shape.rows} puntos={puntos.length} />
         )}
+
+        <button
+          type="button"
+          onClick={() => setMostrarTextos((v) => !v)}
+          className={`rounded-[4px] border px-3 py-1.5 text-[12px] transition ${
+            mostrarTextos
+              ? "border-[rgba(111,191,178,0.6)] text-accent"
+              : "border-[rgba(192,204,202,0.25)] text-[#a9b5b3] hover:border-[rgba(192,204,202,0.5)]"
+          }`}
+        >
+          {mostrarTextos ? "Ocultar textos" : "Ver textos"}
+        </button>
 
         <span className="flex-1" />
 
@@ -109,9 +128,14 @@ export function CombinarBoard({ slug, shape, puntos, insights, editable }: Combi
           <Chip activo={resaltado === null} onClick={() => setResaltado(null)}>
             Ninguno
           </Chip>
-          {visibles.map((i) => (
-            <Chip key={i.id} activo={resaltado === i.id} onClick={() => setResaltado(i.id)}>
-              {i.tag || i.statement.slice(0, 28) + "…"}
+          {visibles.map((i, n) => (
+            <Chip
+              key={i.id}
+              activo={resaltado === i.id}
+              color={colorDeTrazo(i.color, i.position)}
+              onClick={() => setResaltado((v) => (v === i.id ? "todos" : i.id))}
+            >
+              Insight {n + 1}
             </Chip>
           ))}
         </div>
@@ -159,6 +183,7 @@ export function CombinarBoard({ slug, shape, puntos, insights, editable }: Combi
         seleccion={seleccion}
         onToggle={modo === "conectar" ? alternar : null}
         resaltado={modo === "conectar" ? null : resaltado}
+        mostrarTextos={mostrarTextos}
       />
 
       {/* ── Los insights ───────────────────────────────────────────────── */}
@@ -173,17 +198,14 @@ export function CombinarBoard({ slug, shape, puntos, insights, editable }: Combi
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
-          {visibles.map((i) => (
+          {visibles.map((i, n) => (
             <InsightCard
               key={i.id}
               insight={i}
+              numero={n + 1}
               shape={shape}
               editable={editable}
-              activo={resaltado === i.id}
-              onVerTrazo={() => {
-                setModo("leer");
-                setResaltado((v) => (v === i.id ? "todos" : i.id));
-              }}
+              resaltado={resaltado === i.id}
             />
           ))}
         </div>
@@ -195,22 +217,27 @@ export function CombinarBoard({ slug, shape, puntos, insights, editable }: Combi
 function Chip({
   activo,
   onClick,
+  color,
   children,
 }: {
   activo: boolean;
   onClick: () => void;
+  color?: string;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-[12px] transition ${
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] transition ${
         activo
           ? "bg-accent font-semibold text-accentDeep"
           : "border border-[rgba(192,204,202,0.25)] text-[#a9b5b3] hover:border-[rgba(192,204,202,0.5)]"
       }`}
     >
+      {color && (
+        <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+      )}
       {children}
     </button>
   );

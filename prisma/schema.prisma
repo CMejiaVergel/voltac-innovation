@@ -21,14 +21,26 @@ datasource db {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String  @id @default(cuid())
+  email        String  @unique
   name         String
   passwordHash String
-  role         String   @default("MEMBER") // ADMIN | MEMBER
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role         String  @default("MEMBER") // ADMIN | MEMBER
+  active       Boolean @default(true)
+
+  /// Clave de OpenRouter de esta persona, cifrada con AES-256-GCM.
+  ///
+  /// Cada quien gasta sus propios creditos: sin esto, cualquier miembro del
+  /// equipo consumiria la cuenta de quien monto la instancia. Se guarda
+  /// cifrada y NUNCA se devuelve al navegador; la interfaz solo ve `keyHint`.
+  openrouterKey     String   @default("")
+  /// Ultimos caracteres, para reconocerla en pantalla sin exponerla.
+  openrouterHint    String   @default("")
+  /// Permiso de usar la clave del servidor (la de .env) en vez de una propia.
+  /// Por defecto NO: es la cuenta de alguien y sus creditos.
+  usaClaveInstancia Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   sessions      Session[]
   apiTokens     ApiToken[]
@@ -261,6 +273,15 @@ model Fragment {
   /// conversacion de hoy pero que el equipo no quiere perder.
   hidden Boolean @default(false)
 
+  /// A que items de la fila pertenece, como JSON de indices: [0], [0,2], []...
+  ///
+  /// Cada dimension del mapa se compone de varias facetas —Mercado son
+  /// Clientes, Necesidades y Experiencias— y un fragmento casi siempre habla
+  /// de una en concreto. Marcarlo permite ver de un vistazo si una dimension
+  /// esta llena pero con todo el material apilado en una sola faceta, que es
+  /// un punto ciego que el conteo por celda no revela.
+  items String @default("[]")
+
   /// VERIFIED | TO_CONFIRM | ASSUMPTION
   verification String @default("TO_CONFIRM")
   /// ACCEPTED | PROPOSED | REJECTED — los del agente entran como PROPOSED.
@@ -442,8 +463,15 @@ model Insight {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  /// Etiqueta corta para ubicarlo de un vistazo (ej. "Calor", "Credencial").
+  /// Etiqueta corta libre. Ya no se muestra como identificador —el tablero
+  /// los numera por posicion, "Insight 1", "Insight 2"— pero se conserva
+  /// porque el agente la escribe y sirve de nota interna.
   tag String @default("")
+
+  /// Color del trazo en el mapa de puntos. Vacio = se asigna uno de la paleta
+  /// segun la posicion. Se guarda explicito cuando el equipo lo cambia: con
+  /// seis trazos encima del mismo mapa, el color es lo unico que los separa.
+  color String @default("")
 
   /// La frase concluyente. Debe poder leerse sola, sin el desglose.
   statement String

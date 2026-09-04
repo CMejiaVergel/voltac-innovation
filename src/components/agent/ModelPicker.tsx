@@ -176,7 +176,7 @@ export function ModelPicker({
 
             {loadError && (
               <p className="p-4 text-[12px] text-[#e8a99c]">
-                {loadError} Puedes escribir el identificador a mano en el campo de abajo.
+                {loadError} Se mantiene el modelo que ya estaba guardado.
               </p>
             )}
             {!models && !loadError && (
@@ -254,26 +254,11 @@ export function ModelPicker({
         </span>
       </label>
 
-      {editable && (
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            value={selected}
-            onChange={(e) => setSelected(e.target.value)}
-            placeholder={`Escribir identificador a mano (por defecto: ${envDefault})`}
-            className="field flex-1 font-mono text-[12px]"
-          />
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => void save(selected, search)}
-            className="btn"
-          >
-            {saving ? "Guardando…" : "Guardar"}
-          </button>
-          {saved && !saving && (
-            <span className="font-mono text-[10.5px] text-accent">guardado</span>
-          )}
-        </div>
+      {editable && saving && (
+        <span className="font-mono text-[10.5px] text-[#7d8a88]">Guardando…</span>
+      )}
+      {editable && saved && !saving && (
+        <span className="font-mono text-[10.5px] text-accent">guardado</span>
       )}
     </div>
   );

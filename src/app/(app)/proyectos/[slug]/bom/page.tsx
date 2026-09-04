@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireProject, getPrimaryMap } from "@/lib/projects";
 import { canEdit, asEnum, VERIFICATIONS, REVIEW_STATES } from "@/lib/enums";
+import { parseItems } from "@/lib/templates";
 import { BomBoard } from "@/components/bom/BomBoard";
 import type { BoardFragment } from "@/components/bom/types";
 
@@ -43,6 +44,7 @@ export default async function BomPage({ params }: { params: Promise<{ slug: stri
     reviewState: asEnum(REVIEW_STATES, f.reviewState, "ACCEPTED"),
     origin: f.origin === "AGENT" ? "AGENT" : "HUMAN",
     hidden: f.hidden,
+    items: parseItems(f.items),
     sourceUrl: f.sourceUrl,
     sourceCitation: f.sourceCitation,
     agentRationale: f.agentRationale,

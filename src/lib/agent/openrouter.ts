@@ -17,20 +17,29 @@ const BASE = "https://openrouter.ai/api/v1";
 
 export const DEFAULT_MODEL = "google/gemini-2.5-flash";
 
+/** Hay clave en el servidor. Es la de quien monto la instancia. */
 export function openRouterIsConfigured(): boolean {
   return Boolean(process.env.OPENROUTER_API_KEY);
 }
 
+/** Clave del servidor, o null. Solo la usan quienes tienen permiso explicito. */
+export function claveDeInstancia(): string | null {
+  return process.env.OPENROUTER_API_KEY || null;
+}
+
 export class OpenRouterNotConfigured extends Error {
-  constructor() {
-    super("Falta OPENROUTER_API_KEY en el entorno. El agente no puede correr.");
+  constructor(mensaje?: string) {
+    super(
+      mensaje ??
+        "No hay clave de OpenRouter disponible. Pon la tuya en tu cuenta para usar el agente.",
+    );
     this.name = "OpenRouterNotConfigured";
   }
 }
 
-function headers(): Record<string, string> {
+function headers(clave: string): Record<string, string> {
   const h: Record<string, string> = {
-    Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+    Authorization: `Bearer ${clave}`,
     "Content-Type": "application/json",
   };
   // OpenRouter usa estas dos para atribuir el trafico. Son opcionales.
@@ -78,8 +87,10 @@ function perMillion(raw: string | undefined): number | null {
 export async function listModels(force = false): Promise<CatalogModel[]> {
   if (!force && cache && Date.now() - cache.at < CACHE_MS) return cache.models;
 
+  // El catalogo es publico: se pide sin credencial a proposito, para que
+  // listar modelos no dependa de la clave de nadie ni la exponga.
   const res = await fetch(`${BASE}/models`, {
-    headers: openRouterIsConfigured() ? headers() : { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" },
     cache: "no-store",
   });
   if (!res.ok) {
@@ -121,12 +132,18 @@ export async function chat(params: {
   model: string;
   system: string;
   user: string;
+  /**
+   * Clave con la que se cobra esta corrida. Es obligatoria y explicita: cada
+   * quien gasta sus propios creditos, y leerla aqui de una variable global
+   * volveria a hacer que todo el equipo consuma la cuenta de una sola persona.
+   */
+  apiKey: string;
   maxTokens?: number;
   webSearch: boolean;
   maxWebResults?: number;
   signal?: AbortSignal;
 }): Promise<ChatResult> {
-  if (!openRouterIsConfigured()) throw new OpenRouterNotConfigured();
+  if (!params.apiKey) throw new OpenRouterNotConfigured();
 
   const body: Record<string, unknown> = {
     model: params.model,
@@ -146,7 +163,7 @@ export async function chat(params: {
 
   const res = await fetch(`${BASE}/chat/completions`, {
     method: "POST",
-    headers: headers(),
+    headers: headers(params.apiKey),
     body: JSON.stringify(body),
     signal: params.signal,
   });

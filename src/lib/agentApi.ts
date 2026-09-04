@@ -706,6 +706,8 @@ export async function cloneProject(
           colId: f.colId,
           text: f.text,
           position: f.position,
+          hidden: f.hidden,
+          items: f.items,
           verification: f.verification,
           reviewState: f.reviewState,
           origin: f.origin,

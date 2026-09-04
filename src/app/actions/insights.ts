@@ -59,6 +59,7 @@ function refrescar(slug: string) {
 
 export type CampoInsight =
   | "tag"
+  | "color"
   | "statement"
   | "fact"
   | "counterpart"
@@ -72,6 +73,7 @@ export type CampoInsight =
 
 const CAMPOS: CampoInsight[] = [
   "tag",
+  "color",
   "statement",
   "fact",
   "counterpart",
@@ -178,6 +180,12 @@ export async function updateInsight(
 
   if ("statement" in data && !data.statement) {
     throw new Error("El insight necesita su frase. Es lo unico que no puede quedar vacio.");
+  }
+
+  // El color entra como #rrggbb o no entra. Vacio significa "usa la paleta",
+  // asi que un valor invalido se degrada a eso en vez de romper el mapa.
+  if ("color" in data && data.color && !/^#[0-9a-fA-F]{6}$/.test(data.color)) {
+    data.color = "";
   }
 
   await prisma.insight.update({ where: { id: insight.id }, data });

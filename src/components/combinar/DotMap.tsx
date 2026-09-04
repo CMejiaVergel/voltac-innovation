@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import type { TemplateShape } from "@/lib/templates";
-import { DOT_ROLE_META } from "@/lib/enums";
+import { DOT_ROLE_META, colorDeTrazo } from "@/lib/enums";
 import type { InsightVista, Punto } from "./types";
 
 /**
@@ -12,28 +12,17 @@ import type { InsightVista, Punto } from "./types";
  * Las columnas son las cinco DIMENSIONES del negocio, no los lentes. Es una
  * rotacion deliberada del BOM: en Divergir se mira cada dimension desde cinco
  * angulos, y en Combinar se cruza de una dimension a otra. El libro de GIMI
- * llama a esas dimensiones las piezas del rompecabezas —mercado, canal,
- * oferta, capacidades, aliados— y pide una frase que las combine.
+ * llama a esas dimensiones las piezas del rompecabezas.
  *
- * COORDENADAS. Todo se dibuja en un espacio virtual de 1000 unidades de ancho
- * con `viewBox`, en vez de medir el DOM. Medir obligaria a un ResizeObserver y
- * a un primer fotograma con las lineas en el sitio equivocado; asi la posicion
- * de cada punto es la misma cuenta en el servidor y en el cliente, y el trazo
- * nunca aparece descolocado.
- *
- * Conectar dos puntos de la MISMA columna es valido: hay insights que salen de
- * cruzar dos hechos de la misma dimension. Por eso el trazo se dibuja con un
- * desvio lateral cuando origen y destino comparten columna, o seria una linea
- * recta invisible sobre si misma.
+ * POR QUE SE MIDE EL DOM. Las posiciones de los puntos se calculaban antes con
+ * aritmetica pura, para evitar el fotograma en el que las lineas aparecen
+ * descolocadas. Con los textos visibles eso ya no vale: cada punto ocupa un
+ * alto distinto segun cuanto texto tenga, y ninguna formula lo sabe. Se miden
+ * los puntos y se dibujan encima. El fotograma de espera no se nota porque los
+ * trazos entran animados de todas formas.
  */
 
-const ANCHO = 1000;
-const MARGEN_SUP = 54;
-const MARGEN_INF = 26;
-const SEPARACION = 26;
-const RADIO = 6.5;
-
-type Colocado = Punto & { x: number; y: number; color: string };
+type Medida = { x: number; y: number };
 
 export function DotMap({
   shape,
@@ -42,6 +31,7 @@ export function DotMap({
   seleccion,
   onToggle,
   resaltado,
+  mostrarTextos,
 }: {
   shape: TemplateShape;
   puntos: Punto[];
@@ -51,76 +41,101 @@ export function DotMap({
   onToggle: ((fragmentId: string) => void) | null;
   /** Insight cuyo trazo se muestra. null = ninguno; "todos" = todos. */
   resaltado: string | null | "todos";
+  mostrarTextos: boolean;
 }) {
+  const contenedor = useRef<HTMLDivElement>(null);
+  const nodos = useRef(new Map<string, HTMLElement>());
+  const [medidas, setMedidas] = useState<Map<string, Medida>>(new Map());
+  const [caja, setCaja] = useState({ w: 0, h: 0 });
   const [encima, setEncima] = useState<string | null>(null);
 
-  const { colocados, porId, alto } = useMemo(() => {
-    const columnas = shape.rows; // las filas del BOM son las columnas de aqui
-    const anchoCol = ANCHO / columnas.length;
-    const colocados: Colocado[] = [];
-    let maximo = 0;
+  const registrar = useCallback((id: string, el: HTMLElement | null) => {
+    if (el) nodos.current.set(id, el);
+    else nodos.current.delete(id);
+  }, []);
 
-    columnas.forEach((col, i) => {
-      const suyos = puntos.filter((p) => p.rowId === col.id);
-      maximo = Math.max(maximo, suyos.length);
-      suyos.forEach((p, j) => {
-        colocados.push({
-          ...p,
-          x: anchoCol * i + anchoCol / 2,
-          y: MARGEN_SUP + j * SEPARACION,
-          color: col.color,
-        });
-      });
-    });
+  const medir = useCallback(() => {
+    const cont = contenedor.current;
+    if (!cont) return;
+    const base = cont.getBoundingClientRect();
+    const m = new Map<string, Medida>();
+    for (const [id, el] of nodos.current) {
+      const r = el.getBoundingClientRect();
+      m.set(id, { x: r.x - base.x + r.width / 2, y: r.y - base.y + r.height / 2 });
+    }
+    setMedidas(m);
+    setCaja({ w: base.width, h: base.height });
+  }, []);
 
-    return {
-      colocados,
-      porId: new Map(colocados.map((c) => [c.id, c])),
-      alto: MARGEN_SUP + Math.max(maximo - 1, 0) * SEPARACION + MARGEN_INF,
+  // useLayoutEffect y no useEffect: se mide antes de pintar, para que el trazo
+  // no llegue nunca a verse en la posicion equivocada.
+  useLayoutEffect(() => {
+    medir();
+  }, [medir, mostrarTextos, puntos, insights]);
+
+  useEffect(() => {
+    const cont = contenedor.current;
+    if (!cont || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => medir());
+    ro.observe(cont);
+    window.addEventListener("resize", medir);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", medir);
     };
-  }, [shape.rows, puntos]);
+  }, [medir]);
 
-  const anchoCol = ANCHO / shape.rows.length;
+  const visibles = insights.filter(
+    (i) => resaltado === "todos" || (resaltado !== null && i.id === resaltado),
+  );
 
-  /** Trazos a dibujar: los de los insights visibles y el de la seleccion viva. */
-  const trazos = useMemo(() => {
-    const lista: { id: string; puntos: Colocado[]; color: string; vivo: boolean }[] = [];
+  const trazos = visibles
+    .map((ins) => {
+      const coords = [...ins.dots]
+        .sort((a, b) => a.position - b.position)
+        .map((d) => (d.fragmentId ? medidas.get(d.fragmentId) : undefined))
+        .filter((c): c is Medida => Boolean(c));
+      return {
+        id: ins.id,
+        color: colorDeTrazo(ins.color, ins.position),
+        coords,
+        ids: [...ins.dots].sort((a, b) => a.position - b.position).map((d) => d.fragmentId),
+      };
+    })
+    .filter((t) => t.coords.length >= 2);
 
-    if (resaltado === "todos" || resaltado) {
-      for (const ins of insights) {
-        if (resaltado !== "todos" && ins.id !== resaltado) continue;
-        const ordenados = [...ins.dots].sort((a, b) => a.position - b.position);
-        const coords = ordenados
-          .map((d) => (d.fragmentId ? porId.get(d.fragmentId) : undefined))
-          .filter((c): c is Colocado => Boolean(c));
-        if (coords.length >= 2) {
-          lista.push({ id: ins.id, puntos: coords, color: "#E0567F", vivo: false });
-        }
-      }
-    }
+  const enVivo = seleccion.map((id) => medidas.get(id)).filter((c): c is Medida => Boolean(c));
 
-    const enVivo = seleccion
-      .map((id) => porId.get(id))
-      .filter((c): c is Colocado => Boolean(c));
-    if (enVivo.length >= 2) {
-      lista.push({ id: "__seleccion", puntos: enVivo, color: "#6FBFB2", vivo: true });
-    }
-
-    return lista;
-  }, [insights, porId, resaltado, seleccion]);
+  // Que punto pertenece a algun trazo visible, y de que color se ilumina.
+  const iluminados = new Map<string, string>();
+  for (const t of trazos) {
+    for (const id of t.ids) if (id) iluminados.set(id, t.color);
+  }
 
   const enSeleccion = new Set(seleccion);
-  const enTrazo = new Set(trazos.flatMap((t) => t.puntos.map((p) => p.id)));
-  const activo = encima ? porId.get(encima) : null;
+  const hayFoco = seleccion.length > 0 || (resaltado !== "todos" && resaltado !== null);
+  const activo = encima ? puntos.find((p) => p.id === encima) : null;
+  const medidaActiva = encima ? medidas.get(encima) : null;
 
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[680px]">
+      <style>{`
+        @keyframes trazo-dibuja { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+        @keyframes punto-enciende {
+          0%   { opacity: 0; transform: scale(0.2); }
+          60%  { opacity: 1; transform: scale(1.5); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        .trazo-anim { animation: trazo-dibuja 1.1s cubic-bezier(.4,0,.2,1) both; }
+        .halo-anim  { animation: punto-enciende .5s cubic-bezier(.34,1.4,.64,1) both; }
+        @media (prefers-reduced-motion: reduce) {
+          .trazo-anim, .halo-anim { animation: none; }
+        }
+      `}</style>
+
+      <div className={mostrarTextos ? "min-w-[900px]" : "min-w-[620px]"}>
         {/* Cabecera: una franja por dimension, con su color de la plantilla */}
-        <div
-          className="grid gap-[2px] overflow-hidden rounded-t-[5px]"
-          style={{ gridTemplateColumns: `repeat(${shape.rows.length}, minmax(0, 1fr))` }}
-        >
+        <div className="grid gap-[2px] overflow-hidden rounded-t-[5px]" style={cols(shape)}>
           {shape.rows.map((r) => {
             const n = puntos.filter((p) => p.rowId === r.id).length;
             return (
@@ -139,122 +154,143 @@ export function DotMap({
           })}
         </div>
 
-        {/* Lienzo */}
-        <div className="relative rounded-b-[5px] border border-t-0 border-[rgba(232,227,216,0.13)] bg-[rgba(18,24,27,0.6)]">
-          {/* Sin altura fija: el viewBox manda la proporcion y el SVG escala
-              con el ancho. Con una altura en pixeles, preserveAspectRatio
-              dibuja el contenido centrado a escala 1:1 y deja franjas muertas
-              a los lados — los puntos dejan de coincidir con la columna que
-              los encabeza, que es justo lo que este mapa tiene que garantizar. */}
-          <svg
-            viewBox={`0 0 ${ANCHO} ${alto}`}
-            className="block w-full"
-            role="img"
-            aria-label="Mapa de puntos: fragmentos del mapa agrupados por dimension"
-          >
-            {/* Guias verticales, una por dimension */}
-            {shape.rows.map((r, i) => (
-              <line
-                key={r.id}
-                x1={anchoCol * i + anchoCol / 2}
-                x2={anchoCol * i + anchoCol / 2}
-                y1={MARGEN_SUP - 22}
-                y2={alto - 8}
-                stroke="rgba(232,227,216,0.09)"
-                strokeDasharray="3 5"
-              />
-            ))}
+        {/* Lienzo: los puntos son HTML y los trazos un SVG encima */}
+        <div
+          ref={contenedor}
+          className="relative rounded-b-[5px] border border-t-0 border-[rgba(232,227,216,0.13)] bg-[rgba(18,24,27,0.6)] p-3"
+        >
+          <div className="grid gap-[2px]" style={cols(shape)}>
+            {shape.rows.map((col) => (
+              <div key={col.id} className="flex flex-col gap-1">
+                {puntos
+                  .filter((p) => p.rowId === col.id)
+                  .map((p) => {
+                    const marcado = enSeleccion.has(p.id);
+                    const iluminado = iluminados.get(p.id);
+                    const orden = seleccion.indexOf(p.id);
+                    const apagado = hayFoco && !marcado && !iluminado;
+                    return (
+                      <div
+                        key={p.id}
+                        onMouseEnter={() => setEncima(p.id)}
+                        onMouseLeave={() => setEncima((v) => (v === p.id ? null : v))}
+                        onClick={() => onToggle?.(p.id)}
+                        className={`group flex items-start gap-1.5 rounded-[3px] px-1 py-[3px] transition ${
+                          onToggle ? "cursor-pointer hover:bg-[rgba(232,227,216,0.07)]" : ""
+                        } ${apagado ? "opacity-35" : ""}`}
+                      >
+                        <span
+                          ref={(el) => registrar(p.id, el)}
+                          className="relative mt-[3px] grid h-[13px] w-[13px] flex-none place-items-center"
+                        >
+                          {(marcado || iluminado) && (
+                            <span
+                              key={`${iluminado ?? "sel"}-${resaltado}`}
+                              className="halo-anim absolute inset-[-4px] rounded-full"
+                              style={{
+                                background: iluminado ?? "#6FBFB2",
+                                opacity: 0.28,
+                                animationDelay: `${(orden >= 0 ? orden : 0) * 0.12}s`,
+                              }}
+                            />
+                          )}
+                          <span
+                            className="relative block rounded-full transition-all"
+                            style={{
+                              width: marcado ? 12 : 10,
+                              height: marcado ? 12 : 10,
+                              background: col.color,
+                              boxShadow: marcado
+                                ? "0 0 0 1.5px #EDF2F0"
+                                : iluminado
+                                  ? `0 0 0 1.5px ${iluminado}`
+                                  : undefined,
+                            }}
+                          />
+                          {marcado && orden >= 0 && (
+                            <span className="pointer-events-none absolute inset-0 grid place-items-center font-mono text-[8px] font-bold leading-none text-[#12181B]">
+                              {orden + 1}
+                            </span>
+                          )}
+                        </span>
 
-            {/* Trazos. Van debajo de los puntos para no taparlos. */}
-            {trazos.map((t) => (
-              <g key={t.id}>
+                        {mostrarTextos && (
+                          <span className="min-w-0 flex-1 text-[10.5px] leading-[1.35] text-[#a9b5b3] transition group-hover:text-[#e8e3d8]">
+                            {p.text}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            ))}
+          </div>
+
+          {/* Trazos. pointer-events-none: no deben robar el clic a los puntos. */}
+          {caja.w > 0 && (
+            <svg
+              className="pointer-events-none absolute inset-0"
+              width={caja.w}
+              height={caja.h}
+              viewBox={`0 0 ${caja.w} ${caja.h}`}
+              aria-hidden
+            >
+              {trazos.map((t) => (
                 <path
-                  d={rutaDe(t.puntos, anchoCol)}
+                  key={`${t.id}-${resaltado}-${mostrarTextos}`}
+                  d={ruta(t.coords)}
                   fill="none"
                   stroke={t.color}
-                  strokeWidth={t.vivo ? 2.6 : 2}
+                  strokeWidth={2.2}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeDasharray={t.vivo ? "7 5" : undefined}
-                  opacity={t.vivo ? 0.95 : 0.75}
+                  opacity={0.85}
+                  pathLength={1}
+                  strokeDasharray={1}
+                  className="trazo-anim"
                 />
-              </g>
-            ))}
+              ))}
+              {enVivo.length >= 2 && (
+                <path
+                  d={ruta(enVivo)}
+                  fill="none"
+                  stroke="#6FBFB2"
+                  strokeWidth={2.6}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeDasharray="7 5"
+                  opacity={0.95}
+                />
+              )}
+            </svg>
+          )}
 
-            {/* Puntos */}
-            {colocados.map((p) => {
-              const marcado = enSeleccion.has(p.id);
-              const trazado = enTrazo.has(p.id);
-              const orden = seleccion.indexOf(p.id);
-              return (
-                <g
-                  key={p.id}
-                  onMouseEnter={() => setEncima(p.id)}
-                  onMouseLeave={() => setEncima((v) => (v === p.id ? null : v))}
-                  onClick={() => onToggle?.(p.id)}
-                  className={onToggle ? "cursor-pointer" : "cursor-default"}
-                >
-                  {/* Zona de contacto generosa: los puntos son pequeños */}
-                  <circle cx={p.x} cy={p.y} r={13} fill="transparent" />
-                  {(marcado || trazado) && (
-                    <circle cx={p.x} cy={p.y} r={RADIO + 5} fill={p.color} opacity={0.22} />
-                  )}
-                  <circle
-                    cx={p.x}
-                    cy={p.y}
-                    r={marcado ? RADIO + 1.5 : RADIO}
-                    fill={p.color}
-                    opacity={marcado || trazado || !seleccion.length ? 1 : 0.42}
-                    stroke={marcado ? "#EDF2F0" : "transparent"}
-                    strokeWidth={1.6}
-                  />
-                  {marcado && orden >= 0 && (
-                    <text
-                      x={p.x}
-                      y={p.y + 3.4}
-                      textAnchor="middle"
-                      className="pointer-events-none select-none"
-                      style={{ fontSize: 9, fontWeight: 700, fill: "#12181B" }}
-                    >
-                      {orden + 1}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-          </svg>
-
-          {/* Ficha del punto bajo el cursor. Se posiciona con los mismos
-              numeros que el SVG, en porcentaje, asi no hay que medir nada. */}
-          {activo && (
+          {/* Ficha del punto bajo el cursor */}
+          {activo && medidaActiva && (
             <div
-              className="pointer-events-none absolute z-10 w-[248px] rounded-[5px] border border-[rgba(232,227,216,0.2)] bg-[#1b2225] p-3 shadow-xl"
+              className="pointer-events-none absolute z-10 w-[250px] rounded-[5px] border border-[rgba(232,227,216,0.2)] bg-[#1b2225] p-3 shadow-xl"
               style={{
-                left: `${(activo.x / ANCHO) * 100}%`,
-                top: `${(activo.y / alto) * 100}%`,
-                transform: `translate(${activo.x > ANCHO * 0.66 ? "-108%" : "8%"}, -50%)`,
+                left: medidaActiva.x,
+                top: medidaActiva.y,
+                transform: `translate(${medidaActiva.x > caja.w * 0.6 ? "-106%" : "14px"}, -50%)`,
               }}
             >
               <p className="text-[12px] leading-snug text-[#e8e3d8]">{activo.text}</p>
               <p className="mt-2 flex items-center gap-2 border-t border-[rgba(232,227,216,0.12)] pt-2 font-mono text-[9.5px] uppercase tracking-[0.07em] text-[#8b9a97]">
                 <span
                   className="inline-block h-2 w-2 rounded-full"
-                  style={{ background: activo.color }}
+                  style={{ background: shape.rows.find((r) => r.id === activo.rowId)?.color }}
                 />
-                {nombreFila(shape, activo.rowId)} · {nombreCol(shape, activo.colId)}
+                {nombre(shape.rows, activo.rowId)} · {nombre(shape.cols, activo.colId)}
               </p>
             </div>
           )}
         </div>
 
-        {/* Leyenda de los papeles de un punto */}
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 font-mono text-[10px] text-[#5e7370]">
           {Object.entries(DOT_ROLE_META).map(([k, m]) => (
             <span key={k} className="inline-flex items-center gap-1.5" title={m.help}>
-              <span
-                className="inline-block h-2 w-2 rounded-full"
-                style={{ background: m.color }}
-              />
+              <span className="inline-block h-2 w-2 rounded-full" style={{ background: m.color }} />
               {m.label}
             </span>
           ))}
@@ -264,33 +300,33 @@ export function DotMap({
   );
 }
 
+function cols(shape: TemplateShape) {
+  return { gridTemplateColumns: `repeat(${shape.rows.length}, minmax(0, 1fr))` };
+}
+
+function nombre(lista: { id: string; name: string }[], id: string) {
+  return lista.find((x) => x.id === id)?.name ?? id;
+}
+
 /**
  * Traza el recorrido entre puntos.
  *
- * Dos puntos de la misma columna quedarian unidos por una recta vertical que
- * se confunde con la guia de la columna, asi que ese tramo se dibuja como una
- * curva que se abre hacia un lado. Sigue siendo el mismo recorrido, pero se ve.
+ * Dos puntos de la misma columna quedarian unidos por una recta vertical que se
+ * confunde con la propia columna, asi que ese tramo se abre en curva hacia un
+ * lado. Sigue siendo el mismo recorrido, pero se ve.
  */
-function rutaDe(puntos: { x: number; y: number }[], anchoCol: number): string {
+function ruta(puntos: Medida[]): string {
   if (puntos.length === 0) return "";
   let d = `M ${puntos[0].x} ${puntos[0].y}`;
   for (let i = 1; i < puntos.length; i++) {
     const a = puntos[i - 1];
     const b = puntos[i];
-    if (a.x === b.x) {
-      const desvio = anchoCol * 0.28;
-      const medio = (a.y + b.y) / 2;
-      d += ` Q ${a.x + desvio} ${medio} ${b.x} ${b.y}`;
+    if (Math.abs(a.x - b.x) < 2) {
+      const desvio = Math.max(26, Math.abs(b.y - a.y) * 0.22);
+      d += ` Q ${a.x + desvio} ${(a.y + b.y) / 2} ${b.x} ${b.y}`;
     } else {
       d += ` L ${b.x} ${b.y}`;
     }
   }
   return d;
-}
-
-function nombreFila(shape: TemplateShape, id: string) {
-  return shape.rows.find((r) => r.id === id)?.name ?? id;
-}
-function nombreCol(shape: TemplateShape, id: string) {
-  return shape.cols.find((c) => c.id === id)?.name ?? id;
 }

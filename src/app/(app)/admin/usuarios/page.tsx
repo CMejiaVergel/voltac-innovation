@@ -1,6 +1,11 @@
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { createUser, resetUserPassword, setUserActive } from "@/app/actions/projects";
+import {
+  createUser,
+  resetUserPassword,
+  setUserActive,
+  setPermisoClaveInstancia,
+} from "@/app/actions/projects";
 
 export const metadata = { title: "Usuarios — Voltac Innovacion" };
 
@@ -57,6 +62,7 @@ export default async function UsersPage() {
         {users.map((u) => {
           const toggle = setUserActive.bind(null, u.id, !u.active);
           const reset = resetUserPassword.bind(null, u.id);
+          const permiso = setPermisoClaveInstancia.bind(null, u.id, !u.usaClaveInstancia);
           return (
             <li
               key={u.id}
@@ -75,16 +81,56 @@ export default async function UsersPage() {
                     inactivo
                   </span>
                 )}
+                {u.openrouterKey ? (
+                  <span
+                    title="Tiene su propia clave de OpenRouter: gasta sus creditos."
+                    className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-accent"
+                  >
+                    clave propia {u.openrouterHint}
+                  </span>
+                ) : u.usaClaveInstancia ? (
+                  <span
+                    title="Sin clave propia, pero puede gastar la del servidor."
+                    className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[#c9a94e]"
+                  >
+                    usa la del servidor
+                  </span>
+                ) : (
+                  <span
+                    title="Sin clave: el agente no correra para esta persona."
+                    className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[#5e7370]"
+                  >
+                    sin clave
+                  </span>
+                )}
                 <span className="flex-1" />
                 <span className="font-mono text-[10px] text-[#4d5a58]">
                   {u._count.memberships} proyecto{u._count.memberships === 1 ? "" : "s"}
                 </span>
                 {u.id !== admin.id && (
-                  <form action={toggle}>
-                    <button type="submit" className={`btn ${u.active ? "btn-danger" : ""}`}>
-                      {u.active ? "Desactivar" : "Reactivar"}
-                    </button>
-                  </form>
+                  <>
+                    {/* Da o quita el permiso de gastar la clave del servidor.
+                        Sin clave propia y sin este permiso, el agente no corre
+                        para esa persona — que es el comportamiento buscado. */}
+                    <form action={permiso}>
+                      <button
+                        type="submit"
+                        className="btn"
+                        title={
+                          u.usaClaveInstancia
+                            ? "Dejar de permitirle gastar la clave del servidor."
+                            : "Permitirle gastar la clave del servidor en vez de la suya."
+                        }
+                      >
+                        {u.usaClaveInstancia ? "Quitar clave del servidor" : "Dar clave del servidor"}
+                      </button>
+                    </form>
+                    <form action={toggle}>
+                      <button type="submit" className={`btn ${u.active ? "btn-danger" : ""}`}>
+                        {u.active ? "Desactivar" : "Reactivar"}
+                      </button>
+                    </form>
+                  </>
                 )}
               </div>
 

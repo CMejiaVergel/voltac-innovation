@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 
-import { DOT_ROLE_META, DOTS_RECOMENDADO, type DotRole } from "@/lib/enums";
+import { DOT_ROLE_META, DOTS_RECOMENDADO, colorDeTrazo, type DotRole } from "@/lib/enums";
 import type { TemplateShape } from "@/lib/templates";
 import {
   addIdea,
@@ -49,21 +49,26 @@ const CAMPOS: { campo: CampoInsight; label: string; ayuda: string }[] = [
 
 export function InsightCard({
   insight,
+  numero,
   shape,
   editable,
-  activo,
-  onVerTrazo,
+  resaltado,
 }: {
   insight: InsightVista;
+  /** Posicion en el tablero, 1..n. Es su nombre: "Insight 3". */
+  numero: number;
   shape: TemplateShape;
   editable: boolean;
-  activo: boolean;
-  onVerTrazo: () => void;
+  /** Su trazo es el unico visible en el mapa ahora mismo. */
+  resaltado: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [abierto, setAbierto] = useState(false);
+  const [editandoFrase, setEditandoFrase] = useState(false);
   const [ideaNueva, setIdeaNueva] = useState("");
+
+  const color = colorDeTrazo(insight.color, insight.position);
 
   const propuesta = insight.reviewState === "PROPOSED";
   const faltaContraparte = !insight.counterpart.trim();
@@ -88,25 +93,43 @@ export function InsightCard({
 
   return (
     <article
-      className={`panel flex flex-col gap-4 transition ${
-        propuesta ? "border-[rgba(224,86,127,0.45)]" : ""
-      } ${activo ? "ring-1 ring-[rgba(224,86,127,0.5)]" : ""}`}
+      className="panel flex flex-col gap-4 transition"
+      style={{
+        // La franja del color del trazo es lo que ata la ficha con su
+        // recorrido en el mapa: sin ella, con seis trazos encima, no hay forma
+        // de saber cual es cual.
+        borderLeft: `3px solid ${color}`,
+        boxShadow: resaltado ? `0 0 0 1px ${color}` : undefined,
+      }}
     >
       {/* ── Cabecera ───────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
-        {editable ? (
-          <input
-            defaultValue={insight.tag}
-            onBlur={(e) => guardarCampo("tag", e.target.value)}
-            placeholder="etiqueta"
-            className="w-[130px] rounded-[3px] border border-transparent bg-transparent px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[#e0567f] outline-none hover:border-[rgba(232,227,216,0.2)] focus:border-[rgba(232,227,216,0.35)]"
-          />
-        ) : (
-          insight.tag && (
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#e0567f]">
-              {insight.tag}
-            </span>
-          )
+        <span
+          className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em]"
+          style={{ color }}
+        >
+          Insight {numero}
+        </span>
+
+        {editable && (
+          <label
+            className="relative grid h-[18px] w-[18px] cursor-pointer place-items-center rounded-full transition hover:bg-[rgba(232,227,216,0.1)]"
+            title="Color del trazo en el mapa"
+          >
+            <span
+              className="block h-[11px] w-[11px] rounded-full ring-1 ring-[rgba(232,227,216,0.35)]"
+              style={{ background: color }}
+            />
+            {/* El input nativo abre el selector del sistema y queda invisible
+                encima: no hay que reimplementar una rueda de color. */}
+            <input
+              type="color"
+              value={color}
+              onChange={(e) => guardarCampo("color", e.target.value)}
+              className="absolute inset-0 cursor-pointer opacity-0"
+              aria-label={`Color del trazo del insight ${numero}`}
+            />
+          </label>
         )}
 
         {propuesta && (
@@ -117,26 +140,34 @@ export function InsightCard({
 
         <span className="flex-1" />
 
-        <button
-          type="button"
-          onClick={onVerTrazo}
-          className="font-mono text-[10px] uppercase tracking-wider text-[#7d8a88] transition hover:text-accent"
-        >
-          {activo ? "trazo visible" : "ver trazo"}
-        </button>
+        {editable && (
+          <button
+            type="button"
+            onClick={() => setEditandoFrase((v) => !v)}
+            className="rounded-[3px] border border-[rgba(232,227,216,0.18)] px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-wider text-[#8b9a97] transition hover:border-[rgba(111,191,178,0.5)] hover:text-accent"
+          >
+            {editandoFrase ? "listo" : "editar"}
+          </button>
+        )}
       </div>
 
       {/* ── La frase ───────────────────────────────────────────────────── */}
-      {editable ? (
+      {editable && editandoFrase ? (
         <textarea
+          autoFocus
           defaultValue={insight.statement}
-          onBlur={(e) => guardarCampo("statement", e.target.value)}
-          rows={4}
-          placeholder="La frase concluyente. Debe poder leerse sola: un hecho con cifra, y la contraparte de mercado que ya actuo."
-          className="w-full resize-y rounded-[4px] border border-transparent bg-[rgba(232,227,216,0.04)] p-3 text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[#e8e3d8] outline-none transition hover:border-[rgba(232,227,216,0.18)] focus:border-[rgba(111,191,178,0.5)]"
+          onBlur={(e) => {
+            guardarCampo("statement", e.target.value);
+            setEditandoFrase(false);
+          }}
+          rows={8}
+          placeholder="La frase concluyente. Debe leerse sola: un hecho con cifra, un conector causal, la conducta de mercado ya observada, la concesion y el porque."
+          className="w-full resize-y rounded-[4px] border border-[rgba(111,191,178,0.5)] bg-[rgba(232,227,216,0.04)] p-3 text-[15px] leading-relaxed text-[#e8e3d8] outline-none"
         />
       ) : (
-        <p className="text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[#e8e3d8]">
+        /* Se lee mucho mas de lo que se edita, asi que por defecto es texto y
+           no un campo: cuerpo grande, interlineado amplio y ancho de lectura. */
+        <p className="max-w-[62ch] text-[16.5px] leading-[1.5] text-[#e8e3d8]">
           {insight.statement}
         </p>
       )}

@@ -58,6 +58,7 @@ export default async function CombinarPage({ params }: { params: Promise<{ slug:
   const insights: InsightVista[] = filas.map((i) => ({
     id: i.id,
     tag: i.tag,
+    color: i.color,
     statement: i.statement,
     fact: i.fact,
     counterpart: i.counterpart,

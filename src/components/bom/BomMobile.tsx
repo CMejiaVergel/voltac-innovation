@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { TemplateShape } from "@/lib/templates";
 import { THIN_CELL_THRESHOLD } from "@/lib/gimi";
 import { VERIFICATION_META, VERIFICATIONS, type Verification } from "@/lib/enums";
+import { itemsDeFila, colorDeItem } from "@/lib/templates";
 import type { BoardFragment } from "./types";
 
 /**
@@ -32,6 +33,7 @@ export function BomMobile({
   onEditText,
   onSetVerification,
   onSetHidden,
+  onSetItems,
   onDelete,
   onReview,
   onMove,
@@ -47,6 +49,7 @@ export function BomMobile({
   onEditText: (id: string, text: string) => void;
   onSetVerification: (id: string, v: Verification) => void;
   onSetHidden: (id: string, hidden: boolean) => void;
+  onSetItems: (id: string, items: number[]) => void;
   onDelete: (id: string) => void;
   onReview: (id: string, decision: "ACCEPT" | "REJECT") => void;
   onMove: (id: string, rowId: string, colId: string) => void;
@@ -110,7 +113,17 @@ export function BomMobile({
                 <h3 className="text-[15px] font-bold leading-none tracking-[-0.02em]">
                   {row.name}
                 </h3>
-                <span className="text-[10px] leading-tight text-white/75">{row.facets}</span>
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] leading-tight text-white/80">
+                  {itemsDeFila(row.facets).map((nombre, i) => (
+                    <span key={nombre} className="inline-flex items-center gap-1">
+                      <span
+                        className="h-[6px] w-[6px] rounded-full ring-1 ring-white/50"
+                        style={{ background: colorDeItem(i) }}
+                      />
+                      {nombre}
+                    </span>
+                  ))}
+                </span>
                 <span className="flex-1" />
                 <span className="font-mono text-[10px] text-white/70">{accepted}</span>
               </header>
@@ -126,6 +139,7 @@ export function BomMobile({
                   <MobileNote
                     key={f.id}
                     fragment={f}
+                    facetas={itemsDeFila(row.facets)}
                     shape={shape}
                     editable={editable}
                     showVerification={showVerification}
@@ -134,6 +148,7 @@ export function BomMobile({
                     onEditText={onEditText}
                     onSetVerification={onSetVerification}
                     onSetHidden={onSetHidden}
+                    onSetItems={onSetItems}
                     onDelete={onDelete}
                     onReview={onReview}
                     onMove={onMove}
@@ -162,6 +177,7 @@ export function BomMobile({
 
 function MobileNote({
   fragment,
+  facetas,
   shape,
   editable,
   showVerification,
@@ -170,11 +186,13 @@ function MobileNote({
   onEditText,
   onSetVerification,
   onSetHidden,
+  onSetItems,
   onDelete,
   onReview,
   onMove,
 }: {
   fragment: BoardFragment;
+  facetas: string[];
   shape: TemplateShape;
   editable: boolean;
   showVerification: boolean;
@@ -183,6 +201,7 @@ function MobileNote({
   onEditText: (id: string, text: string) => void;
   onSetVerification: (id: string, v: Verification) => void;
   onSetHidden: (id: string, hidden: boolean) => void;
+  onSetItems: (id: string, items: number[]) => void;
   onDelete: (id: string) => void;
   onReview: (id: string, decision: "ACCEPT" | "REJECT") => void;
   onMove: (id: string, rowId: string, colId: string) => void;
@@ -302,6 +321,48 @@ function MobileNote({
               ))}
             </select>
           </label>
+
+          {facetas.length > 0 && (
+            <div>
+              <span className="font-ui text-[10px] uppercase tracking-[0.12em] text-noteInk/60">
+                Items de esta dimension
+              </span>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {facetas.map((nombre, i) => {
+                  const activo = fragment.items.includes(i);
+                  return (
+                    <button
+                      key={nombre}
+                      type="button"
+                      onClick={() =>
+                        onSetItems(
+                          fragment.id,
+                          activo
+                            ? fragment.items.filter((x) => x !== i)
+                            : [...fragment.items, i],
+                        )
+                      }
+                      className="inline-flex items-center gap-1.5 rounded-[3px] border px-2 py-1 font-ui text-[11px] transition"
+                      style={{
+                        borderColor: activo ? colorDeItem(i) : "rgba(0,0,0,0.15)",
+                        background: activo ? `${colorDeItem(i)}1f` : "transparent",
+                        color: "#2b2b2b",
+                      }}
+                    >
+                      <span
+                        className="block h-2 w-2 rounded-full"
+                        style={{
+                          background: activo ? colorDeItem(i) : "transparent",
+                          boxShadow: activo ? "none" : `inset 0 0 0 1.2px ${colorDeItem(i)}66`,
+                        }}
+                      />
+                      {nombre}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <button
             type="button"

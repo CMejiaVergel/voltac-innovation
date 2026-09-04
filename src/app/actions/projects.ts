@@ -10,6 +10,7 @@ import { getProjectRole, uniqueSlug } from "@/lib/projects";
 import { startResearchRun } from "@/lib/agent/run";
 import { cloneProject } from "@/lib/agentApi";
 import { restaurarRespaldo } from "@/lib/backup";
+import { cifrar, pistaDe, pareceClaveOpenRouter } from "@/lib/secretos";
 import type { AgentScope } from "@/lib/agent/prompt";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -504,4 +505,67 @@ export async function resetUserPassword(userId: string, formData: FormData): Pro
   // Cerrar sesiones abiertas: si se cambio la clave, las cookies viejas mueren.
   await prisma.session.deleteMany({ where: { userId } });
   revalidatePath("/admin/usuarios");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Clave de OpenRouter de cada persona
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Guarda la clave de OpenRouter de quien la envia.
+ *
+ * Se cifra antes de tocar la base y NUNCA vuelve al navegador: la interfaz solo
+ * recibe una pista con los ultimos cuatro caracteres. Nadie puede poner la
+ * clave de otra persona — el usuario sale de la sesion, no del formulario.
+ */
+export async function guardarClaveOpenRouter(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const clave = String(formData.get("clave") ?? "").trim();
+
+  if (!clave) throw new Error("Pega tu clave de OpenRouter.");
+  if (!pareceClaveOpenRouter(clave)) {
+    throw new Error(
+      "Eso no parece una clave de OpenRouter. Empiezan por «sk-or-v1-». La consigues en openrouter.ai/keys.",
+    );
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { openrouterKey: cifrar(clave), openrouterHint: pistaDe(clave) },
+  });
+
+  revalidatePath("/cuenta");
+}
+
+/** Borra la clave guardada. A partir de ahi el agente deja de correr. */
+export async function borrarClaveOpenRouter(): Promise<void> {
+  const user = await requireUser();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { openrouterKey: "", openrouterHint: "" },
+  });
+  revalidatePath("/cuenta");
+}
+
+/**
+ * Da o quita a alguien el permiso de gastar la clave del servidor.
+ *
+ * Solo un ADMIN de la plataforma, y nunca sobre si mismo: quitarse el permiso
+ * por accidente dejaria la instancia sin nadie que pueda concederlo de vuelta
+ * desde la interfaz.
+ */
+export async function setPermisoClaveInstancia(
+  userId: string,
+  permitir: boolean,
+): Promise<void> {
+  const admin = await requireAdmin();
+  if (userId === admin.id) {
+    throw new Error("No puedes cambiarte a ti mismo el permiso sobre la clave del servidor.");
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { usaClaveInstancia: permitir },
+  });
+  revalidatePath("/administracion");
 }

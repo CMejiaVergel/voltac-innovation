@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useEffect, useRef, useState } from "react";
 
 import { VERIFICATION_META, VERIFICATIONS, type Verification } from "@/lib/enums";
+import { colorDeItem } from "@/lib/templates";
 import type { BoardFragment } from "./types";
 
 /**
@@ -20,22 +21,27 @@ import type { BoardFragment } from "./types";
  */
 export function Note({
   fragment,
+  items,
   editable,
   showVerification,
   showSource,
   showOrigin,
   onEditText,
+  onSetItems,
   onSetVerification,
   onSetHidden,
   onDelete,
   onReview,
 }: {
   fragment: BoardFragment;
+  /** Facetas de la fila a la que pertenece este post-it. */
+  items: string[];
   editable: boolean;
   showVerification: boolean;
   showSource: boolean;
   showOrigin: boolean;
   onEditText: (id: string, text: string) => void;
+  onSetItems: (id: string, items: number[]) => void;
   onSetVerification: (id: string, v: Verification) => void;
   onSetHidden: (id: string, hidden: boolean) => void;
   onDelete: (id: string) => void;
@@ -114,6 +120,53 @@ export function Note({
       >
         {fragment.text}
       </div>
+
+      {/* ── Items de la dimension ──────────────────────────────────────────
+          Un fragmento casi siempre habla de una faceta concreta de su fila:
+          "Clientes" y no "Mercado" en general. Marcarlo deja ver de un vistazo
+          si una dimension esta llena pero apilada en una sola faceta, que es un
+          punto ciego que el conteo por celda no revela. */}
+      {items.length > 0 && (
+        <div className="mt-1.5 flex items-center gap-1">
+          {items.map((nombre, i) => {
+            const activo = fragment.items.includes(i);
+            const color = colorDeItem(i);
+            return (
+              <button
+                key={nombre}
+                type="button"
+                disabled={!editable}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSetItems(
+                    fragment.id,
+                    activo
+                      ? fragment.items.filter((x) => x !== i)
+                      : [...fragment.items, i],
+                  );
+                }}
+                title={`${nombre}${editable ? (activo ? " · quitar" : " · marcar") : ""}`}
+                aria-pressed={activo}
+                aria-label={nombre}
+                className="grid h-[13px] w-[13px] place-items-center disabled:cursor-default"
+              >
+                <span
+                  className="block rounded-full transition-all"
+                  style={{
+                    width: activo ? 8 : 6,
+                    height: activo ? 8 : 6,
+                    background: activo ? color : "transparent",
+                    // Sin marcar queda el contorno: se ve que la faceta existe
+                    // y esta libre, en vez de desaparecer del post-it.
+                    boxShadow: activo ? "none" : `inset 0 0 0 1.2px ${color}66`,
+                  }}
+                />
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── Pie del post-it ────────────────────────────────────────────────── */}
       <div className="mt-1 flex items-center gap-1.5">

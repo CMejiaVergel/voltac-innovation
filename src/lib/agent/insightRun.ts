@@ -12,6 +12,7 @@ import {
   type PuntoDisponible,
 } from "@/lib/agent/insightPrompt";
 import { parseShape } from "@/lib/templates";
+import { claveDelAgente } from "@/lib/claveAgente";
 
 /**
  * Genera insights con el modelo, sobre los fragmentos que el equipo ya acepto.
@@ -66,8 +67,11 @@ export async function generateInsights(params: {
     select: { statement: true },
   });
 
+  const { clave } = await claveDelAgente(params.userId);
+
   const completion = await chat({
     model: resolveModel(project.agentModel),
+    apiKey: clave,
     system: buildInsightSystemPrompt(shape),
     user: buildInsightUserPrompt(
       project,
