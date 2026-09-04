@@ -9,7 +9,7 @@ import {
   OpenRouterNotConfigured,
 } from "@/lib/agent/openrouter";
 import { claveDelAgente } from "@/lib/claveAgente";
-import { parseShape, isValidCoord } from "@/lib/templates";
+import { parseShape, isValidCoord, itemsDeFila } from "@/lib/templates";
 import { buildSystemPrompt, buildUserPrompt, type AgentScope } from "@/lib/agent/prompt";
 import { parseAgentOutput, type AgentFragment } from "@/lib/agent/schema";
 
@@ -180,6 +180,15 @@ async function executeRun(runId: string): Promise<void> {
         colId: frag.columna,
         text: frag.texto.trim(),
         position,
+        // Los indices se filtran contra la fila: uno fuera de rango pintaria
+        // un punto de color que no corresponde a ninguna faceta. Se descarta
+        // el indice, no el fragmento: el texto vale aunque la clasificacion
+        // venga mal.
+        items: JSON.stringify(
+          [...new Set(frag.items ?? [])]
+            .filter((n) => n < itemsDeFila(shape.rows.find((r) => r.id === frag.fila)!.facets).length)
+            .sort((a, b) => a - b),
+        ),
         // Si dice VERIFIED sin identificar contra que, se degrada. Vale una
         // URL o una cita documental: lo que no vale es afirmar verificacion a
         // secas. La disciplina la impone el codigo, no la buena voluntad del

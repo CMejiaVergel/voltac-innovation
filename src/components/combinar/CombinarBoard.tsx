@@ -75,11 +75,13 @@ export function CombinarBoard({ slug, shape, puntos, insights, editable }: Combi
                   setSeleccion([]);
                   setError(null);
                   if (m === "conectar") {
-                    setResaltado(null);
                     // Al conectar hay que LEER para decidir: los textos se
-                    // encienden solos, que era el trabajo tedioso de antes.
+                    // encienden solos, que era el trabajo tedioso de antes, y
+                    // los trazos se apagan para no taparlos.
                     setMostrarTextos(true);
+                    setResaltado(null);
                   } else {
+                    setMostrarTextos(false);
                     setResaltado("todos");
                   }
                 }}
@@ -101,7 +103,16 @@ export function CombinarBoard({ slug, shape, puntos, insights, editable }: Combi
 
         <button
           type="button"
-          onClick={() => setMostrarTextos((v) => !v)}
+          onClick={() =>
+            setMostrarTextos((v) => {
+              // Encender los textos apaga los trazos, y apagarlos los devuelve.
+              // Con los dos a la vez las lineas cruzan por encima de la letra y
+              // no se lee ninguna de las dos cosas. Los chips siguen mandando:
+              // si se quiere ver un trazo con los textos puestos, se elige.
+              setResaltado(v ? "todos" : null);
+              return !v;
+            })
+          }
           className={`rounded-[4px] border px-3 py-1.5 text-[12px] transition ${
             mostrarTextos
               ? "border-[rgba(111,191,178,0.6)] text-accent"

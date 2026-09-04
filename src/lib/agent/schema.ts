@@ -15,6 +15,10 @@ export const AgentFragmentSchema = z.object({
   columna: z.string().min(1),
   /** La observacion cruda. Una sola idea. */
   texto: z.string().min(8).max(400),
+  /** Indices de los items de la fila a los que pertenece. Se validan contra la
+   *  plantilla al aplicar: un indice fuera de rango pintaria un punto de color
+   *  que no corresponde a ninguna faceta. */
+  items: z.array(z.number().int().min(0).max(9)).max(6).optional().default([]),
   verificacion: z.enum(["VERIFIED", "TO_CONFIRM", "ASSUMPTION"]),
   /** Obligatorio cuando verificacion es VERIFIED. */
   fuenteUrl: z.string().max(600).optional().nullable(),

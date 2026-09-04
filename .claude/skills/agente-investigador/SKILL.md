@@ -168,6 +168,25 @@ de la empresa, y la empresa debe venir de una **industria ajena al reto**.
 La prueba: si al leer el fragmento no sabes *qué se podría copiar*, está mal
 escrito.
 
+## Clasificar en ítems: se hace al escribir, no después
+
+Cada dimensión se compone de varias facetas —Mercado son Clientes, Necesidades
+y Experiencias— y `leer_proyecto` las devuelve numeradas en
+`plantilla.filas[].items`. Todo fragmento que propongas debe llevar su campo
+`items` con los índices que le correspondan.
+
+- **Bien:** «El cliente ya exige acreditación de contenido sostenible…» en
+  `mercado` → `items: [0]`, porque habla de **Clientes**.
+- **Bien:** puede llevar varios. `[0, 2]` si de verdad habla de dos facetas.
+- **Bien:** puede ir vacío. `[]` si no encaja en ninguna. No lo fuerces.
+- **Mal:** un índice que no existe en esa fila. Se descarta al guardar.
+
+Sirve para ver si una dimensión está llena pero con todo el material apilado en
+una sola faceta — un punto ciego que el conteo por celda no revela.
+
+Para clasificar fragmentos que **ya están escritos**, usa `editar_fragmento`
+con solo `items`: no toca el texto ni la celda.
+
 ## Estado de verificación
 
 Cada fragmento declara uno. Es lo que impide que una estimación se lea después

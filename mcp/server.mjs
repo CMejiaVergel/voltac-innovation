@@ -99,6 +99,12 @@ const TOOLS = [
               fila: { type: "string", description: "id de fila de la plantilla, ej. mercado" },
               columna: { type: "string", description: "id de columna, ej. adyac" },
               texto: { type: "string", description: "La observacion. Max 25 palabras." },
+              items: {
+                type: "array",
+                items: { type: "integer" },
+                description:
+                  "Indices de los items de esa fila a los que pertenece el fragmento; leer_proyecto los lista en plantilla.filas[].items. Un fragmento casi siempre habla de una faceta concreta —'el cliente exige acreditacion' es Clientes, no Mercado en general—. Puede llevar varios, o ninguno si de verdad no encaja. No inventes indices.",
+              },
               verificacion: {
                 type: "string",
                 enum: ["VERIFIED", "TO_CONFIRM", "ASSUMPTION"],
@@ -132,6 +138,12 @@ const TOOLS = [
         texto: { type: "string" },
         fila: { type: "string" },
         columna: { type: "string" },
+        items: {
+          type: "array",
+          items: { type: "integer" },
+          description:
+            "Indices de los items de la fila. Sirve para clasificar fragmentos que ya estan escritos sin tocar su texto.",
+        },
         verificacion: { type: "string", enum: ["VERIFIED", "TO_CONFIRM", "ASSUMPTION"] },
         estado: { type: "string", enum: ["ACCEPTED", "PROPOSED", "REJECTED"] },
         fuenteUrl: { type: "string" },

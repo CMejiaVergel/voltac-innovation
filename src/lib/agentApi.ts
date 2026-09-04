@@ -3,7 +3,13 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { canEdit, asEnum, VERIFICATIONS, REVIEW_STATES } from "@/lib/enums";
 import { getProjectRole, slugify } from "@/lib/projects";
-import { parseShape, isValidCoord, type TemplateShape } from "@/lib/templates";
+import {
+  parseShape,
+  isValidCoord,
+  itemsDeFila,
+  parseItems,
+  type TemplateShape,
+} from "@/lib/templates";
 import type { SessionUser } from "@/lib/auth";
 
 /**
@@ -142,7 +148,13 @@ export async function getProjectContext(user: SessionUser, slug: string) {
     },
     plantilla: {
       key: map.template.key,
-      filas: shape.rows.map((r) => ({ id: r.id, nombre: r.name, facetas: r.facets })),
+      filas: shape.rows.map((r) => ({
+        id: r.id,
+        nombre: r.name,
+        facetas: r.facets,
+        // Numerados: es el indice lo que se escribe en `items`, no el nombre.
+        items: itemsDeFila(r.facets),
+      })),
       columnas: shape.cols.map((c) => ({
         id: c.id,
         nombre: c.name,
@@ -165,6 +177,7 @@ export async function getProjectContext(user: SessionUser, slug: string) {
       fila: f.rowId,
       columna: f.colId,
       texto: f.text,
+      items: parseItems(f.items),
       verificacion: f.verification,
       estado: f.reviewState,
       origen: f.origin,
@@ -210,6 +223,8 @@ export type IncomingFragment = {
   fila: string;
   columna: string;
   texto: string;
+  /** Indices de los items de la fila a los que pertenece el fragmento. */
+  items?: number[];
   verificacion?: string;
   fuenteUrl?: string | null;
   fuenteCita?: string | null;
@@ -223,6 +238,21 @@ export type IncomingFragment = {
  * puede pedir ACCEPTED de forma explicita para trabajos de curaduria donde la
  * revision ya ocurrio fuera de la aplicacion.
  */
+/** Deja solo los indices que existen de verdad en esa fila. */
+function filtrarItems(
+  shape: TemplateShape,
+  filaId: string,
+  items: number[] | undefined,
+): number[] {
+  if (!items?.length) return [];
+  const fila = shape.rows.find((r) => r.id === filaId);
+  if (!fila) return [];
+  const cuantos = itemsDeFila(fila.facets).length;
+  return [...new Set(items)]
+    .filter((n) => Number.isInteger(n) && n >= 0 && n < cuantos)
+    .sort((a, b) => a - b);
+}
+
 export async function createFragments(
   user: SessionUser,
   slug: string,
@@ -281,6 +311,12 @@ export async function createFragments(
     const conFuente = Boolean(item.fuenteUrl?.trim() || item.fuenteCita?.trim());
     const verificacion = pedida === "VERIFIED" && !conFuente ? "TO_CONFIRM" : pedida;
 
+    // Los items se validan contra la fila: un indice fuera de rango pintaria
+    // un punto de color que no corresponde a ninguna faceta. Se descartan los
+    // invalidos en vez de rechazar el fragmento — el texto sigue valiendo
+    // aunque la clasificacion venga mal.
+    const itemsValidos = filtrarItems(shape, item.fila, item.items);
+
     const created = await prisma.fragment.create({
       data: {
         mapId: map.id,
@@ -288,6 +324,7 @@ export async function createFragments(
         colId: item.columna,
         text: texto,
         position,
+        items: JSON.stringify(itemsValidos),
         verification: verificacion,
         reviewState: asEnum(REVIEW_STATES, estado, "PROPOSED"),
         origin: "AGENT",
@@ -329,6 +366,8 @@ export async function updateFragment(
     texto?: string;
     fila?: string;
     columna?: string;
+    /** Indices de los items de la fila. Se validan contra la fila DESTINO. */
+    items?: number[];
     verificacion?: string;
     estado?: string;
     fuenteUrl?: string | null;
@@ -361,6 +400,11 @@ export async function updateFragment(
       text: texto,
       rowId,
       colId,
+      // Contra la fila destino, no la de origen: al mover un fragmento de
+      // dimension, sus items viejos ya no significan lo mismo.
+      ...(patch.items !== undefined
+        ? { items: JSON.stringify(filtrarItems(shape, rowId, patch.items)) }
+        : {}),
       verification: asEnum(
         VERIFICATIONS,
         patch.verificacion,

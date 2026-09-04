@@ -206,3 +206,80 @@ export async function chat(params: {
     costUsd: typeof data.usage?.cost === "number" ? data.usage.cost : null,
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Estado de la cuenta
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type EstadoClave = {
+  etiqueta: string | null;
+  /** Gastado por ESTA clave, en dolares. */
+  gastado: number;
+  /** Tope de la clave, si tiene uno. null = sin tope propio. */
+  tope: number | null;
+  /** Lo que queda de la clave. null cuando no hay tope. */
+  restante: number | null;
+  esGratuita: boolean;
+  /** Credito comprado y gastado de la CUENTA entera, si se puede consultar. */
+  cuenta: { comprado: number; gastado: number; saldo: number } | null;
+};
+
+/**
+ * Estado de una clave: cuanto lleva gastado y cuanto le queda.
+ *
+ * Son dos cosas distintas y conviene no confundirlas:
+ *
+ *   `/auth/key`  habla de LA CLAVE: su tope y lo gastado con ella. Una clave
+ *                puede tener un limite propio mas bajo que el saldo real.
+ *   `/credits`   habla de LA CUENTA: credito comprado y gastado en total.
+ *
+ * La segunda puede fallar —hay claves sin permiso para leerla— y eso no es un
+ * error: se devuelve `cuenta: null` y se muestra solo lo de la clave.
+ */
+export async function estadoDeClave(apiKey: string): Promise<EstadoClave> {
+  const res = await fetch(`${BASE}/auth/key`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    cache: "no-store",
+  });
+  if (res.status === 401) throw new Error("OpenRouter rechazo la clave: ya no es valida.");
+  if (!res.ok) throw new Error(`OpenRouter devolvio ${res.status} al consultar la clave.`);
+
+  const body = (await res.json()) as {
+    data?: {
+      label?: string;
+      usage?: number;
+      limit?: number | null;
+      is_free_tier?: boolean;
+    };
+  };
+  const d = body.data ?? {};
+  const gastado = Number(d.usage ?? 0);
+  const tope = d.limit === null || d.limit === undefined ? null : Number(d.limit);
+
+  let cuenta: EstadoClave["cuenta"] = null;
+  try {
+    const rc = await fetch(`${BASE}/credits`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      cache: "no-store",
+    });
+    if (rc.ok) {
+      const cb = (await rc.json()) as {
+        data?: { total_credits?: number; total_usage?: number };
+      };
+      const comprado = Number(cb.data?.total_credits ?? 0);
+      const usado = Number(cb.data?.total_usage ?? 0);
+      cuenta = { comprado, gastado: usado, saldo: comprado - usado };
+    }
+  } catch {
+    // Sin permiso para leer el credito de la cuenta. No es un fallo del panel.
+  }
+
+  return {
+    etiqueta: d.label ?? null,
+    gastado,
+    tope,
+    restante: tope === null ? null : Math.max(0, tope - gastado),
+    esGratuita: Boolean(d.is_free_tier),
+    cuenta,
+  };
+}

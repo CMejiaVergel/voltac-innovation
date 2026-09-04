@@ -1,5 +1,5 @@
 import type { Brief, Project } from "@prisma/client";
-import type { TemplateShape } from "@/lib/templates";
+import { itemsDeFila, type TemplateShape } from "@/lib/templates";
 
 /**
  * Las reglas del agente investigador.
@@ -34,7 +34,13 @@ function jsonList(raw: string): string[] {
 
 export function buildSystemPrompt(shape: TemplateShape): string {
   const filas = shape.rows
-    .map((r) => `  - id "${r.id}" → ${r.name} (${r.facets})`)
+    .map(
+      (r) =>
+        `  - id "${r.id}" → ${r.name}
+      items: ${itemsDeFila(r.facets)
+          .map((f, i) => `${i}=${f}`)
+          .join("  ")}`,
+    )
     .join("\n");
 
   const columnas = shape.cols
@@ -113,6 +119,18 @@ ${columnas}
 
 Los campos "fila" y "columna" de tu salida deben usar EXACTAMENTE esos ids.
 
+CLASIFICA CADA FRAGMENTO EN SUS ITEMS. Cada dimension se compone de varias
+facetas, numeradas arriba. Un fragmento casi siempre habla de una en concreto:
+"el cliente exige acreditacion" es Clientes, no Mercado en general. Devuelve
+en "items" los indices que le correspondan.
+
+  - Puede pertenecer a VARIOS: [0, 2] es valido si habla de las dos.
+  - Puede quedar VACIO: [] si de verdad no encaja en ninguna. No fuerces.
+  - Nunca inventes un indice que no este en la lista de esa fila.
+
+Sirve para ver si una dimension esta llena pero con todo el material apilado en
+una sola faceta, que es un punto ciego que el conteo por celda no revela.
+
 # METODO DE TRABAJO
 
   1. Lee el reto y el brief. Identifica que hay que averiguar.
@@ -138,6 +156,7 @@ de codigo json con esta forma exacta:
       "fila": "<id de fila>",
       "columna": "<id de columna>",
       "texto": "<la observacion, max 25 palabras>",
+      "items": [<indices de los items de esa fila a los que pertenece>],
       "verificacion": "VERIFIED" | "TO_CONFIRM" | "ASSUMPTION",
       "fuenteUrl": "<url real o null>",
       "fuenteCita": "<titulo de la fuente o null>",
