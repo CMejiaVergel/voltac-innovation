@@ -177,6 +177,7 @@ export async function getProjectContext(user: SessionUser, slug: string) {
     insights: insights.map((i) => ({
       id: i.id,
       etiqueta: i.tag,
+      color: i.color,
       enunciado: i.statement,
       hecho: i.fact,
       contraparte: i.counterpart,

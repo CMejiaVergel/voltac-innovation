@@ -283,6 +283,11 @@ const TOOLS = [
                 },
               },
               etiqueta: { type: "string", description: "Nombre corto, ej. 'Calor'." },
+              color: {
+                type: "string",
+                description:
+                  "Color del trazo en el mapa, en #rrggbb. Omitelo para que use el de la paleta segun su posicion.",
+              },
               hecho: { type: "string" },
               contraparte: { type: "string", description: "La conducta ya observada. Sin esto es un dato, no un insight." },
               giro: { type: "string" },
@@ -318,6 +323,7 @@ const TOOLS = [
         id: { type: "string" },
         enunciado: { type: "string" },
         etiqueta: { type: "string" },
+        color: { type: "string", description: "Color del trazo en #rrggbb." },
         hecho: { type: "string" },
         contraparte: { type: "string" },
         giro: { type: "string" },

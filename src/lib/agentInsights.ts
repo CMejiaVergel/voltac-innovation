@@ -20,6 +20,8 @@ export type IncomingInsight = {
   /** Ids de fragmento del mapa, en el orden del recorrido. */
   puntos: { fragmentoId: string; papel?: string }[];
   etiqueta?: string | null;
+  /** Color del trazo en #rrggbb. Vacio = el de la paleta segun posicion. */
+  color?: string | null;
   hecho?: string | null;
   contraparte?: string | null;
   giro?: string | null;
@@ -133,6 +135,7 @@ export async function createInsights(
         position: posicion++,
         statement: enunciado,
         tag: (item.etiqueta ?? "").slice(0, 40),
+        color: colorValido(item.color),
         fact: item.hecho ?? "",
         counterpart: item.contraparte ?? "",
         shift: item.giro ?? "",
@@ -178,6 +181,7 @@ export async function updateInsightById(
   const CAMPOS: [keyof IncomingInsight, string][] = [
     ["enunciado", "statement"],
     ["etiqueta", "tag"],
+    ["color", "color"],
     ["hecho", "fact"],
     ["contraparte", "counterpart"],
     ["giro", "shift"],
@@ -194,6 +198,7 @@ export async function updateInsightById(
   }
   if (cambios.estado) data.reviewState = asEnum(REVIEW_STATES, cambios.estado, "PROPOSED");
   if (data.statement === "") throw new AgentApiError("El insight necesita su frase.", 400);
+  if ("color" in data) data.color = colorValido(data.color as string);
 
   // Los puntos se reemplazan enteros cuando vienen: asi el agente rehace el
   // recorrido de una vez, en vez de dejarlo a medio conectar.
@@ -310,6 +315,16 @@ function sinRepetir<T extends { fragmentoId: string }>(puntos: T[]): T[] {
     vistos.add(p.fragmentoId);
     return true;
   });
+}
+
+/**
+ * Un color solo entra como #rrggbb. Cualquier otra cosa se guarda vacia, que
+ * significa "usa la paleta": es mejor caer al color por posicion que dejar el
+ * trazo con un valor que el navegador no sabe pintar.
+ */
+function colorValido(v: string | null | undefined): string {
+  const c = (v ?? "").trim().toLowerCase();
+  return /^#[0-9a-f]{6}$/.test(c) ? c : "";
 }
 
 /** Compara sin acentos, mayusculas ni puntuacion, para detectar repeticiones. */
