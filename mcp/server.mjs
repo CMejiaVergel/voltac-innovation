@@ -192,6 +192,36 @@ const TOOLS = [
       api(`${slugPath(slug)}/brief`, { method: "PATCH", body: patch }),
   },
   {
+    name: "clasificar_fragmentos",
+    description:
+      "Marca EN LOTE a que items de su fila pertenece cada fragmento. Es la forma de clasificar un mapa ya escrito: hacerlo con editar_fragmento serian cien llamadas. No toca el texto ni la celda de nada, solo los items, asi que es seguro pasarlo sobre un mapa revisado. Los indices de cada fila salen de leer_proyecto en plantilla.filas[].items. Un id que no sea del proyecto se rechaza con su motivo sin tumbar el resto del lote.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        slug: { type: "string" },
+        fragmentos: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string", description: "id de fragmento de leer_proyecto." },
+              items: {
+                type: "array",
+                items: { type: "integer" },
+                description:
+                  "Indices de los items de SU fila. Vacio si de verdad no encaja en ninguna; no fuerces.",
+              },
+            },
+            required: ["id", "items"],
+          },
+        },
+      },
+      required: ["slug", "fragmentos"],
+    },
+    run: ({ slug, fragmentos }) =>
+      api(`${slugPath(slug)}/clasificar`, { method: "POST", body: { fragmentos } }),
+  },
+  {
     name: "registrar_preguntas",
     description:
       "Anota preguntas para la empresa. Es donde va lo que NO pudiste verificar: un dato que falta se pregunta, no se inventa como fragmento.",

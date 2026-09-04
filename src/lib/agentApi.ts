@@ -804,3 +804,69 @@ async function resolveSource(projectId: string, item: IncomingFragment): Promise
   });
   return source.id;
 }
+
+/**
+ * Clasifica muchos fragmentos de una vez.
+ *
+ * Existe porque `updateFragment` va de uno en uno, y clasificar un mapa entero
+ * son cien llamadas. No toca el texto ni la celda de nada: solo escribe
+ * `items`, asi que es seguro pasarlo por encima de un mapa ya revisado.
+ *
+ * Un id que no sea de este proyecto se rechaza con su motivo en vez de tumbar
+ * el lote: en una tanda de cien, que un id equivocado descarte los otros
+ * noventa y nueve seria el peor comportamiento posible.
+ */
+export async function classifyFragments(
+  user: SessionUser,
+  slug: string,
+  items: { id: string; items: number[] }[],
+) {
+  const project = await loadProject(user, slug, true);
+  const { map, shape } = await loadMap(project.id);
+
+  const ids = items.map((i) => i.id);
+  const existentes = await prisma.fragment.findMany({
+    where: { id: { in: ids }, mapId: map.id },
+    select: { id: true, rowId: true },
+  });
+  const porId = new Map(existentes.map((f) => [f.id, f]));
+
+  const rechazados: { id: string; motivo: string }[] = [];
+  const cambios: { id: string; items: number[] }[] = [];
+
+  for (const entrada of items) {
+    const frag = porId.get(entrada.id);
+    if (!frag) {
+      rechazados.push({ id: entrada.id, motivo: "No es un fragmento del mapa de este proyecto." });
+      continue;
+    }
+    const validos = filtrarItems(shape, frag.rowId, entrada.items);
+    const pedidos = [...new Set(entrada.items ?? [])];
+    if (pedidos.length > validos.length) {
+      // Se avisa, pero se guarda lo valido: perder la clasificacion entera
+      // por un indice de mas seria peor que guardarla incompleta.
+      rechazados.push({
+        id: entrada.id,
+        motivo: `Se descartaron indices que no existen en la fila "${frag.rowId}".`,
+      });
+    }
+    cambios.push({ id: entrada.id, items: validos });
+  }
+
+  await prisma.$transaction(
+    cambios.map((c) =>
+      prisma.fragment.update({
+        where: { id: c.id },
+        data: { items: JSON.stringify(c.items) },
+      }),
+    ),
+  );
+
+  const conItems = cambios.filter((c) => c.items.length > 0).length;
+  return {
+    clasificados: cambios.length,
+    conAlgunItem: conItems,
+    sinItem: cambios.length - conItems,
+    rechazados,
+  };
+}

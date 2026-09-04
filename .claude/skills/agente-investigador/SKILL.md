@@ -50,6 +50,7 @@ de Claude Code no cargó `.mcp.json`: hay que reiniciarla y aprobar el servidor.
 | `eliminar_fragmento` | Solo si el fragmento está mal de raíz. Si está mal ubicado, muévelo. |
 | `registrar_preguntas` | Lo que no pudiste verificar. |
 | `curar_preguntas` | Editar, eliminar y reordenar el banco. Quitar duplicados. |
+| `clasificar_fragmentos` | Marcar en lote los ítems de muchos fragmentos ya escritos. |
 | `proponer_insights` | **Etapa Combinar.** Conectar puntos del mapa en un insight. Lee `combinar.md` antes. |
 | `editar_insight` | Corregir un insight existente en vez de duplicarlo. |
 | `eliminar_insight` | Solo si esta mal de raiz. |
@@ -184,8 +185,10 @@ y Experiencias— y `leer_proyecto` las devuelve numeradas en
 Sirve para ver si una dimensión está llena pero con todo el material apilado en
 una sola faceta — un punto ciego que el conteo por celda no revela.
 
-Para clasificar fragmentos que **ya están escritos**, usa `editar_fragmento`
-con solo `items`: no toca el texto ni la celda.
+Para clasificar fragmentos que **ya están escritos**, usa
+`clasificar_fragmentos`: acepta el lote entero en una llamada y no toca el
+texto ni la celda de nada. Hacerlo con `editar_fragmento` de uno en uno son
+cien llamadas para un mapa lleno.
 
 ## Estado de verificación
 
