@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireUser, requireAdmin, hashPassword } from "@/lib/auth";
+import { requireUser, requireAdmin, hashPassword, hashSesionActual } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { canEdit, canAdminProject } from "@/lib/enums";
 import { getProjectRole, uniqueSlug } from "@/lib/projects";
@@ -473,6 +473,11 @@ export async function createUser(formData: FormData): Promise<void> {
     throw new Error("Correo, nombre y una contraseña de al menos 8 caracteres son obligatorios.");
   }
 
+  const yaExiste = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (yaExiste) {
+    throw new Error(`Ya hay una cuenta con el correo ${email}.`);
+  }
+
   await prisma.user.create({
     data: {
       email,
@@ -481,30 +486,69 @@ export async function createUser(formData: FormData): Promise<void> {
       passwordHash: await hashPassword(password),
     },
   });
+
   revalidatePath("/admin/usuarios");
+  redirect(
+    `/admin/usuarios?hecho=${encodeURIComponent(
+      `Cuenta creada para ${name} (${email}). Nace SIN clave de OpenRouter: el agente no correra para esa persona hasta que ponga la suya.`,
+    )}`,
+  );
 }
 
 export async function setUserActive(userId: string, active: boolean): Promise<void> {
   const admin = await requireAdmin();
   if (admin.id === userId) throw new Error("No puedes desactivar tu propia cuenta.");
 
-  await prisma.user.update({ where: { id: userId }, data: { active } });
+  const objetivo = await prisma.user.update({
+    where: { id: userId },
+    data: { active },
+    select: { name: true },
+  });
   if (!active) await prisma.session.deleteMany({ where: { userId } });
+
   revalidatePath("/admin/usuarios");
+  redirect(
+    `/admin/usuarios?hecho=${encodeURIComponent(
+      active
+        ? `${objetivo.name} vuelve a tener acceso.`
+        : `${objetivo.name} queda sin acceso: al intentar entrar vera «correo o contraseña incorrectos».`,
+    )}`,
+  );
 }
 
 export async function resetUserPassword(userId: string, formData: FormData): Promise<void> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const password = String(formData.get("password") ?? "");
   if (password.length < 8) throw new Error("La contraseña debe tener al menos 8 caracteres.");
+
+  const objetivo = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  });
+  if (!objetivo) throw new Error("Ese usuario ya no existe.");
 
   await prisma.user.update({
     where: { id: userId },
     data: { passwordHash: await hashPassword(password) },
   });
+
   // Cerrar sesiones abiertas: si se cambio la clave, las cookies viejas mueren.
-  await prisma.session.deleteMany({ where: { userId } });
+  // Pero si el administrador se la esta cambiando A SI MISMO, hay que dejar
+  // viva la cookie de esta peticion: borrarla lo expulsaba a mitad de la accion
+  // y la pantalla se quedaba en negro sin decir si el cambio surtio efecto.
+  const propia = userId === admin.id ? await hashSesionActual() : null;
+  await prisma.session.deleteMany({
+    where: { userId, ...(propia ? { token: { not: propia } } : {}) },
+  });
+
   revalidatePath("/admin/usuarios");
+  redirect(
+    `/admin/usuarios?hecho=${encodeURIComponent(
+      userId === admin.id
+        ? "Tu contraseña quedo cambiada. Tu sesion actual sigue abierta; las demas se cerraron."
+        : `Contraseña de ${objetivo.name} restablecida. Sus sesiones abiertas se cerraron.`,
+    )}`,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -563,9 +607,20 @@ export async function setPermisoClaveInstancia(
     throw new Error("No puedes cambiarte a ti mismo el permiso sobre la clave del servidor.");
   }
 
-  await prisma.user.update({
+  const objetivo = await prisma.user.update({
     where: { id: userId },
     data: { usaClaveInstancia: permitir },
+    select: { name: true },
   });
-  revalidatePath("/administracion");
+
+  // Antes revalidaba "/administracion", que no existe: el cambio no se veia
+  // hasta recargar a mano y parecia que el boton no habia hecho nada.
+  revalidatePath("/admin/usuarios");
+  redirect(
+    `/admin/usuarios?hecho=${encodeURIComponent(
+      permitir
+        ? `${objetivo.name} ya puede gastar la clave del servidor. Son tus creditos.`
+        : `${objetivo.name} deja de poder gastar la clave del servidor.`,
+    )}`,
+  );
 }

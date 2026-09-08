@@ -57,6 +57,20 @@ export async function createSession(userId: string, userAgent?: string): Promise
   });
 }
 
+/**
+ * Hash del token de la peticion actual, o null si no hay cookie.
+ *
+ * Sirve para cerrar «todas las sesiones menos esta»: al restablecer una
+ * contraseña hay que matar las cookies viejas, pero si quien la restablece es
+ * el propio dueño de la cuenta, matar tambien la suya lo expulsa a mitad de la
+ * accion y la pantalla se queda en negro.
+ */
+export async function hashSesionActual(): Promise<string | null> {
+  const jar = await cookies();
+  const token = jar.get(COOKIE_NAME)?.value;
+  return token ? hashToken(token) : null;
+}
+
 export async function destroySession(): Promise<void> {
   const jar = await cookies();
   const token = jar.get(COOKIE_NAME)?.value;

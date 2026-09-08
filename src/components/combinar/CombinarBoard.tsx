@@ -27,7 +27,14 @@ import type { CombinarProps } from "./types";
  * con el mapa proyectado, tocar un punto sin querer y crear un insight fantasma
  * es exactamente el error que hay que hacer imposible.
  */
-export function CombinarBoard({ slug, shape, puntos, insights, editable }: CombinarProps) {
+export function CombinarBoard({
+  slug,
+  shape,
+  puntos,
+  insights,
+  editable,
+  puedeCorrerAgente,
+}: CombinarProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +105,12 @@ export function CombinarBoard({ slug, shape, puntos, insights, editable }: Combi
         )}
 
         {editable && puntos.length >= 4 && (
-          <InsightAgent slug={slug} dimensiones={shape.rows} puntos={puntos.length} />
+          <InsightAgent
+            slug={slug}
+            dimensiones={shape.rows}
+            puntos={puntos.length}
+            puedeCorrer={puedeCorrerAgente}
+          />
         )}
 
         <button

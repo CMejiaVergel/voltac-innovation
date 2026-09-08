@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireProject, getPrimaryMap } from "@/lib/projects";
 import { canEdit, asEnum, VERIFICATIONS, DOT_ROLES, REVIEW_STATES } from "@/lib/enums";
+import { estadoClaveAgente } from "@/lib/claveAgente";
 import { CombinarBoard } from "@/components/combinar/CombinarBoard";
 import type { InsightVista, Punto } from "@/components/combinar/types";
 
@@ -118,6 +119,7 @@ export default async function CombinarPage({ params }: { params: Promise<{ slug:
         puntos={puntos}
         insights={insights}
         editable={canEdit(role)}
+        puedeCorrerAgente={Boolean((await estadoClaveAgente(user.id))?.puedeCorrer)}
       />
     </div>
   );

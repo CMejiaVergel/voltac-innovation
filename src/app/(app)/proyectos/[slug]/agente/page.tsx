@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireProject, getPrimaryMap } from "@/lib/projects";
 import { canEdit, RUN_STATUS_LABEL, asEnum, RUN_STATUSES, VERIFICATIONS } from "@/lib/enums";
 import { agentIsConfigured, reapStaleRuns } from "@/lib/agent/run";
+import { estadoClaveAgente } from "@/lib/claveAgente";
 import { DEFAULT_MODEL } from "@/lib/agent/openrouter";
 import { THIN_CELL_THRESHOLD } from "@/lib/gimi";
 import { AgentLaunchForm } from "@/components/agent/AgentLaunchForm";
@@ -52,18 +53,77 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
   const configured = agentIsConfigured();
   const running = runs.some((r) => r.status === "RUNNING");
 
+  // Que el SERVIDOR tenga clave no significa que ESTA PERSONA pueda gastarla.
+  // Sin esto la pagina mostraba el formulario completo a cualquiera y el fallo
+  // solo aparecia al pulsar «Lanzar», sin decir por que.
+  const clave = await estadoClaveAgente(user.id);
+  const puedeCorrer = Boolean(clave?.puedeCorrer);
+
   return (
     <div className="mt-7 flex flex-col gap-7 pb-16">
-      {!configured && (
-        <div className="rounded-[4px] border border-[rgba(217,139,63,0.45)] bg-[rgba(217,139,63,0.12)] p-4">
-          <p className="text-[13px] font-semibold text-warn">El agente no esta configurado.</p>
-          <p className="hint mt-1.5">
-            Falta <code className="font-mono text-[11.5px]">OPENROUTER_API_KEY</code> en el
-            entorno del servidor. Sin ella el resto de la aplicacion funciona con normalidad;
-            solo el llenado automatico queda deshabilitado.
-          </p>
-        </div>
-      )}
+      {/* Tres motivos distintos por los que el agente puede no correr, y hay
+          que separarlos: decirle «pon tu clave» a quien ya la puso, o «falta
+          la del servidor» a quien nunca iba a poder usarla, manda a la
+          persona a arreglar lo que no esta roto. */}
+      {!puedeCorrer &&
+        (clave?.claveIlegible ? (
+          <div className="rounded-[4px] border border-[rgba(217,139,63,0.45)] bg-[rgba(217,139,63,0.12)] p-4">
+            <p className="text-[13px] font-semibold text-warn">
+              Tu clave guardada ya no se puede leer.
+            </p>
+            <p className="hint mt-1.5">
+              El secreto del servidor cambio desde que la guardaste, asi que hay que volver a
+              introducirla.{" "}
+              <Link href="/cuenta" className="text-accent underline">
+                Ponla de nuevo en tu cuenta
+              </Link>
+              .
+            </p>
+          </div>
+        ) : !configured && !clave?.puedeUsarInstancia ? (
+          <div className="rounded-[4px] border border-[rgba(217,139,63,0.45)] bg-[rgba(217,139,63,0.12)] p-4">
+            <p className="text-[13px] font-semibold text-warn">
+              No tienes una clave de OpenRouter.
+            </p>
+            <p className="hint mt-1.5">
+              Cada quien gasta sus propios creditos.{" "}
+              <Link href="/cuenta" className="text-accent underline">
+                Pon tu clave en tu cuenta
+              </Link>{" "}
+              para poder lanzar investigaciones. El resto de la aplicacion funciona con
+              normalidad: solo el llenado automatico queda deshabilitado.
+            </p>
+          </div>
+        ) : clave?.puedeUsarInstancia && !configured ? (
+          <div className="rounded-[4px] border border-[rgba(217,139,63,0.45)] bg-[rgba(217,139,63,0.12)] p-4">
+            <p className="text-[13px] font-semibold text-warn">
+              El servidor no tiene clave configurada.
+            </p>
+            <p className="hint mt-1.5">
+              Tienes permiso para gastar la del servidor, pero falta{" "}
+              <code className="font-mono text-[11.5px]">OPENROUTER_API_KEY</code> en su
+              entorno. Puedes poner{" "}
+              <Link href="/cuenta" className="text-accent underline">
+                una clave propia
+              </Link>{" "}
+              mientras tanto.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-[4px] border border-[rgba(217,139,63,0.45)] bg-[rgba(217,139,63,0.12)] p-4">
+            <p className="text-[13px] font-semibold text-warn">
+              No tienes una clave de OpenRouter.
+            </p>
+            <p className="hint mt-1.5">
+              El agente no correra para ti. La clave del servidor es de quien monto la
+              instancia y son sus creditos, asi que no se gasta sin permiso explicito.{" "}
+              <Link href="/cuenta" className="text-accent underline">
+                Pon la tuya en tu cuenta
+              </Link>{" "}
+              y podras lanzar investigaciones.
+            </p>
+          </div>
+        ))}
 
       {/* ── Reglas del agente ────────────────────────────────────────────── */}
       <section className="panel">
@@ -136,7 +196,7 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
             shape={primary.shape}
             counts={Object.fromEntries(counts)}
             thinThreshold={THIN_CELL_THRESHOLD}
-            disabled={!configured || running}
+            disabled={!puedeCorrer || running}
             running={running}
           />
         </section>

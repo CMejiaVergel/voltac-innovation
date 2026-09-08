@@ -18,16 +18,32 @@ export function InsightAgent({
   slug,
   dimensiones,
   puntos,
+  puedeCorrer,
 }: {
   slug: string;
   dimensiones: TemplateRow[];
   puntos: number;
+  puedeCorrer: boolean;
 }) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [hecho, setHecho] = useState<string | null>(null);
+
+  // Sin clave el agente no corre, y ofrecer el boton solo lleva a un error
+  // despues de haber llenado el formulario. Se dice antes, no despues.
+  if (!puedeCorrer) {
+    return (
+      <p className="text-[12px] leading-snug text-[#7d8a88]">
+        Para pedir insights al agente necesitas una clave de OpenRouter.{" "}
+        <a href="/cuenta" className="text-accent underline">
+          Ponla en tu cuenta
+        </a>
+        : cada quien gasta sus propios creditos.
+      </p>
+    );
+  }
 
   if (!abierto) {
     return (

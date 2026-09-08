@@ -9,8 +9,13 @@ import {
 
 export const metadata = { title: "Usuarios — Voltac Innovacion" };
 
-export default async function UsersPage() {
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ hecho?: string }>;
+}) {
   const admin = await requireAdmin();
+  const { hecho } = await searchParams;
 
   const users = await prisma.user.findMany({
     orderBy: [{ active: "desc" }, { createdAt: "asc" }],
@@ -28,6 +33,15 @@ export default async function UsersPage() {
         contraseña por un canal seguro y pidele a la persona que la cambie contigo. Cambiar o
         desactivar una cuenta cierra sus sesiones abiertas de inmediato.
       </p>
+
+      {/* Confirmacion de la ultima accion. Antes no habia ninguna: la pagina
+          se recargaba igual que estaba y no se sabia si el cambio surtio
+          efecto. */}
+      {hecho && (
+        <p className="mt-6 rounded-[4px] border border-[rgba(111,191,178,0.45)] bg-[rgba(111,191,178,0.1)] p-3 text-[12.5px] leading-relaxed text-accent">
+          {hecho}
+        </p>
+      )}
 
       <form action={createUser} className="panel mt-7 flex flex-col gap-3">
         <h2 className="kicker">Crear usuario</h2>

@@ -53,4 +53,6 @@ export type CombinarProps = {
   puntos: Punto[];
   insights: InsightVista[];
   editable: boolean;
+  /** Esta persona tiene con que clave correr el agente. Poder editar no basta. */
+  puedeCorrerAgente: boolean;
 };
