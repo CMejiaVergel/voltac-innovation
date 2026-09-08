@@ -149,9 +149,15 @@ export default async function UsersPage({
               </div>
 
               <form action={reset} className="mt-2.5 flex gap-2">
+                {/* `required` ademas de `minLength`: minLength NO valida un
+                    campo vacio, asi que sin esto el navegador dejaba enviar el
+                    formulario en blanco —cosa facil de hacer, porque cada fila
+                    tiene el suyo y es facil escribir en uno y pulsar el de
+                    otro— y el servidor lanzaba. Esa era la pantalla negra. */}
                 <input
                   name="password"
                   type="text"
+                  required
                   minLength={8}
                   className="field flex-1 text-[12px]"
                   placeholder="Nueva contraseña para esta cuenta"
