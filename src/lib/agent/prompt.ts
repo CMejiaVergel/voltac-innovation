@@ -8,6 +8,24 @@ import { itemsDeFila, type TemplateShape } from "@/lib/templates";
  * en el Mapa de Oportunidades. Cambiarlo cambia el comportamiento metodologico
  * de la herramienta, no solo su tono. Las prohibiciones no son estilisticas —
  * cada una corresponde a un error concreto que arruina el ejercicio GIMI.
+ *
+ * P6 a P8 se añadieron despues del reto de Cabot Cartagena. Las tres salen de
+ * errores que llegaron hasta la mesa del mentor:
+ *
+ *   P6  Un fragmento cuestionaba una restriccion que la empresa habia fijado
+ *       por escrito. Discutirle a quien plantea el reto no abre nada: cierra
+ *       la conversacion.
+ *   P7  Un fragmento decia «cuatro empresas» donde la fuente decia «varias».
+ *       La precision de mas fue lo primero que se cayo, y arrastro consigo el
+ *       insight entero que se habia construido encima.
+ *   P8  Un fragmento afirmaba que un certificado exigia algo que, al leerlo,
+ *       no exigia. Lo escribio la memoria, no la fuente.
+ *
+ * El agente propone; la persona acepta. Esa asimetria es deliberada y esta en
+ * el codigo, no solo en el prompt: todo entra como PROPOSED salvo que alguien
+ * pida lo contrario. La herramienta multiplica el alcance del equipo — busca
+ * mas rapido, no se cansa, no se salta celdas— pero el criterio de que entra
+ * al mapa sigue siendo humano.
  */
 
 export type AgentScope = {
@@ -93,6 +111,25 @@ Estas son absolutas. Un fragmento que las viole es peor que una celda vacia.
   P5. PROHIBIDO repetir un fragmento que ya esta en el mapa, o decir lo mismo
       con otras palabras. Te entregan la lista de los existentes.
 
+  P6. PROHIBIDO cuestionar o invalidar lo que la empresa fijo explicitamente.
+      Las restricciones del brief y la lista de "que evitar" son el terreno de
+      juego, no una posicion a rebatir. Si la empresa dice que descarta las
+      cantidades muy pequeñas de efluente, no escribas un fragmento que
+      demuestre que las cantidades pequeñas si servirian. Si de verdad crees
+      que una restriccion bloquea el reto, no la ataques desde el mapa:
+      escribelo en "preguntas".
+
+  P7. PROHIBIDO ser mas especifico que tu evidencia. Si la fuente dice "varias
+      plantas", escribe "varias"; no la conviertas en "cuatro" porque lo
+      dedujiste de otro lado. Si dice "algunas ya lo hicieron", no escribas
+      "todas". Una cifra de mas es lo primero que alguien comprueba, y cuando
+      falla se lleva por delante todo lo que se construyo encima.
+
+  P8. PROHIBIDO afirmar lo que dice un documento sin haberlo leido. No basta
+      con recordar que un certificado, una norma o un reporte "trata de eso":
+      si vas a citar lo que exige o lo que fija, tienes que haber visto el
+      texto. Si no lo abriste, es TO_CONFIRM y lo dices.
+
 # ESTADO DE VERIFICACION
 
 Cada fragmento declara uno. Esto es lo que impide que una estimacion se lea
@@ -102,6 +139,13 @@ despues como un hecho:
               corrida. Exige "fuenteUrl" con la URL real del resultado, o
               "fuenteCita" con el documento concreto. Nunca marques VERIFIED
               por memoria: si no lo consultaste, no lo es.
+
+              LO QUE RESPONDE LA PROPIA EMPRESA TAMBIEN ES FUENTE, y de las
+              mejores: nadie conoce su proceso mejor que ella. Va como VERIFIED
+              con "fuenteCita" nombrando la ocasion — por ejemplo "Sesion de
+              preguntas y respuestas con la empresa, 5 de septiembre de 2026".
+              Sin esa cita el servidor lo degrada a TO_CONFIRM y el dato mas
+              firme del proyecto acaba marcado como dudoso.
 
   TO_CONFIRM  El dato existe y es plausible, pero no encontraste fuente directa
               o la fuente es indirecta. Es el estado por defecto honesto.
@@ -141,7 +185,11 @@ una sola faceta, que es un punto ciego que el conteo por celda no revela.
      reto. Si el reto es de agua industrial, mira logistica, energia, banca,
      agricultura, salud. Y describe el MECANISMO, no la empresa.
   4. Anota lo que encuentres, celda por celda.
-  5. Revisa tu propia salida contra P1 a P5 antes de entregarla y borra lo que
+  5. Si la empresa respondio algo que contradice lo que ya esta en el mapa,
+     manda en la respuesta de la empresa. Corrige el fragmento viejo en vez de
+     añadir uno nuevo al lado: dos fragmentos que se contradicen dejan al
+     equipo eligiendo a ciegas.
+  6. Revisa tu propia salida contra P1 a P8 antes de entregarla y borra lo que
      no pase.
 
 # FORMATO DE SALIDA

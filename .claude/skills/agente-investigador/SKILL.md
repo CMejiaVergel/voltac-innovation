@@ -44,6 +44,8 @@ de Claude Code no cargó `.mcp.json`: hay que reiniciarla y aprobar el servidor.
 | Herramienta | Para qué |
 |---|---|
 | `listar_proyectos` | Obtener el slug. **Empieza siempre por aquí.** |
+| `crear_proyecto` | Abrir un proyecto nuevo con su mapa vacío. Solo el reto literal: Configurar lo escribe el equipo. |
+| `renombrar_proyecto` | Cambiar nombre, empresa o programa. El slug no se toca. |
 | `estado_proyecto` | Conteos, celdas flacas y una **firma** del estado. ~140 tokens. **Empieza siempre por aquí.** |
 | `leer_proyecto` | Contexto, con las secciones que pidas. Sin argumentos trae lo justo para proponer. |
 | `proponer_fragmentos` | Escribir en el mapa. Por defecto quedan en la cola de revisión. |
@@ -119,7 +121,12 @@ diferencia entre deshacer un error y no poder.
    devuelve el banco: **no anotes una pregunta que ya está escrita con otras
    palabras**; si la que hay está mal planteada, corrígela con
    `curar_preguntas` en vez de añadir otra.
-8. Reporta en el chat qué propusiste y por qué, celda por celda.
+8. Si la empresa respondió algo que **contradice** lo que ya está en el mapa,
+   manda la respuesta de la empresa: corrige el fragmento viejo con
+   `editar_fragmento` en vez de añadir uno nuevo al lado. Dos fragmentos que se
+   contradicen dejan al equipo eligiendo a ciegas, y el que gana suele ser el
+   que estaba primero.
+9. Reporta en el chat qué propusiste y por qué, celda por celda.
 
 ## Qué es un fragmento
 
@@ -155,6 +162,20 @@ Son absolutas. Un fragmento que las viole es peor que una celda vacía.
   más que muchos supuestos.
 - **P5. Nada de repetir** lo que ya está en el mapa, ni decir lo mismo con
   otras palabras. `leer_proyecto` te da la lista completa.
+- **P6. Nada de cuestionar lo que la empresa fijó por escrito.** Las
+  restricciones del brief y la lista de «qué evitar» son el terreno de juego.
+  Si el reto descarta las cantidades muy pequeñas de efluente, no propongas un
+  fragmento que demuestre que sí servirían. Si de verdad crees que una
+  restricción bloquea el reto, no la ataques desde el mapa: `registrar_preguntas`.
+- **P7. Nada de ser más específico que la fuente.** Si dice «varias plantas»,
+  escribe «varias». Convertirlo en «cuatro» porque lo dedujiste de otro lado es
+  lo primero que alguien comprueba, y cuando falla se lleva por delante todo lo
+  que se construyó encima.
+- **P8. Nada de afirmar lo que dice un documento sin haberlo leído.** No basta
+  con recordar que un certificado o una norma «trata de eso». Pasó: un fragmento
+  afirmaba que un certificado exigía acreditación de contenido sostenible al
+  cliente; al abrir el PDF no decía nada parecido, y el insight construido
+  encima hubo que tirarlo entero.
 
 ## Ubicar bien: el error más común
 
@@ -222,6 +243,7 @@ como un hecho.
 | Estado | Cuándo |
 |---|---|
 | `VERIFIED` | Lo respalda una fuente identificada: una URL que **consultaste en esta sesión**, o un documento concreto que el equipo tiene (`fuenteCita`). Nunca por memoria. |
+| `VERIFIED` | **Lo que responde la propia empresa también cuenta**, y es de las mejores fuentes: nadie conoce su proceso mejor que ella. Va con `fuenteCita` nombrando la ocasión — «Sesión de preguntas y respuestas con la empresa, 5 de septiembre de 2026». Sin esa cita el servidor lo degrada y el dato más firme del proyecto acaba marcado como dudoso. |
 | `TO_CONFIRM` | El dato existe y es plausible, pero no hay fuente directa. Es el estado honesto por defecto. |
 | `ASSUMPTION` | Inferencia tuya. Con moderación, y solo si el equipo puede contrastarla. |
 

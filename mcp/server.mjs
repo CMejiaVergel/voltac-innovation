@@ -67,6 +67,51 @@ const TOOLS = [
     run: () => api("/api/agent/proyectos"),
   },
   {
+    name: "crear_proyecto",
+    description:
+      "Abre un proyecto de innovacion nuevo, con su brief y su mapa vacio. Solo se escribe el reto LITERAL tal como lo entrego la empresa, sin reinterpretarlo. El resto de la etapa Configurar —meta, restricciones y sobre todo el «que evitar»— lo escribe el equipo con la empresa delante: son los campos que despues limitan lo que se puede proponer, y rellenarlos por tu cuenta inventa restricciones que nadie fijo. Devuelve el slug.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        nombre: {
+          type: "string",
+          description:
+            "Como se va a llamar el proyecto. Que diga de que va el reto, no solo el nombre de la empresa.",
+        },
+        empresa: { type: "string", description: "La compañia que plantea el reto." },
+        programa: { type: "string", description: "El programa o convocatoria, si lo hay." },
+        reto: {
+          type: "string",
+          description: "El reto tal como lo escribio la empresa. Cita literal, sin reformular.",
+        },
+        plantilla: {
+          type: "string",
+          description:
+            "Clave de la plantilla del mapa. Por defecto 'gimi-5x5', que es la del taller.",
+        },
+      },
+      required: ["nombre"],
+    },
+    run: (body) => api("/api/agent/proyectos", { method: "POST", body }),
+  },
+  {
+    name: "renombrar_proyecto",
+    description:
+      "Cambia el nombre, la empresa o el programa de un proyecto. El slug NO cambia: los enlaces guardados, los respaldos y las corridas registradas siguen valiendo.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        slug: { type: "string" },
+        nombre: { type: "string" },
+        empresa: { type: "string" },
+        programa: { type: "string" },
+      },
+      required: ["slug"],
+    },
+    run: ({ slug, ...body }) =>
+      api(`${slugPath(slug)}/renombrar`, { method: "POST", body }),
+  },
+  {
     name: "leer_proyecto",
     description:
       "Contexto del proyecto. Trae SOLO las secciones que pidas: cada llamada completa cuesta decenas de miles de tokens y agota la sesion en pocas lecturas. Por defecto vienen brief, plantilla, celdas y fragmentos en modo resumen, que es lo que hace falta para proponer. Pide 'preguntas' o 'insights' solo si los vas a tocar, y detalle 'completo' solo al revisar propuestas (añade verificacion, fuentes y porQueAqui). Devuelve una 'firma': si no cambio desde tu ultima lectura, el contexto que ya tienes sirve y no hace falta releer.",
@@ -114,7 +159,7 @@ const TOOLS = [
   {
     name: "proponer_fragmentos",
     description:
-      "Agrega fragmentos al Mapa de Oportunidades. Un fragmento es UNA observacion cruda de maximo 25 palabras, sin conclusiones ni insights. Por defecto entran como PROPOSED y esperan revision humana en la aplicacion. El servidor rechaza duplicados y celdas que no existen, y degrada a 'por confirmar' cualquier fragmento marcado VERIFIED que llegue sin fuenteUrl.",
+      "Agrega fragmentos al Mapa de Oportunidades. Un fragmento es UNA observacion cruda de maximo 25 palabras, con sujeto nombrado y cifras con unidad y año, sin conclusiones ni insights. PROHIBIDO: concluir ('el patron es', 'la oportunidad es'), relacionar fragmentos entre si, inventar cifras, rellenar por cuota, repetir lo que ya esta, cuestionar una restriccion que la empresa fijo por escrito, ser mas especifico que la fuente (si dice 'varias' no escribas 'cuatro'), y afirmar lo que dice un documento sin haberlo abierto. Lo que responde la propia empresa SI es fuente valida: va como VERIFIED con fuenteCita nombrando la ocasion. Por defecto entran como PROPOSED y esperan revision humana. El servidor rechaza duplicados y celdas que no existen, y degrada a 'por confirmar' cualquier VERIFIED que llegue sin fuenteUrl ni fuenteCita.",
     inputSchema: {
       type: "object",
       properties: {
@@ -143,10 +188,14 @@ const TOOLS = [
                 type: "string",
                 enum: ["VERIFIED", "TO_CONFIRM", "ASSUMPTION"],
                 description:
-                  "VERIFIED exige fuenteUrl real consultada en esta sesion. Si dudas, TO_CONFIRM.",
+                  "VERIFIED exige fuenteUrl real consultada en esta sesion, o fuenteCita con el documento concreto. Si dudas, TO_CONFIRM.",
               },
               fuenteUrl: { type: "string" },
-              fuenteCita: { type: "string", description: "Titulo de la fuente." },
+              fuenteCita: {
+                type: "string",
+                description:
+                  "Titulo del documento. Tambien sirve para lo que respondio la propia empresa, que es fuente de primera mano: 'Sesion de preguntas y respuestas con la empresa, 5 de septiembre de 2026'.",
+              },
               porQueAqui: {
                 type: "string",
                 description: "Una frase: por que esta celda y no otra.",
@@ -164,7 +213,7 @@ const TOOLS = [
   {
     name: "editar_fragmento",
     description:
-      "Corrige un fragmento existente: su texto, la celda donde vive, su estado de verificacion o su fuente. Util para reubicar fragmentos mal colocados.",
+      "Corrige un fragmento existente: su texto, la celda donde vive, su estado de verificacion o su fuente. Util para reubicar fragmentos mal colocados. Y obligatorio cuando la empresa responde algo que contradice lo que ya esta escrito: se corrige el fragmento viejo, no se añade uno nuevo al lado — dos fragmentos que se contradicen dejan al equipo eligiendo a ciegas.",
     inputSchema: {
       type: "object",
       properties: {
@@ -321,7 +370,7 @@ const TOOLS = [
   {
     name: "proponer_insights",
     description:
-      "Etapa COMBINAR. Crea insights conectando puntos (fragmentos) del mapa. Un insight NO es un dato reencuadrado: la frase debe sostenerse en hechos de las DOS puntas del intercambio —una necesidad o particularidad verificable, y una conducta de mercado YA observada que responde a ella—. Prohibido afirmar disposicion ('estarian dispuestos a'): solo vale lo que ya hicieron y consta en un fragmento. Los ids de los puntos salen de leer_proyecto. Por defecto entran como PROPOSED para que una persona los revise.",
+      "Etapa COMBINAR. Crea insights conectando puntos (fragmentos) del mapa. ANATOMIA OBLIGATORIA, en este orden: PATRON (una regularidad dificilmente cuestionable, escrita en general: si alguien puede decir 'eso depende', no es un patron) -> HECHO (el dato del mapa que demuestra que ese patron se cumple en este reto, con cifra y actor) -> IMPLICACION (el '¿y que?': lo que cambia al leer los dos juntos y que ninguno decia solo). Y un EXAMEN que decide si se queda: la implicacion tiene que abrir una OPORTUNIDAD DE NEGOCIO NUEVA. Un insight que solo reafirma la importancia del reto se descarta — la empresa ya sabe que su reto importa, por eso lo planteo. Prohibido afirmar disposicion ('estarian dispuestos a'): solo vale lo que ya hicieron y consta en un fragmento. Prohibido contradecir lo que la empresa fijo en el brief. Prohibido adelantarse a la solucion: el insight revela, no diseña. Lee la skill combinar.md antes. Los ids de los puntos salen de leer_proyecto. Por defecto entran como PROPOSED para que una persona los revise.",
     inputSchema: {
       type: "object",
       properties: {
@@ -340,7 +389,7 @@ const TOOLS = [
               enunciado: {
                 type: "string",
                 description:
-                  "La frase concluyente, que debe leerse sola. Cinco piezas: hecho con cifra + conector causal + conducta de mercado observada con actor nombrado + concesion + porque.",
+                  "El parrafo completo: patron, hecho e implicacion seguidos. Tiene que leerse solo, sin el desglose, y en tercera persona — lo va a leer gente que no estuvo en la conversacion.",
               },
               puntos: {
                 type: "array",
@@ -351,8 +400,9 @@ const TOOLS = [
                     fragmentoId: { type: "string", description: "id de fragmento de leer_proyecto." },
                     papel: {
                       type: "string",
-                      enum: ["HECHO", "CONTRAPARTE", "APOYO"],
-                      description: "HECHO es la primera punta; CONTRAPARTE la segunda.",
+                      enum: ["PATRON", "HECHO", "APERTURA", "APOYO"],
+                      description:
+                        "PATRON: muestra que la regularidad se repite. HECHO: aporta el dato duro; sin ninguno el insight no se sostiene. APERTURA: el punto por el que asoma la oportunidad, casi siempre una adyacencia. APOYO: matiza o acota.",
                     },
                   },
                   required: ["fragmentoId"],
@@ -364,14 +414,26 @@ const TOOLS = [
                 description:
                   "Color del trazo en el mapa, en #rrggbb. Omitelo para que use el de la paleta segun su posicion.",
               },
-              hecho: { type: "string" },
-              contraparte: { type: "string", description: "La conducta ya observada. Sin esto es un dato, no un insight." },
-              giro: { type: "string" },
-              ofreceQuien: { type: "string" },
-              ofrecePrueba: { type: "string", description: "La evidencia de que ya lo hace." },
-              pagaQuien: { type: "string" },
-              pagaPrueba: { type: "string", description: "La evidencia de que ya lo paga." },
-              negocio: { type: "string" },
+              patron: {
+                type: "string",
+                description:
+                  "1. La regularidad dificilmente cuestionable, en general y sin nombrar todavia a la empresa. Es la unica pieza que puede no salir de un fragmento, porque es conocimiento comun — pero entonces tiene que ser de verdad incuestionable.",
+              },
+              hecho: {
+                type: "string",
+                description:
+                  "2. El dato del mapa que demuestra que el patron se cumple en este reto. Con cifra y actor nombrado. Si no puedes señalar el punto del que sale, no lo escribas.",
+              },
+              implicacion: {
+                type: "string",
+                description:
+                  "3. El «¿y que?». Casi siempre un desplazamiento: el problema no esta donde se buscaba, o el candidato no es el que parecia. Si se puede sustituir por el hecho sin perder nada, es una glosa.",
+              },
+              oportunidad: {
+                type: "string",
+                description:
+                  "El negocio nuevo que abre la implicacion. Es el examen que decide si el insight vale: si lo unico que abre es «hay que resolver el reto», descartalo y dilo.",
+              },
               limite: { type: "string", description: "Que NO se puede afirmar con estos puntos. Obligatorio en la practica." },
               ideas: { type: "array", items: { type: "string" } },
             },
@@ -400,15 +462,11 @@ const TOOLS = [
         enunciado: { type: "string" },
         etiqueta: { type: "string" },
         color: { type: "string", description: "Color del trazo en #rrggbb." },
-        hecho: { type: "string" },
-        contraparte: { type: "string" },
-        giro: { type: "string" },
-        ofreceQuien: { type: "string" },
-        ofrecePrueba: { type: "string" },
-        pagaQuien: { type: "string" },
-        pagaPrueba: { type: "string" },
-        negocio: { type: "string" },
-        limite: { type: "string" },
+        patron: { type: "string", description: "1. La regularidad dificilmente cuestionable." },
+        hecho: { type: "string", description: "2. El dato del mapa que la demuestra aqui." },
+        implicacion: { type: "string", description: "3. El «¿y que?»." },
+        oportunidad: { type: "string", description: "El negocio nuevo que abre." },
+        limite: { type: "string", description: "Hasta donde llega la evidencia." },
         estado: { type: "string", enum: ["ACCEPTED", "PROPOSED", "REJECTED"] },
         puntos: {
           type: "array",
@@ -416,7 +474,7 @@ const TOOLS = [
             type: "object",
             properties: {
               fragmentoId: { type: "string" },
-              papel: { type: "string", enum: ["HECHO", "CONTRAPARTE", "APOYO"] },
+              papel: { type: "string", enum: ["PATRON", "HECHO", "APERTURA", "APOYO"] },
             },
             required: ["fragmentoId"],
           },

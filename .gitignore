@@ -28,3 +28,6 @@ npm-debug.log*
 # settings.local.json puede llevar VOLTAC_API_TOKEN dentro.
 .mcp.local.json
 .claude/settings.local.json
+
+# Consultas sueltas contra la base mientras se trabaja.
+scratch/

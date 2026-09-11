@@ -1,8 +1,13 @@
 import Link from "next/link";
 
 import { requireUser } from "@/lib/auth";
-import { IDEX, HATS, THIN_CELL_THRESHOLD } from "@/lib/gimi";
-import { VERIFICATION_META, type Verification } from "@/lib/enums";
+import { IDEX, HATS, THIN_CELL_THRESHOLD, ANATOMIA_INSIGHT } from "@/lib/gimi";
+import {
+  VERIFICATION_META,
+  DOT_ROLES,
+  DOT_ROLE_META,
+  type Verification,
+} from "@/lib/enums";
 
 export const metadata = { title: "Guia de uso — Voltac Innovacion" };
 
@@ -211,6 +216,104 @@ export default async function GuiaPage() {
         </Def>
       </Section>
 
+      {/* ── Combinar ──────────────────────────────────────────────────────── */}
+      <Section title="Combinar — de los puntos al insight">
+        <p>
+          Es la etapa 3. Aqui no se busca nada nuevo: se lee el mapa lleno hasta que aparece
+          una revelacion que ninguna celda decia por separado. La unica fuente son los
+          fragmentos que el equipo ya acepto.
+        </p>
+
+        <Def term="La anatomia: patron, hecho, implicacion">
+          Un dato describe el mundo. Un insight hace que quien escucha{" "}
+          <b className="text-[#cbd4d2]">vea una oportunidad que no veia</b>, con informacion
+          que ya tenia. Son tres piezas en este orden, y un examen que decide si se queda:
+          <ul className="mt-3 flex flex-col gap-2.5">
+            {ANATOMIA_INSIGHT.map((pieza) => (
+              <li key={pieza.campo}>
+                <b className="text-[#cbd4d2]">
+                  {pieza.n}. {pieza.nombre}.
+                </b>{" "}
+                {pieza.resumen} {pieza.ayuda}
+                <br />
+                <span className="text-[12px] text-[#7f8f8c]">{pieza.prueba}</span>
+              </li>
+            ))}
+          </ul>
+        </Def>
+
+        <Def term="Por que el patron va primero">
+          Porque hace que la sala asienta antes de oir el dato, y entonces el dato no se
+          discute: se encaja. Si empiezas por la cifra, lo primero que hace quien escucha es
+          comprobarla; si empiezas por algo que ya sabe que es cierto, lo primero que hace es
+          darte la razon.
+          <br />
+          <br />
+          Un patron es <b className="text-[#cbd4d2]">dificilmente cuestionable</b>. Si alguien
+          puede responder &ldquo;eso depende&rdquo;, todavia no lo es.
+        </Def>
+
+        <Def term="El examen que mas insights tumba">
+          <b className="text-[#cbd4d2]">Un insight que solo reafirma la importancia del reto
+          no sirve</b>, por bien escrito que este. La empresa ya sabe que su reto importa: por
+          eso lo planteo. Si al terminar de leerlo no ve nada que antes no viera, se tira y se
+          vuelve al mapa.
+          <br />
+          <br />
+          Es preferible tener dos insights que abran algo, a seis que reafirmen el punto de
+          partida.
+        </Def>
+
+        <Def term="Lo que el insight no hace">
+          <b className="text-[#cbd4d2]">No discute las restricciones de la empresa.</b> Lo que
+          fijo por escrito es el terreno de juego; un insight que empieza demostrandole que su
+          restriccion esta mal no se escucha, se rebate.
+          <br />
+          <br />
+          <b className="text-[#cbd4d2]">No diseña la solucion.</b> El insight revela; el
+          equipo decide. Prescribir el equipo o la arquitectura cierra el abanico antes de
+          abrirlo, y eso es lo que hace Convergir.
+        </Def>
+
+        <Def term="Los cuatro papeles de un punto">
+          Cada fragmento conectado declara que hace ahi:
+          <ul className="mt-3 flex flex-col gap-1.5">
+            {DOT_ROLES.map((r) => (
+              <li key={r}>
+                <b style={{ color: DOT_ROLE_META[r].color }}>{DOT_ROLE_META[r].label}.</b>{" "}
+                {DOT_ROLE_META[r].help}
+              </li>
+            ))}
+          </ul>
+        </Def>
+      </Section>
+
+      {/* ── Presentacion ──────────────────────────────────────────────────── */}
+      <Section title="Presentacion — devolverle el trabajo a la empresa">
+        <p>
+          Es la quinta cara del proyecto, junto al brief, el mapa, los insights y los
+          conceptos: el documento con el que el equipo{" "}
+          <b className="text-[#cbd4d2]">consolida lo que encontro, muestra el avance y recoge
+          la retroalimentacion</b> de quien planteo el reto.
+        </p>
+
+        <Def term="Por que vive aqui y no en una carpeta">
+          Porque una presentacion armada fuera se desincroniza el mismo dia: alguien corrige
+          un insight en la plataforma y la lamina sigue diciendo lo anterior. Guardada junto
+          al proyecto, la version que se expuso queda fechada y trazable.
+        </Def>
+
+        <Def term="El boton de generar esta apagado, y es a proposito">
+          Todo lo que hace falta para armar las laminas ya esta en el proyecto: el reto, el
+          mapa, los insights con su anatomia y sus ideas. Lo unico que falta es el generador.
+          Dejar el boton visible y apagado es mas honesto que esconder la pieza que falta.
+          <br />
+          <br />
+          Mientras tanto la presentacion se carga desde el servidor y la pantalla la muestra,
+          la imprime a PDF y la deja abrir aparte.
+        </Def>
+      </Section>
+
       {/* ── Agente ────────────────────────────────────────────────────────── */}
       <Section title="Agente investigador">
         <p>
@@ -339,6 +442,18 @@ export default async function GuiaPage() {
           <li>
             <b className="text-[#cbd4d2]">Recien ahi</b> el equipo se sienta a leer el mapa
             lleno y buscar insights. Ese es el momento del metodo, y no se adelanta.
+          </li>
+          <li>
+            En Combinar se escriben: patron, hecho, implicacion. Y se pasan por el examen —
+            si solo reafirman el reto, se tiran.
+          </li>
+          <li>
+            En Convergir las ideas que abrieron se vuelven conceptos de solucion, puntuados
+            por impacto y encaje.
+          </li>
+          <li>
+            Y en Presentacion se consolida todo en el documento con el que se le devuelve el
+            trabajo a la empresa.
           </li>
         </ol>
       </Section>

@@ -30,15 +30,15 @@ export type InsightVista = {
   /** Color del trazo. Vacio = el de la paleta segun `position`. */
   color: string;
   statement: string;
+  pattern: string;
   fact: string;
-  counterpart: string;
-  shift: string;
+  implication: string;
+  business: string;
+  limitNote: string;
   offerWho: string;
   offerProof: string;
   payWho: string;
   payProof: string;
-  business: string;
-  limitNote: string;
   reviewState: "ACCEPTED" | "PROPOSED" | "REJECTED";
   origin: "HUMAN" | "AGENT";
   hidden: boolean;

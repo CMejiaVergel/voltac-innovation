@@ -9,6 +9,7 @@ const TABS = [
   { href: "/bom", label: "Mapa de Oportunidades" },
   { href: "/combinar", label: "Combinar" },
   { href: "/convergir", label: "Convergir" },
+  { href: "/presentacion", label: "Presentación" },
   { href: "/agente", label: "Agente investigador" },
   { href: "/fuentes", label: "Fuentes y preguntas" },
   { href: "/equipo", label: "Equipo" },

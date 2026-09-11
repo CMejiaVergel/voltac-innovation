@@ -145,14 +145,10 @@ export async function generateInsights(params: {
         position: posicion++,
         tag: (item.etiqueta ?? "").slice(0, 40),
         statement: item.enunciado,
+        pattern: item.patron ?? "",
         fact: item.hecho ?? "",
-        counterpart: item.contraparte ?? "",
-        shift: item.giro ?? "",
-        offerWho: item.ofreceQuien ?? "",
-        offerProof: item.ofrecePrueba ?? "",
-        payWho: item.pagaQuien ?? "",
-        payProof: item.pagaPrueba ?? "",
-        business: item.negocio ?? "",
+        implication: item.implicacion ?? "",
+        business: item.oportunidad ?? "",
         limitNote: item.limite ?? "",
         dots: {
           create: dots.map((r, i) => ({

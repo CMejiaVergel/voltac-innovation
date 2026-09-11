@@ -127,24 +127,35 @@ export function asEnum<T extends readonly string[]>(
 // Etapa Combinar
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Papel que juega un punto dentro del insight que ayuda a sostener. */
-export const DOT_ROLES = ["HECHO", "CONTRAPARTE", "APOYO"] as const;
+/**
+ * Papel que juega un punto dentro del insight que ayuda a sostener.
+ *
+ * Siguen el orden de la anatomia: primero lo que muestra que el patron se
+ * repite, luego el dato que lo ancla a este reto, luego el punto por el que
+ * asoma la oportunidad.
+ */
+export const DOT_ROLES = ["PATRON", "HECHO", "APERTURA", "APOYO"] as const;
 export type DotRole = (typeof DOT_ROLES)[number];
 
 export const DOT_ROLE_META: Record<DotRole, { label: string; help: string; color: string }> = {
+  PATRON: {
+    label: "Patrón",
+    help: "Muestra que la regularidad se repite. No siempre hace falta: un patrón puede ser evidente sin que ningún fragmento lo diga.",
+    color: "#8E5324",
+  },
   HECHO: {
     label: "Hecho",
-    help: "La necesidad o particularidad verificable. La primera punta del intercambio.",
+    help: "El dato con cifra que demuestra que el patrón se cumple en este reto. Es el punto que nadie puede discutir.",
     color: "#2F5D8C",
   },
-  CONTRAPARTE: {
-    label: "Contraparte",
-    help: "La conducta de mercado ya observada que responde a esa necesidad. La segunda punta.",
-    color: "#8E5324",
+  APERTURA: {
+    label: "Apertura",
+    help: "El punto por el que asoma la oportunidad nueva. Suele venir de Adyacencias: un mecanismo que ya funcionó en otro sector.",
+    color: "#6B4C9A",
   },
   APOYO: {
     label: "Apoyo",
-    help: "Dato que refuerza o matiza, sin ser ninguna de las dos puntas.",
+    help: "Dato que refuerza, acota o matiza sin ser ninguna de las tres piezas.",
     color: "#5E7370",
   },
 };

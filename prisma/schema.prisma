@@ -150,6 +150,7 @@ model Project {
   researchRuns  ResearchRun[]
   insights      Insight[]
   concepts      Concept[]
+  decks         Deck[]
 }
 
 model Membership {
@@ -456,13 +457,27 @@ model ResearchRun {
 /// los insights existen, asi que llenarlo no se puede contaminar con la
 /// conclusion. Divergir queda crudo; Combinar lee encima.
 ///
-/// QUE HACE VALIDO A UN INSIGHT (lo aprendido con el mentor):
-/// no basta con reencuadrar un dato. La frase tiene que ser concluyente por si
-/// sola y sostenerse en hechos verificables de las DOS puntas del intercambio:
-/// una necesidad o particularidad real, y una contraparte de mercado que ya
-/// demostro con conducta —no con intencion— que responde a ella. Por eso
-/// `counterpart` existe como campo propio: es lo que separa un dato de un
-/// insight, y es lo que primero se cae cuando falta.
+/// ANATOMIA DE UN INSIGHT (lo aprendido en el reto de Cabot, tras seis
+/// iteraciones y tres correcciones de mentor). Son tres piezas en este orden:
+///
+///   1. PATRON      Una regularidad dificilmente cuestionable. No una opinion
+///                  ni una hipotesis: algo que quien escucha reconoce como
+///                  cierto sin pedir prueba. `pattern`.
+///   2. HECHO       El dato del mapa que demuestra que ese patron se cumple
+///                  aqui, en este reto, con esta empresa. `fact`.
+///   3. IMPLICACION El «¿y que?». Lo que cambia al poner las dos piezas
+///                  juntas, y que ninguna de las dos decia sola.
+///                  `implication`.
+///
+/// Y una condicion de validez que no es una pieza sino un examen: la
+/// implicacion tiene que ABRIR UNA OPORTUNIDAD DE NEGOCIO NUEVA (`business`).
+/// Un insight que solo reafirma la importancia del reto —«el agua escasea, por
+/// eso hay que ahorrarla»— esta bien escrito y no sirve para nada: el equipo
+/// que planteo el reto ya lo sabia. Si al terminar de leerlo la empresa no ve
+/// nada que antes no viera, hay que tirarlo y volver al mapa.
+///
+/// `limitNote` cierra: hasta donde llega la evidencia. Un insight que no
+/// declara donde termina invita a que se lo desmonten en la primera pregunta.
 model Insight {
   id        String  @id @default(cuid())
   projectId String
@@ -478,28 +493,31 @@ model Insight {
   /// seis trazos encima del mismo mapa, el color es lo unico que los separa.
   color String @default("")
 
-  /// La frase concluyente. Debe poder leerse sola, sin el desglose.
+  /// La frase concluyente: patron, hecho e implicacion en un solo parrafo.
+  /// Debe poder leerse sola, sin el desglose.
   statement String
 
-  /// El hecho con cifra y fuente que sostiene la primera punta.
+  /// 1. El patron dificilmente cuestionable.
+  pattern     String @default("")
+  /// 2. El hecho del mapa que lo demuestra en este reto, con su cifra.
   fact        String @default("")
-  /// La conducta de mercado ya observada que sostiene la segunda punta.
-  counterpart String @default("")
-  /// Que cambia de perspectiva al leer las dos juntas.
-  shift       String @default("")
+  /// 3. La implicacion: el «¿y que?».
+  implication String @default("")
 
-  /// Quien ofrece, y la evidencia de que ya lo hace.
-  offerWho   String @default("")
-  offerProof String @default("")
-  /// Quien paga, y la evidencia de que ya lo paga.
-  payWho     String @default("")
-  payProof   String @default("")
-
-  /// El negocio que aparece cuando las dos puntas se encuentran.
+  /// La oportunidad de negocio que abre la implicacion. Sin esto el insight
+  /// esta incompleto aunque las tres piezas anteriores sean impecables.
   business  String @default("")
   /// Hasta donde llega la evidencia. Declararlo es parte del insight: marca
   /// donde termina lo que se puede afirmar y empieza la pregunta.
   limitNote String @default("")
+
+  /// Quien ofrece y quien paga, con la prueba de que ya lo hacen. No forman
+  /// parte de la anatomia: son el examen «¿como sabes eso?» aplicado a la
+  /// oportunidad, y solo se llenan cuando el insight nombra un intercambio.
+  offerWho   String @default("")
+  offerProof String @default("")
+  payWho     String @default("")
+  payProof   String @default("")
 
   /// ACCEPTED | PROPOSED | REJECTED — los del agente entran como PROPOSED.
   reviewState String  @default("ACCEPTED")
@@ -547,7 +565,10 @@ model InsightDot {
   rowId        String @default("")
   colId        String @default("")
 
-  /// HECHO | CONTRAPARTE | APOYO — que papel juega este punto en el insight.
+  /// PATRON | HECHO | APERTURA | APOYO — que papel juega este punto.
+  /// PATRON: muestra que la regularidad se repite. HECHO: aporta el dato duro.
+  /// APERTURA: es el punto por el que asoma la oportunidad, casi siempre una
+  /// adyacencia. APOYO: matiza o acota.
   role     String @default("APOYO")
   /// Orden del trazo en el mapa de puntos.
   position Int    @default(0)
@@ -697,4 +718,54 @@ model Assumption {
   updatedAt DateTime @updatedAt
 
   @@index([conceptId])
+}
+
+// -----------------------------------------------------------------------------
+// Presentacion — como se consolida y se muestra el avance al cliente
+// -----------------------------------------------------------------------------
+
+/// La presentacion del proyecto: el documento con el que el equipo devuelve el
+/// trabajo a la empresa que planteo el reto y recoge su retroalimentacion.
+///
+/// POR QUE VIVE EN LA HERRAMIENTA Y NO EN UNA CARPETA:
+/// el banco de conocimiento completo —brief, mapa, insights, conceptos— ya esta
+/// aqui. Una presentacion armada fuera se desincroniza el mismo dia: alguien
+/// corrige un insight en la plataforma y la lamina sigue diciendo lo anterior.
+/// Guardandola junto al proyecto, la version que se expuso queda fechada y
+/// trazable, y el dia que el generador funcione se rehace de una sola fuente.
+///
+/// ESTADO ACTUAL: `source` es HUMAN en todos los casos. El HTML se carga con
+/// `npm run presentacion:cargar`. El boton de generar existe en la interfaz
+/// desactivado a proposito: es la promesa explicita de a donde va esto, no un
+/// adorno.
+model Deck {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  title    String
+  subtitle String @default("")
+
+  /// El documento entero, autocontenido: estilos e imagenes embebidas. Se sirve
+  /// dentro de un iframe aislado, nunca inyectado en el arbol de la aplicacion.
+  html String
+
+  /// Cuantas laminas tiene, para mostrarlo sin abrir el documento.
+  pages Int @default(0)
+
+  /// Tamaño de pagina en CSS, tal como lo declara el propio HTML. Se muestra
+  /// junto al boton de imprimir para que nadie se sorprenda con el PDF.
+  pageSize String @default("")
+
+  /// HUMAN | AGENT — quien la armo. Ver la nota de arriba.
+  source String @default("HUMAN")
+
+  /// Marca de la version expuesta: que se enseño, cuando y a quien.
+  presentedAt DateTime?
+  presentedTo String    @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
 }

@@ -61,29 +61,33 @@ export type CampoInsight =
   | "tag"
   | "color"
   | "statement"
+  // La anatomia, en orden: patron -> hecho -> implicacion, y el negocio que
+  // abre. Ver ANATOMIA_INSIGHT en `src/lib/gimi.ts`.
+  | "pattern"
   | "fact"
-  | "counterpart"
-  | "shift"
+  | "implication"
+  | "business"
+  | "limitNote"
+  // El examen «¿como sabes eso?» aplicado a la oportunidad. Opcional: solo
+  // cuando el insight nombra un intercambio concreto.
   | "offerWho"
   | "offerProof"
   | "payWho"
-  | "payProof"
-  | "business"
-  | "limitNote";
+  | "payProof";
 
 const CAMPOS: CampoInsight[] = [
   "tag",
   "color",
   "statement",
+  "pattern",
   "fact",
-  "counterpart",
-  "shift",
+  "implication",
+  "business",
+  "limitNote",
   "offerWho",
   "offerProof",
   "payWho",
   "payProof",
-  "business",
-  "limitNote",
 ];
 
 /**
@@ -127,15 +131,15 @@ export async function createInsight(
       origin: "HUMAN",
       statement: statement || "Insight sin enunciar",
       tag: (campos.tag ?? "").trim(),
+      pattern: (campos.pattern ?? "").trim(),
       fact: (campos.fact ?? "").trim(),
-      counterpart: (campos.counterpart ?? "").trim(),
-      shift: (campos.shift ?? "").trim(),
+      implication: (campos.implication ?? "").trim(),
+      business: (campos.business ?? "").trim(),
+      limitNote: (campos.limitNote ?? "").trim(),
       offerWho: (campos.offerWho ?? "").trim(),
       offerProof: (campos.offerProof ?? "").trim(),
       payWho: (campos.payWho ?? "").trim(),
       payProof: (campos.payProof ?? "").trim(),
-      business: (campos.business ?? "").trim(),
-      limitNote: (campos.limitNote ?? "").trim(),
       position: await siguientePosicion(projectId),
       dots: {
         create: fragmentos.map((f) => ({

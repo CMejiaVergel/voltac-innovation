@@ -58,6 +58,106 @@ async function loadMap(projectId: string) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Alta y datos del proyecto
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type NuevoProyecto = {
+  nombre: string;
+  empresa?: string | null;
+  programa?: string | null;
+  /** Clave de la plantilla del mapa. Por defecto la 5x5 del taller. */
+  plantilla?: string | null;
+  /** El reto tal como lo escribio la empresa. Literal, sin reinterpretar. */
+  reto?: string | null;
+};
+
+/**
+ * Crea un proyecto con su brief y su mapa vacio.
+ *
+ * El agente puede abrir el proyecto, pero la etapa Configurar sigue siendo
+ * trabajo del equipo: aqui solo se deja el reto literal. Meta, restricciones y
+ * el "que evitar" se escriben despues, con la empresa delante, porque son
+ * justo los campos que luego limitan lo que el agente puede proponer.
+ */
+export async function createProjectForAgent(user: SessionUser, datos: NuevoProyecto) {
+  const nombre = (datos.nombre ?? "").trim();
+  if (nombre.length < 4) {
+    throw new AgentApiError("El proyecto necesita un nombre de al menos 4 caracteres.", 400);
+  }
+
+  const clave = (datos.plantilla ?? "gimi-5x5").trim() || "gimi-5x5";
+  const template = await prisma.mapTemplate.findUnique({ where: { key: clave } });
+  if (!template) throw new AgentApiError(`No existe la plantilla "${clave}".`, 404);
+
+  const base = slugify(nombre);
+  let slug = base;
+  for (let i = 2; await prisma.project.findUnique({ where: { slug } }); i++) {
+    slug = `${base}-${i}`;
+  }
+
+  const creado = await prisma.project.create({
+    data: {
+      slug,
+      name: nombre,
+      company: (datos.empresa ?? "").trim() || null,
+      program: (datos.programa ?? "").trim() || null,
+      createdById: user.id,
+      members: { create: { userId: user.id, role: "OWNER" } },
+      brief: { create: { challengeText: (datos.reto ?? "").trim() } },
+      maps: { create: { templateId: template.id } },
+    },
+    select: { slug: true, name: true },
+  });
+
+  return {
+    slug: creado.slug,
+    nombre: creado.name,
+    plantilla: clave,
+    siguiente:
+      "Completa la etapa Configurar antes de investigar: meta, restricciones y sobre todo el " +
+      "«que evitar». Son los campos que despues limitan lo que el agente puede proponer, y sin " +
+      "ellos el mapa se llena en direcciones que la empresa ya descarto.",
+  };
+}
+
+/**
+ * Cambia el nombre, la empresa o el programa. El slug NO se toca: es lo que
+ * usan los enlaces guardados, los respaldos y las corridas ya registradas.
+ */
+export async function renameProject(
+  user: SessionUser,
+  slug: string,
+  datos: { nombre?: string | null; empresa?: string | null; programa?: string | null },
+) {
+  const project = await loadProject(user, slug, true);
+
+  const data: Record<string, string | null> = {};
+  if (typeof datos.nombre === "string" && datos.nombre.trim().length >= 4) {
+    data.name = datos.nombre.trim();
+  }
+  if (typeof datos.empresa === "string") data.company = datos.empresa.trim() || null;
+  if (typeof datos.programa === "string") data.program = datos.programa.trim() || null;
+
+  if (Object.keys(data).length === 0) {
+    throw new AgentApiError("No hay nada que cambiar, o el nombre es demasiado corto.", 400);
+  }
+
+  const actualizado = await prisma.project.update({
+    where: { id: project.id },
+    data,
+    select: { slug: true, name: true, company: true, program: true },
+  });
+
+  return {
+    slug: actualizado.slug,
+    nombre: actualizado.name,
+    empresa: actualizado.company,
+    programa: actualizado.program,
+    nota: "El slug no cambia: los enlaces y los respaldos existentes siguen valiendo.",
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Lectura
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -370,14 +470,10 @@ export async function getProjectContext(
       ...(completo
         ? {
             etiqueta: i.tag,
+            patron: i.pattern,
             hecho: i.fact,
-            contraparte: i.counterpart,
-            giro: i.shift,
-            ofreceQuien: i.offerWho,
-            ofrecePrueba: i.offerProof,
-            pagaQuien: i.payWho,
-            pagaPrueba: i.payProof,
-            negocio: i.business,
+            implicacion: i.implication,
+            oportunidad: i.business,
             limite: i.limitNote,
             origen: i.origin,
             ideas: (i.ideas as { text: string }[]).map((n) => n.text),

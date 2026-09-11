@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 
 import { DOT_ROLE_META, DOTS_RECOMENDADO, colorDeTrazo, type DotRole } from "@/lib/enums";
 import type { TemplateShape } from "@/lib/templates";
+import { ANATOMIA_INSIGHT } from "@/lib/gimi";
 import {
   addIdea,
   deleteIdea,
@@ -20,32 +21,28 @@ import type { InsightVista } from "./types";
 /**
  * La ficha de un insight.
  *
- * Los campos son fijos y no texto libre a proposito. La estructura —hecho,
- * contraparte, las dos puntas con su evidencia— es lo que separa un insight de
- * un dato reencuadrado, y es exactamente lo que se cae primero cuando alguien
- * lo escribe con prisa. Al ser campos, la ficha puede avisar de lo que falta
- * sin tener que leer la prosa.
+ * Los campos son fijos y no texto libre a proposito. La anatomia —patron,
+ * hecho, implicacion, y la oportunidad que abre— es lo que separa un insight
+ * de un dato reencuadrado, y es exactamente lo que se cae primero cuando
+ * alguien lo escribe con prisa. Al ser campos, la ficha puede avisar de lo que
+ * falta sin tener que leer la prosa.
  *
  * Los avisos NO bloquean el guardado. La metodologia prohibe rellenar por
- * cuota, y una validacion dura empujaria a inventar una contraparte con tal de
+ * cuota, y una validacion dura empujaria a inventarse una pieza con tal de
  * poder guardar, que es peor que dejarla vacia y verla marcada.
  */
 
-const CAMPOS: { campo: CampoInsight; label: string; ayuda: string }[] = [
-  { campo: "fact", label: "El hecho", ayuda: "La necesidad o particularidad, con cifra y fuente." },
-  {
-    campo: "counterpart",
-    label: "La contraparte",
-    ayuda: "La conducta de mercado YA observada que responde a ese hecho. No una intencion.",
-  },
-  { campo: "shift", label: "El giro", ayuda: "Que cambia al leer las dos juntas." },
-  { campo: "business", label: "El negocio", ayuda: "Que aparece cuando las dos puntas se encuentran." },
-  {
-    campo: "limitNote",
-    label: "Lo que no podemos afirmar",
-    ayuda: "Hasta donde llega la evidencia. Declararlo es parte del insight.",
-  },
-];
+/**
+ * Los campos de la ficha SON la anatomia, leida de `gimi.ts`. No se duplica
+ * aqui: si algun dia cambia la metodologia, cambia en un sitio y el agente y
+ * la ficha se mueven juntos.
+ */
+const CAMPOS = ANATOMIA_INSIGHT.map((pieza) => ({
+  campo: pieza.campo as CampoInsight,
+  label: `${pieza.n}. ${pieza.nombre}`,
+  ayuda: pieza.ayuda,
+  prueba: pieza.prueba,
+}));
 
 export function InsightCard({
   insight,
@@ -71,7 +68,10 @@ export function InsightCard({
   const color = colorDeTrazo(insight.color, insight.position);
 
   const propuesta = insight.reviewState === "PROPOSED";
-  const faltaContraparte = !insight.counterpart.trim();
+  // Las dos piezas que primero se caen: sin implicacion es una glosa, y sin
+  // oportunidad es un insight que reafirma el reto en vez de abrir algo.
+  const faltaImplicacion = !insight.implication.trim();
+  const faltaOportunidad = !insight.business.trim();
   const pocosPuntos = insight.dots.length < DOTS_RECOMENDADO;
   const huerfanos = insight.dots.filter((d) => d.huerfano).length;
 
@@ -173,12 +173,18 @@ export function InsightCard({
       )}
 
       {/* ── Avisos ─────────────────────────────────────────────────────── */}
-      {(faltaContraparte || pocosPuntos || huerfanos > 0) && (
+      {(faltaImplicacion || faltaOportunidad || pocosPuntos || huerfanos > 0) && (
         <ul className="flex flex-col gap-1 rounded-[4px] border border-dashed border-[rgba(201,162,39,0.4)] p-2.5">
-          {faltaContraparte && (
+          {faltaImplicacion && (
             <li className="text-[11.5px] leading-snug text-[#c9a94e]">
-              Falta la contraparte de mercado. Sin ella el insight es un dato reencuadrado: no
-              dice quien ya respondio a ese hecho.
+              Falta la implicacion. Sin el «¿y que?» esto es un dato reencuadrado: se lee bien y
+              no cambia nada.
+            </li>
+          )}
+          {faltaOportunidad && (
+            <li className="text-[11.5px] leading-snug text-[#c9a94e]">
+              Falta la oportunidad que abre. Un insight que solo reafirma la importancia del reto
+              no le dice nada nuevo a quien lo planteo.
             </li>
           )}
           {pocosPuntos && (
@@ -290,6 +296,9 @@ export function InsightCard({
               </div>
             ))}
 
+            <p className="kicker mt-1 border-t border-[rgba(232,227,216,0.1)] pt-3">
+              ¿Como sabemos que hay negocio? · opcional
+            </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <Punta
                 titulo="Quien ofrece"

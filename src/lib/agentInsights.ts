@@ -22,14 +22,15 @@ export type IncomingInsight = {
   etiqueta?: string | null;
   /** Color del trazo en #rrggbb. Vacio = el de la paleta segun posicion. */
   color?: string | null;
+  /** 1 — el patron dificilmente cuestionable, escrito en general. */
+  patron?: string | null;
+  /** 2 — el hecho del mapa que lo demuestra en este reto, con su cifra. */
   hecho?: string | null;
-  contraparte?: string | null;
-  giro?: string | null;
-  ofreceQuien?: string | null;
-  ofrecePrueba?: string | null;
-  pagaQuien?: string | null;
-  pagaPrueba?: string | null;
-  negocio?: string | null;
+  /** 3 — la implicacion: el «¿y que?». */
+  implicacion?: string | null;
+  /** El examen: que oportunidad de negocio nueva abre. */
+  oportunidad?: string | null;
+  /** Hasta donde llega la evidencia. */
   limite?: string | null;
   ideas?: string[];
 };
@@ -136,14 +137,10 @@ export async function createInsights(
         statement: enunciado,
         tag: (item.etiqueta ?? "").slice(0, 40),
         color: colorValido(item.color),
+        pattern: item.patron ?? "",
         fact: item.hecho ?? "",
-        counterpart: item.contraparte ?? "",
-        shift: item.giro ?? "",
-        offerWho: item.ofreceQuien ?? "",
-        offerProof: item.ofrecePrueba ?? "",
-        payWho: item.pagaQuien ?? "",
-        payProof: item.pagaPrueba ?? "",
-        business: item.negocio ?? "",
+        implication: item.implicacion ?? "",
+        business: item.oportunidad ?? "",
         limitNote: item.limite ?? "",
         dots: { create: unicos.map((p, i) => aDot(porId.get(p.fragmentoId)!, p.papel, i)) },
         ideas: {
@@ -183,14 +180,10 @@ export async function updateInsightById(
     ["enunciado", "statement"],
     ["etiqueta", "tag"],
     ["color", "color"],
+    ["patron", "pattern"],
     ["hecho", "fact"],
-    ["contraparte", "counterpart"],
-    ["giro", "shift"],
-    ["ofreceQuien", "offerWho"],
-    ["ofrecePrueba", "offerProof"],
-    ["pagaQuien", "payWho"],
-    ["pagaPrueba", "payProof"],
-    ["negocio", "business"],
+    ["implicacion", "implication"],
+    ["oportunidad", "business"],
     ["limite", "limitNote"],
   ];
   for (const [entra, campo] of CAMPOS) {
