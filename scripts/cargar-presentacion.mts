@@ -17,9 +17,22 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+/**
+ * Valor de una opcion `--nombre`, juntando todas las palabras hasta la
+ * siguiente opcion.
+ *
+ * Sin esto, `--titulo Insights Caribe Innova 2026` se guardaba como
+ * «Insights»: entre npm y el shell del servidor las comillas no llegan
+ * enteras, y el titulo perdia todo menos la primera palabra.
+ */
 function arg(nombre: string): string | undefined {
   const i = process.argv.indexOf(`--${nombre}`);
-  return i > 0 ? process.argv[i + 1] : undefined;
+  if (i < 0) return undefined;
+  const palabras: string[] = [];
+  for (let j = i + 1; j < process.argv.length && !process.argv[j].startsWith("--"); j++) {
+    palabras.push(process.argv[j]);
+  }
+  return palabras.length > 0 ? palabras.join(" ") : undefined;
 }
 
 /** Cuenta las laminas por el marcado del propio documento. */
@@ -43,7 +56,14 @@ function quitarBarra(html: string): string {
 }
 
 async function main() {
-  const [slug, archivo] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+  // Solo los dos primeros sueltos: lo que venga despues de un `--opcion`
+  // pertenece a esa opcion, no a la lista de posicionales.
+  const sueltos: string[] = [];
+  for (const a of process.argv.slice(2)) {
+    if (a.startsWith("--")) break;
+    sueltos.push(a);
+  }
+  const [slug, archivo] = sueltos;
   if (!slug || !archivo) {
     console.error(
       'Uso: npm run presentacion:cargar -- <slug> <archivo.html> [--titulo "..."] [--subtitulo "..."]',
