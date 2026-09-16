@@ -547,6 +547,35 @@ const TOOLS = [
       api(`${slugPath(slug)}/conceptos`, { method: "POST", body }),
   },
   {
+    name: "editar_concepto",
+    description:
+      "Corrige un concepto de Convergir o puntua su matriz Impacto x Fit. Puntua SOLO si el equipo lo pidio: es su ejercicio. Escala 1 a 5, 0 deja el subcriterio sin puntuar. Impacto: demanda (tiene mas demanda), implementar (facil de implementar), escalar (facil de escalar). Fit: resuelveProblema, atractivoEquipo, metas (ayuda a alcanzar las metas del reto). Siempre con justificacion: el porque de cada numero, anclado en fragmentos, insights o supuestos. Un numero sin porque no se puede discutir.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        titulo: { type: "string" },
+        enunciado: { type: "string" },
+        estado: { type: "string", enum: ["ACCEPTED", "PROPOSED", "REJECTED"] },
+        puntuacion: {
+          type: "object",
+          properties: {
+            demanda: { type: "integer", minimum: 0, maximum: 5 },
+            implementar: { type: "integer", minimum: 0, maximum: 5 },
+            escalar: { type: "integer", minimum: 0, maximum: 5 },
+            resuelveProblema: { type: "integer", minimum: 0, maximum: 5 },
+            atractivoEquipo: { type: "integer", minimum: 0, maximum: 5 },
+            metas: { type: "integer", minimum: 0, maximum: 5 },
+          },
+        },
+        justificacion: { type: "string" },
+      },
+      required: ["id"],
+    },
+    run: ({ id, ...patch }) =>
+      api(`/api/agent/conceptos/${encodeURIComponent(id)}`, { method: "PATCH", body: patch }),
+  },
+  {
     name: "registrar_fuentes",
     description:
       "Agrega entradas a la bibliografia del proyecto. Toda afirmacion del mapa deberia poder rastrearse hasta aqui.",

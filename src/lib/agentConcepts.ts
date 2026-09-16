@@ -16,10 +16,12 @@ import type { SessionUser } from "@/lib/auth";
  * inexistente se rechaza entero, igual que un insight que cita un punto que
  * no esta en el mapa.
  *
- * Lo que el agente NO hace es puntuar. La matriz Impacto × Fit es un ejercicio
- * del equipo (CV.pdf: evaluar, intercambiar el ranking con un par, votar si
- * hay empate). Un agente que llega con los seis numeros puestos le quita al
- * equipo justo la discusion que la etapa existe para provocar.
+ * El agente NO puntua por iniciativa propia. La matriz Impacto × Fit es un
+ * ejercicio del equipo (CV.pdf: evaluar, intercambiar el ranking con un par,
+ * votar si hay empate). Un agente que llega con los seis numeros puestos le
+ * quita al equipo justo la discusion que la etapa existe para provocar. Si el
+ * equipo se lo pide, puntua, y deja escrito el porque de cada numero para que
+ * haya contra que discutirlo.
  */
 
 export type IncomingConcept = {
@@ -166,4 +168,91 @@ export async function createConcepts(
   }
 
   return { creados, rechazados };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Correccion y puntuacion
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Nombres de la API, en español, contra las columnas de los seis subcriterios. */
+const PUNTUACION: Record<string, "impDemanda" | "impImplementar" | "impEscalar" | "fitProblema" | "fitEquipo" | "fitMetas"> = {
+  demanda: "impDemanda",
+  implementar: "impImplementar",
+  escalar: "impEscalar",
+  resuelveProblema: "fitProblema",
+  atractivoEquipo: "fitEquipo",
+  metas: "fitMetas",
+};
+
+const ROTULO_JUSTIFICACION = "Por qué esta puntuación";
+
+export type ConceptPatch = {
+  titulo?: string;
+  enunciado?: string;
+  estado?: string;
+  /** Escala 1 a 5; 0 deja el subcriterio sin puntuar. */
+  puntuacion?: Partial<Record<keyof typeof PUNTUACION, number>>;
+  /**
+   * Por que cada numero. Se guarda al final de la descripcion, reemplazando la
+   * justificacion anterior si la habia. Sin esto el equipo ve un 2 y no sabe
+   * contra que discutirlo, que es para lo que existe la matriz.
+   */
+  justificacion?: string;
+};
+
+export async function updateConceptById(user: SessionUser, id: string, cambios: ConceptPatch) {
+  const concepto = await prisma.concept.findUnique({
+    where: { id },
+    select: { id: true, projectId: true, description: true },
+  });
+  if (!concepto) throw new AgentApiError("El concepto no existe.", 404);
+  const access = await getProjectRole(user, concepto.projectId);
+  if (!access) throw new AgentApiError("El concepto no existe.", 404);
+  if (!canEdit(access.role)) {
+    throw new AgentApiError("El token no tiene permiso de escritura en este proyecto.", 403);
+  }
+
+  const data: Record<string, unknown> = {};
+  if (typeof cambios.titulo === "string" && cambios.titulo.trim()) data.title = cambios.titulo.trim();
+  if (typeof cambios.enunciado === "string" && cambios.enunciado.trim()) {
+    data.statement = cambios.enunciado.trim();
+  }
+  if (cambios.estado && ["ACCEPTED", "PROPOSED", "REJECTED"].includes(cambios.estado)) {
+    data.reviewState = cambios.estado;
+  }
+
+  for (const [nombre, valor] of Object.entries(cambios.puntuacion ?? {})) {
+    const columna = PUNTUACION[nombre];
+    if (!columna) throw new AgentApiError(`No existe el subcriterio "${nombre}".`, 400);
+    const n = Math.round(Number(valor));
+    if (!Number.isFinite(n) || n < 0 || n > 5) {
+      throw new AgentApiError(`"${nombre}" va de 1 a 5, o 0 para dejarlo sin puntuar.`, 400);
+    }
+    data[columna] = n;
+  }
+
+  if (typeof cambios.justificacion === "string" && cambios.justificacion.trim()) {
+    const base = concepto.description.split(`\n\n${ROTULO_JUSTIFICACION}\n`)[0].trimEnd();
+    data.description = `${base}\n\n${ROTULO_JUSTIFICACION}\n${cambios.justificacion.trim()}`;
+  }
+
+  if (Object.keys(data).length === 0) {
+    throw new AgentApiError("El cambio no trae ningun campo reconocido.", 400);
+  }
+
+  const actualizado = await prisma.concept.update({
+    where: { id },
+    data,
+    select: {
+      id: true,
+      title: true,
+      impDemanda: true,
+      impImplementar: true,
+      impEscalar: true,
+      fitProblema: true,
+      fitEquipo: true,
+      fitMetas: true,
+    },
+  });
+  return { actualizado };
 }
