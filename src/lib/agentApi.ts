@@ -288,7 +288,8 @@ export type SeccionContexto =
   | "celdas"
   | "preguntas"
   | "fragmentos"
-  | "insights";
+  | "insights"
+  | "conceptos";
 
 const SECCIONES_POR_DEFECTO: SeccionContexto[] = [
   "brief",
@@ -476,9 +477,48 @@ export async function getProjectContext(
             oportunidad: i.business,
             limite: i.limitNote,
             origen: i.origin,
-            ideas: (i.ideas as { text: string }[]).map((n) => n.text),
+            // Con id: es lo que cita un concepto de Convergir.
+            ideas: (i.ideas as { id: string; text: string }[]).map((n) => ({ id: n.id, texto: n.text })),
           }
         : { ideas: i._count.ideas }),
+    }));
+  }
+
+  if (quiere.has("conceptos")) {
+    const conceptos = await prisma.concept.findMany({
+      where: { projectId: project.id },
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+      include: {
+        origenes: { select: { ideaId: true, insightId: true } },
+        supuestos: { orderBy: [{ likelihood: "asc" }, { position: "asc" }] },
+      },
+    });
+    salida.conceptos = conceptos.map((c) => ({
+      id: c.id,
+      titulo: c.title,
+      enunciado: c.statement,
+      estado: c.reviewState,
+      ideas: c.origenes.map((o) => o.ideaId).filter(Boolean),
+      insights: [...new Set(c.origenes.map((o) => o.insightId).filter(Boolean))],
+      supuestos: c.supuestos.map((a) => ({
+        id: a.id,
+        texto: a.text,
+        probabilidad: a.likelihood,
+        estado: a.status,
+      })),
+      ...(completo
+        ? {
+            descripcion: c.description,
+            puntuacion: {
+              demanda: c.impDemanda,
+              implementar: c.impImplementar,
+              escalar: c.impEscalar,
+              resuelveProblema: c.fitProblema,
+              atractivoEquipo: c.fitEquipo,
+              metas: c.fitMetas,
+            },
+          }
+        : {}),
     }));
   }
 

@@ -315,3 +315,24 @@ export const ARTEFACTO = {
     "El llamado a la accion invita a reaccionar, no a comprar.",
   ],
 } as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Plantilla de concepto de solucion — etapa Convergir
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Los cinco elementos con que el GIMI describe un concepto (CB.pdf, lamina 44),
+ * mas el ancla: el "punto caliente" del mapa del que parte.
+ *
+ * No es casual que coincidan con las filas del mapa. Quien tiene el problema y
+ * que necesita es Mercado; la solucion es Oferta; quien la ofrece y como es
+ * Produccion y Modelos. Un concepto que deja vacio uno de los cinco suele
+ * delatar una fila del mapa que nadie lleno.
+ */
+export const PLANTILLA_CONCEPTO = [
+  { campo: "quienTieneElProblema", pregunta: "¿Quién tiene el problema?", filaDelMapa: "mercado" },
+  { campo: "necesidades", pregunta: "¿Cuáles son sus necesidades?", filaDelMapa: "mercado" },
+  { campo: "solucion", pregunta: "¿Cuál es la solución?", filaDelMapa: "oferta" },
+  { campo: "quienLaOfrece", pregunta: "¿Quién la está ofreciendo?", filaDelMapa: "produccion" },
+  { campo: "comoLoResuelve", pregunta: "¿Cómo lo resolverá?", filaDelMapa: "modelos" },
+] as const;

@@ -15,6 +15,7 @@ const VALIDAS: SeccionContexto[] = [
   "preguntas",
   "fragmentos",
   "insights",
+  "conceptos",
 ];
 
 export const GET = withToken(async (user, _identity, request) => {
