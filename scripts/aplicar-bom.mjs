@@ -3,7 +3,7 @@
  * Aplica un mapa versionado (prisma/data/bom-*.json) a un proyecto.
  *
  *   node scripts/aplicar-bom.mjs --archivo prisma/data/bom-cabot-v2.json \
- *                                --slug reuso-de-agua-de-rechazo-cabot-cartagena-prueba \
+ *                                --slug <slug-del-proyecto> \
  *                                --estado ACCEPTED
  *
  * Deliberadamente NO habla con la base de datos: entra por /api/agent, la

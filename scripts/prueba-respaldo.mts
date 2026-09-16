@@ -1,7 +1,7 @@
 /**
  * Prueba de ida y vuelta del respaldo, contra la base real.
  *
- *   npm run respaldo:probar [slug]
+ *   npm run respaldo:probar -- <slug>
  *
  * Crea un respaldo del proyecto, lo restaura de verdad como proyecto nuevo,
  * compara todo con el original y despues borra la copia para no dejar basura.
@@ -33,7 +33,13 @@ const { prisma } = await import("../src/lib/db");
 const { crearRespaldo, restaurarRespaldo } = await import("../src/lib/backup");
 const { writeFileSync } = await import("node:fs");
 
-const SLUG = process.argv[2] ?? "reuso-de-agua-de-rechazo-cabot-cartagena-prueba";
+// Sin valor por defecto: antes apuntaba a una copia vieja del proyecto de Cabot,
+// con informacion desactualizada. La prueba tiene que decir contra que corre.
+const SLUG = process.argv[2];
+if (!SLUG) {
+  console.error("Uso: npm run respaldo:probar -- <slug-del-proyecto>   (solo contra la base local)");
+  process.exit(1);
+}
 
 async function contar(projectId: string) {
   const map = await prisma.bomMap.findFirst({ where: { projectId } });
