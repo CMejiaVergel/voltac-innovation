@@ -38,6 +38,8 @@ const ARCHIVOS = {
   preguntas: "preguntas.json",
   insights: "insights.json",
   conceptos: "conceptos.json",
+  artefactos: "artefactos.json",
+  presentaciones: "presentaciones.json",
   corridas: "corridas.json",
   leeme: "LEEME.txt",
 } as const;
@@ -65,6 +67,9 @@ QUE HAY EN CADA ARCHIVO
                     conectan y las ideas que abren.
   conceptos.json    Los conceptos de Convergir, con su puntuacion, las ideas
                     de las que salen y los supuestos de los que dependen.
+  artefactos.json   Los artefactos de innovacion: el documento, los supuestos
+                    que exponen, sus cifras y lo que respondio la empresa.
+  presentaciones.json  La presentacion del proyecto, tal como se expuso.
   corridas.json     Las ejecuciones del agente investigador y su costo.
 
 COMO SE RESTAURA
@@ -138,6 +143,24 @@ export async function crearRespaldo(projectId: string) {
     orderBy: { position: "asc" },
   });
 
+  const artefactos = await prisma.artifact.findMany({
+    where: { projectId },
+    include: {
+      supuestos: { select: { assumptionId: true } },
+      cifras: { orderBy: { position: "asc" } },
+      reacciones: {
+        orderBy: { createdAt: "asc" },
+        include: { author: { select: { email: true } } },
+      },
+    },
+    orderBy: { position: "asc" },
+  });
+
+  const presentaciones = await prisma.deck.findMany({
+    where: { projectId },
+    orderBy: { createdAt: "asc" },
+  });
+
   const manifiesto = {
     formato: "voltac-innovacion/respaldo",
     version: VERSION_RESPALDO,
@@ -150,6 +173,8 @@ export async function crearRespaldo(projectId: string) {
       preguntas: project.openQuestions.length,
       insights: insights.length,
       conceptos: conceptos.length,
+      artefactos: artefactos.length,
+      presentaciones: presentaciones.length,
       corridas: project.researchRuns.length,
     },
   };
@@ -275,6 +300,8 @@ export async function crearRespaldo(projectId: string) {
       nombre: ARCHIVOS.conceptos,
       contenido: json(
         conceptos.map((c) => ({
+          // Con su id, y el de cada supuesto: los artefactos apuntan a ellos.
+          id: c.id,
           title: c.title,
           statement: c.statement,
           description: c.description,
@@ -296,6 +323,7 @@ export async function crearRespaldo(projectId: string) {
             insightId: o.insightId,
           })),
           supuestos: c.supuestos.map((a) => ({
+            id: a.id,
             text: a.text,
             likelihood: a.likelihood,
             status: a.status,
@@ -303,6 +331,55 @@ export async function crearRespaldo(projectId: string) {
             position: a.position,
             origin: a.origin,
           })),
+        })),
+      ),
+    },
+    {
+      nombre: ARCHIVOS.artefactos,
+      contenido: json(
+        artefactos.map((a) => ({
+          conceptId: a.conceptId,
+          title: a.title,
+          kind: a.kind,
+          promise: a.promise,
+          html: a.html,
+          status: a.status,
+          presentedAt: a.presentedAt,
+          presentedTo: a.presentedTo,
+          origin: a.origin,
+          position: a.position,
+          supuestos: a.supuestos.map((x) => x.assumptionId),
+          cifras: a.cifras.map((c) => ({
+            value: c.value,
+            label: c.label,
+            kind: c.kind,
+            basis: c.basis,
+            fragmentId: c.fragmentId,
+            position: c.position,
+          })),
+          reacciones: a.reacciones.map((r) => ({
+            source: r.source,
+            text: r.text,
+            assumptionId: r.assumptionId,
+            verdict: r.verdict,
+            authorEmail: r.author?.email ?? null,
+            createdAt: r.createdAt,
+          })),
+        })),
+      ),
+    },
+    {
+      nombre: ARCHIVOS.presentaciones,
+      contenido: json(
+        presentaciones.map((d) => ({
+          title: d.title,
+          subtitle: d.subtitle,
+          html: d.html,
+          pages: d.pages,
+          pageSize: d.pageSize,
+          source: d.source,
+          presentedAt: d.presentedAt,
+          presentedTo: d.presentedTo,
         })),
       ),
     },
@@ -373,6 +450,9 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
   const preguntas = leer(zip, ARCHIVOS.preguntas) ?? [];
   const insights = leer(zip, ARCHIVOS.insights) ?? [];
   const conceptos = leer(zip, ARCHIVOS.conceptos) ?? [];
+  // Respaldos anteriores no traen estos archivos: quedan vacios, no fallan.
+  const artefactos = leer(zip, ARCHIVOS.artefactos) ?? [];
+  const presentaciones = leer(zip, ARCHIVOS.presentaciones) ?? [];
 
   // Los autores se reconectan por correo. Si esa persona no existe en esta
   // instalacion, el campo queda vacio y el nombre sobrevive en el historial.
@@ -380,6 +460,10 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
   for (const f of fragmentos) if (f.authorEmail) correos.add(f.authorEmail);
   for (const r of historial) if (r.editedByEmail) correos.add(r.editedByEmail);
   for (const i of insights) if (i.authorEmail) correos.add(i.authorEmail);
+  for (const c of conceptos) if (c.authorEmail) correos.add(c.authorEmail);
+  for (const a of artefactos) {
+    for (const r of a.reacciones ?? []) if (r.authorEmail) correos.add(r.authorEmail);
+  }
   const usuarios = correos.size
     ? await prisma.user.findMany({
         where: { email: { in: [...correos] } },
@@ -589,8 +673,10 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
   }
 
   // ── Conceptos de Convergir ────────────────────────────────────────────────
+  const idConcepto = new Map<string, string>();
+  const idSupuesto = new Map<string, string>();
   for (const c of conceptos) {
-    await prisma.concept.create({
+    const conceptoCreado = await prisma.concept.create({
       data: {
         projectId: nuevo.id,
         title: c.title,
@@ -617,16 +703,93 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
             insightId: String(o.insightId ?? ""),
           })),
         },
-        supuestos: {
-          create: (c.supuestos ?? []).map((a: Record<string, unknown>) => ({
-            text: String(a.text ?? ""),
-            likelihood: Number(a.likelihood ?? 3),
-            status: String(a.status ?? "OPEN"),
-            note: String(a.note ?? ""),
-            position: Number(a.position ?? 0),
-            origin: String(a.origin ?? "HUMAN"),
+      },
+      select: { id: true },
+    });
+    if (c.id) idConcepto.set(String(c.id), conceptoCreado.id);
+
+    // Uno por uno y no anidados: hay que saber que id nuevo le toco a cada
+    // supuesto viejo, porque los artefactos apuntan a ellos.
+    for (const a of c.supuestos ?? []) {
+      const sup = await prisma.assumption.create({
+        data: {
+          conceptId: conceptoCreado.id,
+          text: String(a.text ?? ""),
+          likelihood: Number(a.likelihood ?? 3),
+          status: String(a.status ?? "OPEN"),
+          note: String(a.note ?? ""),
+          position: Number(a.position ?? 0),
+          origin: String(a.origin ?? "HUMAN"),
+        },
+        select: { id: true },
+      });
+      if (a.id) idSupuesto.set(String(a.id), sup.id);
+    }
+  }
+
+  // ── Artefactos de Actuar ──────────────────────────────────────────────────
+  for (const a of artefactos) {
+    const supuestos = ((a.supuestos ?? []) as string[])
+      .map((id) => idSupuesto.get(String(id)))
+      .filter((id): id is string => Boolean(id));
+
+    await prisma.artifact.create({
+      data: {
+        projectId: nuevo.id,
+        conceptId: a.conceptId ? (idConcepto.get(String(a.conceptId)) ?? null) : null,
+        title: String(a.title ?? "Artefacto"),
+        kind: String(a.kind ?? "LANDING"),
+        promise: String(a.promise ?? ""),
+        html: String(a.html ?? ""),
+        status: String(a.status ?? "BORRADOR"),
+        presentedAt: a.presentedAt ? new Date(a.presentedAt) : null,
+        presentedTo: String(a.presentedTo ?? ""),
+        origin: String(a.origin ?? "HUMAN"),
+        position: Number(a.position ?? 0),
+        supuestos: { create: [...new Set(supuestos)].map((assumptionId) => ({ assumptionId })) },
+        cifras: {
+          create: (a.cifras ?? []).map((c: Record<string, unknown>) => {
+            const fragmentId = c.fragmentId ? (idFragmento.get(String(c.fragmentId)) ?? null) : null;
+            // Si el fragmento no se pudo reenlazar, la cifra ya no puede
+            // decirse hecho: se degrada igual que al crearla.
+            const kind = String(c.kind ?? "ESTIMACION");
+            return {
+              value: String(c.value ?? ""),
+              label: String(c.label ?? ""),
+              kind: kind === "HECHO" && !fragmentId ? "ESTIMACION" : kind,
+              basis: String(c.basis ?? ""),
+              fragmentId,
+              position: Number(c.position ?? 0),
+            };
+          }),
+        },
+        reacciones: {
+          create: (a.reacciones ?? []).map((r: Record<string, unknown>) => ({
+            source: String(r.source ?? ""),
+            text: String(r.text ?? ""),
+            assumptionId: r.assumptionId ? (idSupuesto.get(String(r.assumptionId)) ?? null) : null,
+            verdict: String(r.verdict ?? ""),
+            authorId: r.authorEmail ? (porCorreo.get(String(r.authorEmail)) ?? null) : null,
+            createdAt: r.createdAt ? new Date(String(r.createdAt)) : undefined,
           })),
         },
+      },
+    });
+  }
+
+  // ── Presentacion ──────────────────────────────────────────────────────────
+  for (const d of presentaciones) {
+    await prisma.deck.create({
+      data: {
+        projectId: nuevo.id,
+        title: String(d.title ?? "Presentacion"),
+        subtitle: String(d.subtitle ?? ""),
+        html: String(d.html ?? ""),
+        pages: Number(d.pages ?? 0),
+        pageSize: String(d.pageSize ?? ""),
+        source: String(d.source ?? "HUMAN"),
+        presentedAt: d.presentedAt ? new Date(d.presentedAt) : null,
+        presentedTo: String(d.presentedTo ?? ""),
       },
     });
   }
@@ -641,6 +804,8 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
       preguntas: preguntas.length,
       insights: insights.length,
       conceptos: conceptos.length,
+      artefactos: artefactos.length,
+      presentaciones: presentaciones.length,
     },
   };
 }

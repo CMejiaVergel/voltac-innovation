@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { requireUser } from "@/lib/auth";
-import { IDEX, HATS, THIN_CELL_THRESHOLD, ANATOMIA_INSIGHT } from "@/lib/gimi";
+import { IDEX, HATS, THIN_CELL_THRESHOLD, ANATOMIA_INSIGHT, ARTEFACTO } from "@/lib/gimi";
 import {
   VERIFICATION_META,
   DOT_ROLES,
@@ -285,6 +285,41 @@ export default async function GuiaPage() {
               </li>
             ))}
           </ul>
+        </Def>
+      </Section>
+
+      {/* ── Artefactos ────────────────────────────────────────────────────── */}
+      <Section title="Artefactos — hacer tangible el concepto">
+        <p>
+          Es la etapa 5, Actuar. {ARTEFACTO.definicion}
+        </p>
+
+        <Def term="Por que va antes del MVP">
+          {ARTEFACTO.frenteAlMvp} La landing de Quantycs es el ejemplo de referencia: presentaba
+          la solucion, como funcionaba, sus modulos y el equipo detras, sin que el producto
+          existiera todavia.
+        </Def>
+
+        <Def term="Vende, pero expone">
+          Una pieza que solo vende invita a la cortesia, no a la critica. Por eso cada artefacto
+          marca que supuestos de su concepto pone a la vista, empezando por el menos probable.
+          Lo que responda la empresa se registra, y si confirma o refuta un supuesto, el supuesto
+          cambia de estado tambien en Convergir.
+        </Def>
+
+        <Def term="Las cifras dicen que son">
+          Cada cifra se declara meta, estimacion o hecho. Un hecho exige el fragmento del mapa que
+          lo sostiene; sin el, se guarda como estimacion. Un porcentaje de impacto mostrado como
+          medido, para una solucion que todavia es un concepto, es lo primero que la empresa va a
+          preguntar.
+        </Def>
+
+        <Def term="Estructura que funciono">
+          <ol className="mt-1 flex list-decimal flex-col gap-1 pl-5">
+            {ARTEFACTO.estructura.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ol>
         </Def>
       </Section>
 

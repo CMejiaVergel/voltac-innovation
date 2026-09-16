@@ -44,6 +44,8 @@ async function contar(projectId: string) {
     preguntas: await prisma.openQuestion.count({ where: { projectId } }),
     insights: await prisma.insight.count({ where: { projectId } }),
     conceptos: await prisma.concept.count({ where: { projectId } }),
+    artefactos: await prisma.artifact.count({ where: { projectId } }),
+    presentaciones: await prisma.deck.count({ where: { projectId } }),
   };
 }
 
@@ -184,6 +186,43 @@ if (cA.length > 0) {
   if (rotos > 0 || !igual || cA.length !== cB.length) fallas++;
   console.log(`${rotos === 0 ? "ok    " : "FALLA "} ideas de origen reenlazadas: ${ok} enlazadas, ${rotos} rotas`);
   console.log(`${igual ? "ok    " : "FALLA "} conceptos (nombre, puntuacion, origenes, supuestos)`);
+}
+
+// Los artefactos apuntan a tres cosas por id: el concepto, sus supuestos y
+// fragmentos del mapa. Las tres se remapean al restaurar, y cualquiera puede
+// romperse en silencio: la cifra seguiria ahi pero ya no diria de donde sale.
+const conArt = {
+  include: {
+    concept: { select: { projectId: true, title: true } },
+    supuestos: { include: { assumption: { select: { text: true, concept: { select: { projectId: true } } } } } },
+    cifras: { orderBy: { position: "asc" }, include: { fragment: { select: { text: true, mapId: true } } } },
+    reacciones: { orderBy: { createdAt: "asc" }, include: { assumption: { select: { text: true } } } },
+  },
+  orderBy: { position: "asc" },
+} as const;
+const aA = await prisma.artifact.findMany({ where: { projectId: original.id }, ...conArt });
+const aB = await prisma.artifact.findMany({ where: { projectId: copia!.id }, ...conArt });
+
+if (aA.length > 0) {
+  let rotos = 0;
+  for (const a of aB) {
+    if (a.conceptId && a.concept?.projectId !== copia!.id) rotos++;
+    for (const s of a.supuestos) if (s.assumption.concept.projectId !== copia!.id) rotos++;
+    for (const c of a.cifras) if (c.fragmentId && c.fragment?.mapId !== mapB!.id) rotos++;
+  }
+  const resumen = (l: typeof aA) =>
+    JSON.stringify(
+      l.map((a) => [
+        a.title, a.kind, a.status, a.promise, a.html.length, a.concept?.title ?? null,
+        a.supuestos.map((s) => s.assumption.text).sort(),
+        a.cifras.map((c) => [c.value, c.label, c.kind, c.basis, c.fragment?.text ?? null]),
+        a.reacciones.map((r) => [r.text, r.source, r.verdict, r.assumption?.text ?? null]),
+      ]),
+    );
+  const igual = resumen(aA) === resumen(aB);
+  if (rotos > 0 || !igual || aA.length !== aB.length) fallas++;
+  console.log(`${rotos === 0 ? "ok    " : "FALLA "} artefactos reenlazados a concepto, supuestos y mapa nuevos: ${rotos} rotos`);
+  console.log(`${igual ? "ok    " : "FALLA "} artefactos (documento, supuestos, cifras con su fragmento, reacciones)`);
 }
 
 // ── 4. Limpiar ───────────────────────────────────────────────────────────────

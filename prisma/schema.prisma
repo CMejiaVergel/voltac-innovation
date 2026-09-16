@@ -42,17 +42,18 @@ model User {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  sessions      Session[]
-  apiTokens     ApiToken[]
-  pushSubs      PushSubscription[]
-  memberships   Membership[]
-  projects      Project[]          @relation("ProjectCreator")
-  fragments     Fragment[]         @relation("FragmentAuthor")
-  revisions     FragmentRevision[] @relation("RevisionAuthor")
-  researchRuns  ResearchRun[]
-  reviewedFrags Fragment[]         @relation("FragmentReviewer")
-  insights      Insight[]          @relation("InsightAuthor")
-  concepts      Concept[]          @relation("ConceptAuthor")
+  sessions         Session[]
+  apiTokens        ApiToken[]
+  pushSubs         PushSubscription[]
+  memberships      Membership[]
+  projects         Project[]          @relation("ProjectCreator")
+  fragments        Fragment[]         @relation("FragmentAuthor")
+  revisions        FragmentRevision[] @relation("RevisionAuthor")
+  researchRuns     ResearchRun[]
+  reviewedFrags    Fragment[]         @relation("FragmentReviewer")
+  insights         Insight[]          @relation("InsightAuthor")
+  concepts         Concept[]          @relation("ConceptAuthor")
+  artifactFeedback ArtifactFeedback[] @relation("ArtifactFeedbackAuthor")
 }
 
 /// Token de acceso para agentes externos (MCP, scripts, integraciones).
@@ -151,6 +152,7 @@ model Project {
   insights      Insight[]
   concepts      Concept[]
   decks         Deck[]
+  artifacts     Artifact[]
 }
 
 model Membership {
@@ -313,8 +315,9 @@ model Fragment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  revisions   FragmentRevision[]
-  insightDots InsightDot[]
+  revisions      FragmentRevision[]
+  insightDots    InsightDot[]
+  artifactClaims ArtifactClaim[]
 
   @@index([mapId, rowId, colId])
   @@index([mapId, reviewState])
@@ -655,8 +658,9 @@ model Concept {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  origenes  ConceptSource[]
-  supuestos Assumption[]
+  origenes   ConceptSource[]
+  supuestos  Assumption[]
+  artefactos Artifact[]
 
   @@index([projectId, reviewState])
 }
@@ -717,6 +721,10 @@ model Assumption {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// Artefactos que exponen este supuesto a la empresa, y lo que ella respondio.
+  expuestoEn ArtifactAssumption[]
+  reacciones ArtifactFeedback[]
+
   @@index([conceptId])
 }
 
@@ -768,4 +776,131 @@ model Deck {
   updatedAt DateTime @updatedAt
 
   @@index([projectId])
+}
+
+// -----------------------------------------------------------------------------
+// Etapa 5 — Actuar: artefactos de innovacion
+// -----------------------------------------------------------------------------
+
+/// Un artefacto de innovacion: la representacion visual de un concepto de
+/// solucion —landing page, one-pager, folleto— para que la empresa reaccione a
+/// una solucion concreta antes del MVP.
+///
+/// DOS REGLAS QUE ESTAN EN LOS DATOS Y NO SOLO EN EL TEXTO:
+///
+///   1. Cuelga de un CONCEPTO, no de un insight. Un concepto ya puede juntar
+///      ideas de varios insights, que es como se escalan las soluciones; saltar
+///      Convergir seria adelantarse a la solucion.
+///
+///   2. Vende, pero expone. Un artefacto que solo vende invita a la cortesia y
+///      no a la critica. Por eso guarda que supuestos del concepto pone a la
+///      vista (ArtifactAssumption) y que respondio la empresa (ArtifactFeedback).
+///      Esa respuesta puede confirmar o refutar el supuesto: asi el cliente
+///      contesta y el proyecto aprende.
+///
+/// Se distingue de un MVP en lo que mide: un MVP mide lo que la gente HACE
+/// (registros, clics, uso). El artefacto mide lo que la empresa RESPONDE.
+model Artifact {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  /// Opcional en la base para que borrar un concepto no borre el artefacto que
+  /// ya se le mostro a la empresa. La interfaz exige elegirlo al crear.
+  conceptId String?
+  concept   Concept? @relation(fields: [conceptId], references: [id], onDelete: SetNull)
+
+  title   String
+  /// LANDING | ONE_PAGER | FOLLETO | OTRO
+  kind    String @default("LANDING")
+  /// Lo que la empresa tiene que entender al verlo, en una frase.
+  promise String @default("")
+
+  /// El documento autocontenido, igual que Deck. Vacio hasta que se carga.
+  html String @default("")
+
+  /// BORRADOR | LISTO | PRESENTADO
+  status      String    @default("BORRADOR")
+  presentedAt DateTime?
+  presentedTo String    @default("")
+
+  /// HUMAN | AGENT
+  origin   String @default("HUMAN")
+  position Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  supuestos  ArtifactAssumption[]
+  cifras     ArtifactClaim[]
+  reacciones ArtifactFeedback[]
+
+  @@index([projectId])
+}
+
+/// Un supuesto del concepto que el artefacto pone a la vista de la empresa.
+model ArtifactAssumption {
+  id           String     @id @default(cuid())
+  artifactId   String
+  artifact     Artifact   @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  assumptionId String
+  assumption   Assumption @relation(fields: [assumptionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([artifactId, assumptionId])
+}
+
+/// Una cifra que el artefacto muestra.
+///
+/// Existe como modelo por la leccion de Quantycs: la pagina mostraba
+/// porcentajes de impacto como si estuvieran medidos, para una solucion que
+/// todavia era un concepto. Aqui cada cifra declara que es. HECHO exige un
+/// fragmento del mapa que la sostenga; sin el, el servidor la degrada a
+/// ESTIMACION, igual que degrada un VERIFIED sin fuente.
+model ArtifactClaim {
+  id         String   @id @default(cuid())
+  artifactId String
+  artifact   Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+
+  /// La cifra tal como aparece, ej. "12-20%".
+  value String
+  /// Que mide, ej. "Reduccion de tiempos de inactividad".
+  label String
+  /// META | ESTIMACION | HECHO
+  kind  String @default("ESTIMACION")
+  /// De donde sale. Obligatorio en la practica para ESTIMACION.
+  basis String @default("")
+
+  fragmentId String?
+  fragment   Fragment? @relation(fields: [fragmentId], references: [id], onDelete: SetNull)
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([artifactId])
+}
+
+/// Lo que respondio la empresa al ver el artefacto.
+model ArtifactFeedback {
+  id         String   @id @default(cuid())
+  artifactId String
+  artifact   Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+
+  /// Quien lo dijo: nombre, cargo o area.
+  source String @default("")
+  text   String
+
+  /// Supuesto al que responde, si responde a uno.
+  assumptionId String?
+  assumption   Assumption? @relation(fields: [assumptionId], references: [id], onDelete: SetNull)
+  /// CONFIRMA | REFUTA | MATIZA | vacio. Confirmar o refutar cambia el estado
+  /// del supuesto; matizar lo deja abierto con la nota.
+  verdict      String      @default("")
+
+  authorId String?
+  author   User?   @relation("ArtifactFeedbackAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([artifactId])
 }

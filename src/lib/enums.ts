@@ -263,3 +263,65 @@ export const PROBABILIDAD = [
   { n: 4, label: "Probable", color: "#6E9A5E" },
   { n: 5, label: "Muy probable", color: "#2F7D5F" },
 ] as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Etapa Actuar — artefactos de innovacion
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const ARTIFACT_KINDS = ["LANDING", "ONE_PAGER", "FOLLETO", "OTRO"] as const;
+export type ArtifactKind = (typeof ARTIFACT_KINDS)[number];
+
+export const ARTIFACT_KIND_LABEL: Record<ArtifactKind, string> = {
+  LANDING: "Landing page",
+  ONE_PAGER: "One-pager",
+  FOLLETO: "Folleto",
+  OTRO: "Otro",
+};
+
+export const ARTIFACT_STATUSES = ["BORRADOR", "LISTO", "PRESENTADO"] as const;
+export type ArtifactStatus = (typeof ARTIFACT_STATUSES)[number];
+
+export const ARTIFACT_STATUS_META: Record<ArtifactStatus, { label: string; color: string }> = {
+  BORRADOR: { label: "Borrador", color: "#8b9a97" },
+  LISTO: { label: "Listo para presentar", color: "#C9A94E" },
+  PRESENTADO: { label: "Presentado", color: "#2F7D5F" },
+};
+
+/**
+ * Que declara ser cada cifra de un artefacto.
+ *
+ * HECHO sin fragmento del mapa no se admite: se degrada a ESTIMACION, igual
+ * que un VERIFIED sin fuente se degrada a TO_CONFIRM. Es la leccion de
+ * Quantycs: porcentajes de impacto mostrados como medidos para una solucion
+ * que todavia era un concepto.
+ */
+export const CLAIM_KINDS = ["META", "ESTIMACION", "HECHO"] as const;
+export type ClaimKind = (typeof CLAIM_KINDS)[number];
+
+export const CLAIM_KIND_META: Record<ClaimKind, { label: string; help: string; color: string }> = {
+  META: {
+    label: "Meta",
+    help: "Lo que la solucion se propone lograr. No afirma que ya ocurra.",
+    color: "#6B4C9A",
+  },
+  ESTIMACION: {
+    label: "Estimacion",
+    help: "Un calculo o un referente externo. Tiene que decir de donde sale.",
+    color: "#C9A94E",
+  },
+  HECHO: {
+    label: "Hecho",
+    help: "Un dato verificado que ya esta en el mapa. Exige el fragmento que lo sostiene.",
+    color: "#2F5D8C",
+  },
+};
+
+/** Lo que una reaccion de la empresa hace con el supuesto al que responde. */
+export const FEEDBACK_VERDICTS = ["CONFIRMA", "REFUTA", "MATIZA"] as const;
+export type FeedbackVerdict = (typeof FEEDBACK_VERDICTS)[number];
+
+export const FEEDBACK_VERDICT_META: Record<FeedbackVerdict, { label: string; color: string }> = {
+  CONFIRMA: { label: "Confirma el supuesto", color: "#2F7D5F" },
+  REFUTA: { label: "Refuta el supuesto", color: "#8E3324" },
+  MATIZA: { label: "Lo matiza", color: "#C9A94E" },
+};

@@ -19,7 +19,8 @@
     "mcp": "node mcp/server.mjs",
     "respaldo:probar": "tsx scripts/prueba-respaldo.mts",
     "clave:probar": "tsx scripts/prueba-clave-agente.mts",
-    "presentacion:cargar": "tsx scripts/cargar-presentacion.mts"
+    "presentacion:cargar": "tsx scripts/cargar-presentacion.mts",
+    "artefacto:cargar": "tsx scripts/cargar-artefacto.mts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -19,9 +19,10 @@ dedique a revisar, corregir y decidir.
 | — | Agente investigador con cola de revision humana |
 | — | Bibliografia y banco de preguntas pendientes |
 | — | Login, proyectos privados, roles por proyecto |
-| 3 · Combinar | Pendiente — Fields of Play y Conceptos de Solucion |
-| 4 · Convergir | Pendiente — matriz Impacto × Fit |
-| 5 · Actuar | Pendiente — plan de accion |
+| 3 · Combinar | Mapa de puntos e insights con anatomia patron, hecho e implicacion |
+| 4 · Convergir | Conceptos de solucion, matriz Impacto × Fit y supuestos |
+| 5 · Actuar | Artefactos de innovacion con supuestos expuestos, cifras declaradas y reacciones de la empresa. Plan de accion pendiente |
+| — | Presentacion del proyecto, visible y exportable a PDF |
 
 ## Arranque local
 

@@ -81,10 +81,10 @@ export const IDEX: IdexStage[] = [
     key: "actuar",
     n: 5,
     name: "Actuar",
-    purpose: "Plan de accion",
+    purpose: "Artefactos y plan de accion",
     hats: ["AZUL", "NEGRO", "BLANCO"],
-    implemented: false,
-    route: null,
+    implemented: true,
+    route: "artefactos",
   },
 ];
 
@@ -269,3 +269,49 @@ export const EXAMEN_INSIGHT = [
   "¿Contradice algo que la empresa fijó explícitamente en el brief?",
   "¿Está declarado hasta dónde llega la evidencia?",
 ] as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Artefactos de innovacion — etapa Actuar
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Que es un artefacto, oficializado.
+ *
+ * El material del GIMI lo menciona una sola vez y no lo define: los
+ * innovadores terminan "generando aceptacion de sus ideas a traves de
+ * artefactos e historias convincentes" (CG.pdf, lamina 24). La definicion de
+ * abajo sale de la practica del equipo en temporadas anteriores —la landing de
+ * Quantycs es el ejemplo de referencia— contrastada con dos cuerpos de
+ * investigacion: prototipado temprano para obtener retroalimentacion, y el
+ * Lean Startup.
+ */
+export const ARTEFACTO = {
+  definicion:
+    "Representacion visual de un concepto de solucion, construida sobre uno o varios " +
+    "insights, para que la empresa reaccione a una solucion concreta antes del MVP. Vende " +
+    "la idea y a la vez expone sus supuestos mas debiles a la critica.",
+  /** Por que va antes del MVP, dicho de forma que un mentor del Lean Startup no lo tumbe. */
+  frenteAlMvp:
+    "Un MVP mide lo que la gente hace: registros, clics, uso. El artefacto mide lo que la " +
+    "empresa responde. Por eso lo precede.",
+  /** La estructura de la landing de Quantycs, que funciono. En orden. */
+  estructura: [
+    "Propuesta de valor",
+    "El problema",
+    "La solucion",
+    "Como funciona",
+    "Componentes o modulos",
+    "Tecnologia",
+    "Resultados esperados",
+    "Equipo",
+    "Aliados",
+    "Llamado a reaccionar",
+  ],
+  reglas: [
+    "Cuelga de un concepto de Convergir, no de un insight suelto. Un concepto puede juntar ideas de varios insights: asi se escala la solucion.",
+    "Vende, pero expone al menos un supuesto del concepto, el menos probable. Una pieza que solo vende invita a la cortesia, no a la critica.",
+    "Cada cifra declara si es meta, estimacion o hecho. Un hecho exige el fragmento del mapa que lo sostiene.",
+    "No se presenta como producto existente. Nada de botones de ingresar o iniciar sesion en algo que todavia es un concepto.",
+    "El llamado a la accion invita a reaccionar, no a comprar.",
+  ],
+} as const;
