@@ -454,7 +454,7 @@ const TOOLS = [
   {
     name: "editar_insight",
     description:
-      "Corrige un insight existente: su frase, su desglose, sus puntos o sus ideas. Si envias 'puntos' o 'ideas' se reemplazan enteros, no se fusionan. Usalo en vez de crear uno nuevo cuando el insight ya existe pero esta mal planteado.",
+      "Corrige un insight existente: su frase, su desglose, sus puntos o sus ideas. Los 'puntos' se reemplazan enteros. Las 'ideas' NO: pasa cada idea existente con su id para editarla en su sitio, porque los conceptos de Convergir apuntan a ellas; una idea sin id se crea, y una existente que no envies se borra y deja huerfano al concepto que salia de ella. Los ids vienen en leer_proyecto con insights en detalle completo. Usalo en vez de crear uno nuevo cuando el insight ya existe pero esta mal planteado.",
     inputSchema: {
       type: "object",
       properties: {
@@ -479,7 +479,23 @@ const TOOLS = [
             required: ["fragmentoId"],
           },
         },
-        ideas: { type: "array", items: { type: "string" } },
+        ofreceQuien: { type: "string" },
+        ofrecePrueba: { type: "string" },
+        pagaQuien: { type: "string" },
+        pagaPrueba: { type: "string" },
+        ideas: {
+          type: "array",
+          items: {
+            anyOf: [
+              { type: "string", description: "Idea nueva." },
+              {
+                type: "object",
+                properties: { id: { type: "string" }, texto: { type: "string" } },
+                required: ["texto"],
+              },
+            ],
+          },
+        },
       },
       required: ["id"],
     },

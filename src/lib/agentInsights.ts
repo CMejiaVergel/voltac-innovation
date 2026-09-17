@@ -35,6 +35,22 @@ export type IncomingInsight = {
   ideas?: string[];
 };
 
+/**
+ * Una idea al corregir un insight. Con `id` se edita en su sitio y conserva su
+ * identidad; sin `id` se crea. Ver `updateInsightById`.
+ */
+export type IdeaPatch = string | { id?: string | null; texto: string };
+
+export type InsightPatch = Omit<Partial<IncomingInsight>, "ideas"> & {
+  estado?: string;
+  ideas?: IdeaPatch[];
+  /** El examen «¿como sabes eso?» aplicado a la oportunidad. Opcionales. */
+  ofreceQuien?: string | null;
+  ofrecePrueba?: string | null;
+  pagaQuien?: string | null;
+  pagaPrueba?: string | null;
+};
+
 async function accesoDeEscritura(user: SessionUser, projectId: string) {
   const access = await getProjectRole(user, projectId);
   if (!access) throw new AgentApiError("El proyecto no existe.", 404);
@@ -166,7 +182,7 @@ export async function createInsights(
 export async function updateInsightById(
   user: SessionUser,
   insightId: string,
-  cambios: Partial<IncomingInsight> & { estado?: string },
+  cambios: InsightPatch,
 ) {
   const insight = await prisma.insight.findUnique({
     where: { id: insightId },
@@ -176,7 +192,7 @@ export async function updateInsightById(
   await accesoDeEscritura(user, insight.project.id);
 
   const data: Record<string, unknown> = {};
-  const CAMPOS: [keyof IncomingInsight, string][] = [
+  const CAMPOS: [keyof InsightPatch, string][] = [
     ["enunciado", "statement"],
     ["etiqueta", "tag"],
     ["color", "color"],
@@ -185,6 +201,10 @@ export async function updateInsightById(
     ["implicacion", "implication"],
     ["oportunidad", "business"],
     ["limite", "limitNote"],
+    ["ofreceQuien", "offerWho"],
+    ["ofrecePrueba", "offerProof"],
+    ["pagaQuien", "payWho"],
+    ["pagaPrueba", "payProof"],
   ];
   for (const [entra, campo] of CAMPOS) {
     const v = cambios[entra];
@@ -226,27 +246,77 @@ export async function updateInsightById(
     data.dots = { create: unicos.map((p, i) => aDot(porId.get(p.fragmentoId)!, p.papel, i)) };
   }
 
+  // Las ideas NO se borran y recrean. Antes si, y eso era inofensivo mientras
+  // nada colgaba de ellas; desde Convergir, un concepto apunta a sus ideas de
+  // origen por id, y recrearlas lo dejaba huerfano en silencio.
+  //
+  // Ahora: la idea que trae `id` se edita en su sitio y su texto se propaga a
+  // la copia que guardan los conceptos. La que no trae `id` se crea. La que ya
+  // existia y no viene en la lista se borra: si algun concepto salia de ella,
+  // queda huerfano a la vista, que es lo correcto cuando alguien la quito.
+  const resumenIdeas = { editadas: 0, creadas: 0, borradas: 0, conceptosActualizados: 0 };
+  let opsIdeas: (() => Promise<unknown>)[] = [];
+
   if (cambios.ideas) {
-    await prisma.insightIdea.deleteMany({ where: { insightId } });
-    data.ideas = {
-      create: cambios.ideas.map((text, i) => ({
-        text: text.slice(0, 400),
-        position: i,
-        origin: "AGENT",
-      })),
-    };
+    const actuales = await prisma.insightIdea.findMany({
+      where: { insightId },
+      select: { id: true, text: true },
+    });
+    const porId = new Map(actuales.map((i) => [i.id, i]));
+    const normalizadas = cambios.ideas.map((x) =>
+      typeof x === "string" ? { id: null, texto: x } : { id: x.id ?? null, texto: x.texto },
+    );
+
+    const ajenas = normalizadas.filter((x) => x.id && !porId.has(x.id));
+    if (ajenas.length > 0) {
+      throw new AgentApiError(
+        `Estas ideas no son de este insight: ${ajenas.map((x) => x.id).join(", ")}.`,
+        400,
+      );
+    }
+    if (normalizadas.some((x) => !x.texto?.trim())) {
+      throw new AgentApiError("Toda idea necesita texto.", 400);
+    }
+
+    const conservadas = new Set(normalizadas.map((x) => x.id).filter(Boolean) as string[]);
+    const aBorrar = actuales.filter((i) => !conservadas.has(i.id)).map((i) => i.id);
+
+    opsIdeas = normalizadas.map((x, position) => async () => {
+      const text = x.texto.trim().slice(0, 400);
+      if (x.id) {
+        await prisma.insightIdea.update({ where: { id: x.id }, data: { text, position } });
+        resumenIdeas.editadas++;
+        if (porId.get(x.id)!.text !== text) {
+          const r = await prisma.conceptSource.updateMany({
+            where: { ideaId: x.id },
+            data: { textSnapshot: text },
+          });
+          resumenIdeas.conceptosActualizados += r.count;
+        }
+      } else {
+        await prisma.insightIdea.create({ data: { insightId, text, position, origin: "AGENT" } });
+        resumenIdeas.creadas++;
+      }
+    });
+    if (aBorrar.length > 0) {
+      opsIdeas.push(async () => {
+        const r = await prisma.insightIdea.deleteMany({ where: { id: { in: aBorrar } } });
+        resumenIdeas.borradas = r.count;
+      });
+    }
   }
 
   const actualizado = await prisma.insight.update({
     where: { id: insightId },
     data,
-    include: { dots: true, ideas: true },
+    include: { dots: true },
   });
+  for (const op of opsIdeas) await op();
 
   return {
     id: actualizado.id,
     puntos: actualizado.dots.length,
-    ideas: actualizado.ideas.length,
+    ...(cambios.ideas ? { ideas: resumenIdeas } : {}),
   };
 }
 
