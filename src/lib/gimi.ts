@@ -328,6 +328,9 @@ export const ARTEFACTO = {
  * que necesita es Mercado; la solucion es Oferta; quien la ofrece y como es
  * Produccion y Modelos. Un concepto que deja vacio uno de los cinco suele
  * delatar una fila del mapa que nadie lleno.
+ *
+ * Y por eso la regla de CONCEPTO_COMPLETO: no basta con escribir los cinco
+ * elementos, cada uno tiene que apoyarse en un fragmento del mapa.
  */
 export const PLANTILLA_CONCEPTO = [
   { campo: "quienTieneElProblema", pregunta: "¿Quién tiene el problema?", filaDelMapa: "mercado" },
@@ -336,3 +339,26 @@ export const PLANTILLA_CONCEPTO = [
   { campo: "quienLaOfrece", pregunta: "¿Quién la está ofreciendo?", filaDelMapa: "produccion" },
   { campo: "comoLoResuelve", pregunta: "¿Cómo lo resolverá?", filaDelMapa: "modelos" },
 ] as const;
+
+/**
+ * Cuando un concepto de negocio esta completo.
+ *
+ * Lo fijo la mentoria del programa: un concepto recorre las cinco dimensiones
+ * del Mapa de Oportunidades —mercado, entrega, oferta, produccion y modelos de
+ * negocio— con al menos un fragmento en cada una, y puede usar varios.
+ *
+ * Un concepto que no toca una dimension no esta mal escrito: esta incompleto.
+ * Le falta el cliente, el canal, lo que se vende, con que se produce o como se
+ * cobra, y esa ausencia es justo lo que la empresa pregunta primero. Si el mapa
+ * no tiene ningun fragmento que lo sostenga en esa dimension, hay dos salidas
+ * honestas: investigar hasta encontrarlo o reformular el concepto. Inventar la
+ * pieza no es una de ellas.
+ *
+ * La plataforma lo avisa en la ficha y el agente recibe las dimensiones que
+ * faltan. No lo bloquea, igual que el resto de avisos.
+ */
+export const CONCEPTO_COMPLETO = {
+  minimoPorDimension: 1,
+  regla:
+    "Un concepto de negocio está completo solo si recorre las cinco dimensiones del mapa —mercado, entrega, oferta, producción y modelos de negocio— con al menos un fragmento en cada una.",
+} as const;

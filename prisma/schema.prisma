@@ -318,6 +318,7 @@ model Fragment {
   revisions      FragmentRevision[]
   insightDots    InsightDot[]
   artifactClaims ArtifactClaim[]
+  conceptAnclas  ConceptFragment[]
 
   @@index([mapId, rowId, colId])
   @@index([mapId, reviewState])
@@ -661,6 +662,7 @@ model Concept {
   origenes   ConceptSource[]
   supuestos  Assumption[]
   artefactos Artifact[]
+  anclas     ConceptFragment[]
 
   @@index([projectId, reviewState])
 }
@@ -903,4 +905,35 @@ model ArtifactFeedback {
   createdAt DateTime @default(now())
 
   @@index([artifactId])
+}
+
+/// Un fragmento del mapa que sostiene un concepto en una de las dimensiones.
+///
+/// REGLA DEL METODO: un concepto de negocio esta completo solo si recorre las
+/// cinco dimensiones del Mapa de Oportunidades —mercado, entrega, oferta,
+/// produccion y modelos de negocio— con al menos un fragmento en cada una.
+/// Puede usar varios por dimension. La plataforma lo avisa, no lo impide.
+///
+/// Por que existe aparte de ConceptSource: las ideas de origen dicen de que
+/// insight sale el concepto, pero no demuestran que el concepto tenga cliente,
+/// canal, oferta, capacidad y modelo. Eso solo lo prueba el mapa.
+///
+/// `rowId` y `textSnapshot` se copian al anclar, igual que en InsightDot: si
+/// alguien borra el fragmento, el concepto no pierde la dimension en silencio.
+model ConceptFragment {
+  id        String  @id @default(cuid())
+  conceptId String
+  concept   Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  fragmentId String?
+  fragment   Fragment? @relation(fields: [fragmentId], references: [id], onDelete: SetNull)
+
+  rowId        String @default("")
+  textSnapshot String @default("")
+  position     Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([conceptId, fragmentId])
+  @@index([conceptId])
 }

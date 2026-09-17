@@ -517,7 +517,7 @@ const TOOLS = [
   {
     name: "proponer_conceptos",
     description:
-      "Etapa CONVERGIR. Crea conceptos de solucion a partir de ideas de Combinar. Un concepto puede juntar ideas de VARIOS insights compatibles: asi se escala una solucion mas alla de lo que cada insight abria solo. Se describe con los cinco elementos de la plantilla del GIMI: quien tiene el problema, que necesita, cual es la solucion, quien la ofrece y como lo resolvera, mas el ancla en el mapa. Cada concepto declara sus supuestos: lo que tendria que ser cierto para que funcione, con probabilidad de 1 (muy improbable) a 5; lo improbable es el trabajo que queda. Los limites declarados en los insights suelen ser los mejores supuestos. NO puntues la matriz Impacto x Fit: es un ejercicio del equipo. No contradigas las restricciones del brief ni lo que afirma otro insight. La meta del GIMI es de 4 a 5 conceptos. Los ids de las ideas salen de leer_proyecto con insights en detalle completo. Entran como PROPOSED.",
+      "Etapa CONVERGIR. Crea conceptos de solucion a partir de ideas de Combinar. Un concepto puede juntar ideas de VARIOS insights compatibles: asi se escala una solucion mas alla de lo que cada insight abria solo. Se describe con los cinco elementos de la plantilla del GIMI: quien tiene el problema, que necesita, cual es la solucion, quien la ofrece y como lo resolvera, mas el ancla en el mapa. Cada concepto declara sus supuestos: lo que tendria que ser cierto para que funcione, con probabilidad de 1 (muy improbable) a 5; lo improbable es el trabajo que queda. Los limites declarados en los insights suelen ser los mejores supuestos. NO puntues la matriz Impacto x Fit: es un ejercicio del equipo. No contradigas las restricciones del brief ni lo que afirma otro insight. COMPLETITUD: un concepto de negocio esta completo solo si recorre las cinco dimensiones del mapa —mercado, entrega, oferta, produccion y modelos de negocio— con al menos un fragmento ACEPTADO en cada una; puede usar varios. Pasalos en 'fragmentos'. Si el mapa no tiene fragmento que lo sostenga en una dimension, investiga o reformula el concepto: no lo rellenes. La respuesta devuelve las dimensiones que faltan. La meta del GIMI es de 4 a 5 conceptos. Los ids de las ideas salen de leer_proyecto con insights en detalle completo. Entran como PROPOSED.",
     inputSchema: {
       type: "object",
       properties: {
@@ -540,6 +540,12 @@ const TOOLS = [
                 type: "array",
                 items: { type: "string" },
                 description: "Ids de ideas de Combinar. Minimo una.",
+              },
+              fragmentos: {
+                type: "array",
+                items: { type: "string" },
+                description:
+                  "Ids de fragmentos aceptados del mapa que sostienen el concepto. Al menos uno por cada una de las cinco dimensiones.",
               },
               supuestos: {
                 type: "array",
@@ -636,6 +642,23 @@ const TOOLS = [
           },
         },
         justificacion: { type: "string" },
+        fragmentos: {
+          type: "array",
+          items: { type: "string" },
+          description: "Reemplaza los fragmentos que sostienen el concepto. Al menos uno por dimension.",
+        },
+        supuestosNuevos: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              texto: { type: "string" },
+              probabilidad: { type: "integer", minimum: 1, maximum: 5 },
+            },
+            required: ["texto"],
+          },
+          description: "Supuestos que se añaden al final; los existentes no se tocan.",
+        },
         quienTieneElProblema: { type: "string", description: "Si envias uno de los cinco elementos, envia los cinco: la descripcion se recompone entera." },
         necesidades: { type: "string" },
         solucion: { type: "string" },

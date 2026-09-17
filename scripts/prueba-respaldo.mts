@@ -159,7 +159,11 @@ if (insA.length > 0) {
 // Los conceptos apuntan a las ideas de Combinar por id. Al restaurar hay que
 // remapearlos, y si eso falla el concepto aparece sin procedencia — en silencio.
 const conConc = {
-  include: { origenes: { orderBy: { createdAt: "asc" } }, supuestos: { orderBy: { position: "asc" } } },
+  include: {
+    origenes: { orderBy: { createdAt: "asc" } },
+    supuestos: { orderBy: { position: "asc" } },
+    anclas: { orderBy: { position: "asc" }, include: { fragment: { select: { mapId: true } } } },
+  },
   orderBy: { position: "asc" },
 } as const;
 const cA = await prisma.concept.findMany({ where: { projectId: original.id }, ...conConc });
@@ -186,12 +190,17 @@ if (cA.length > 0) {
         [c.impDemanda, c.impImplementar, c.impEscalar, c.fitProblema, c.fitEquipo, c.fitMetas],
         c.origenes.map((o) => o.textSnapshot),
         c.supuestos.map((a) => [a.text, a.likelihood, a.status]),
+        c.anclas.map((a) => [a.rowId, a.textSnapshot]),
       ]),
     );
   const igual = resumen(cA) === resumen(cB);
   if (rotos > 0 || !igual || cA.length !== cB.length) fallas++;
   console.log(`${rotos === 0 ? "ok    " : "FALLA "} ideas de origen reenlazadas: ${ok} enlazadas, ${rotos} rotas`);
-  console.log(`${igual ? "ok    " : "FALLA "} conceptos (nombre, puntuacion, origenes, supuestos)`);
+  console.log(`${igual ? "ok    " : "FALLA "} conceptos (nombre, puntuacion, origenes, supuestos, anclas)`);
+  const anclasRotas = cB.flatMap((c) => c.anclas).filter((a) => !a.fragmentId || a.fragment?.mapId !== mapB!.id).length;
+  const anclasTotal = cB.flatMap((c) => c.anclas).length;
+  if (anclasRotas > 0) fallas++;
+  console.log(`${anclasRotas === 0 ? "ok    " : "FALLA "} anclas de concepto reenlazadas al mapa nuevo: ${anclasTotal - anclasRotas} enlazadas, ${anclasRotas} rotas`);
 }
 
 // Los artefactos apuntan a tres cosas por id: el concepto, sus supuestos y

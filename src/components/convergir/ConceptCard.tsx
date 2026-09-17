@@ -22,7 +22,7 @@ import {
   updateConcept,
   type CampoConcepto,
 } from "@/app/actions/concepts";
-import type { ConceptoVista } from "./types";
+import type { ConceptoVista, DimensionVista } from "./types";
 
 /**
  * La ficha de un concepto de solucion.
@@ -37,12 +37,14 @@ import type { ConceptoVista } from "./types";
  */
 export function ConceptCard({
   concepto,
+  dimensiones,
   numero,
   editable,
   resaltado,
   onResaltar,
 }: {
   concepto: ConceptoVista;
+  dimensiones: DimensionVista[];
   numero: number;
   editable: boolean;
   resaltado: boolean;
@@ -66,6 +68,13 @@ export function ConceptCard({
   });
   const criticos = supuestos.filter((s) => s.status === "OPEN" && s.likelihood <= 2).length;
   const huerfanos = concepto.origenes.filter((o) => o.huerfano).length;
+
+  // Un concepto completo recorre las cinco dimensiones del mapa con al menos un
+  // fragmento vigente en cada una. Los anclados a fragmentos que ya no estan
+  // aceptados no cuentan: la dimension quedo sin sostén aunque el texto siga.
+  const anclasVivas = concepto.anclas.filter((a) => !a.huerfano);
+  const faltantes = dimensiones.filter((d) => !anclasVivas.some((a) => a.rowId === d.id));
+  const [verAnclas, setVerAnclas] = useState(false);
 
   function correr(fn: () => Promise<unknown>) {
     setError(null);
@@ -179,12 +188,76 @@ export function ConceptCard({
       )}
 
       {/* ── Avisos ─────────────────────────────────────────────────────── */}
-      {(n < SUBCRITERIOS.length || huerfanos > 0) && (
+      {/* ── Recorrido por el mapa ───────────────────────────────────────── */}
+      {dimensiones.length > 0 && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setVerAnclas((v) => !v)}
+            className="kicker mb-2 transition hover:text-accent"
+          >
+            Recorre el mapa · {dimensiones.length - faltantes.length} de {dimensiones.length}
+          </button>
+          <div className="flex flex-wrap gap-1.5">
+            {dimensiones.map((d) => {
+              const n = anclasVivas.filter((a) => a.rowId === d.id).length;
+              return (
+                <span
+                  key={d.id}
+                  className="rounded-[3px] px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider"
+                  style={
+                    n > 0
+                      ? { background: `${d.color}33`, color: "#e8e3d8", border: `1px solid ${d.color}` }
+                      : { color: "#5e7370", border: "1px dashed rgba(232,227,216,0.2)" }
+                  }
+                  title={n > 0 ? `${n} fragmento${n === 1 ? "" : "s"}` : "Sin fragmento que lo sostenga"}
+                >
+                  {d.name} {n > 0 ? `· ${n}` : ""}
+                </span>
+              );
+            })}
+          </div>
+          {verAnclas && (
+            <ul className="mt-3 flex flex-col gap-2">
+              {dimensiones.map((d) => {
+                const suyas = concepto.anclas.filter((a) => a.rowId === d.id);
+                if (suyas.length === 0) return null;
+                return (
+                  <li key={d.id}>
+                    <p className="font-mono text-[9.5px] uppercase tracking-wider" style={{ color: d.color }}>
+                      {d.name}
+                    </p>
+                    <ul className="mt-1 flex flex-col gap-1">
+                      {suyas.map((a) => (
+                        <li
+                          key={a.id}
+                          className={`text-[12px] leading-snug ${a.huerfano ? "text-[#c98b7a] line-through" : "text-[#a9b5b3]"}`}
+                        >
+                          {a.text}
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {(n < SUBCRITERIOS.length || huerfanos > 0 || faltantes.length > 0) && (
         <ul className="flex flex-col gap-1 rounded-[4px] border border-dashed border-[rgba(201,162,39,0.4)] p-2.5">
           {n < SUBCRITERIOS.length && (
             <li className="text-[11.5px] leading-snug text-[#c9a94e]">
               {n} de {SUBCRITERIOS.length} criterios puntuados. Su sitio en la matriz puede
               moverse con los que faltan.
+            </li>
+          )}
+          {faltantes.length > 0 && (
+            <li className="text-[11.5px] leading-snug text-[#c9a94e]">
+              Concepto incompleto: no recorre {faltantes.map((d) => d.name.toLowerCase()).join(", ")}. Un
+              concepto de negocio se apoya en al menos un fragmento del mapa en cada una de las cinco
+              dimensiones.
             </li>
           )}
           {huerfanos > 0 && (

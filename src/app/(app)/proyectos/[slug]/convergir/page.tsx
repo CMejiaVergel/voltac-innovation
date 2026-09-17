@@ -4,9 +4,10 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireProject } from "@/lib/projects";
 import { canEdit, asEnum, colorDeTrazo, ASSUMPTION_STATUSES, REVIEW_STATES } from "@/lib/enums";
-import { TARGET_SOLUTION_CONCEPTS } from "@/lib/gimi";
+import { TARGET_SOLUTION_CONCEPTS, CONCEPTO_COMPLETO } from "@/lib/gimi";
+import { parseShape } from "@/lib/templates";
 import { ConvergirBoard } from "@/components/convergir/ConvergirBoard";
-import type { ConceptoVista, IdeaDisponible } from "@/components/convergir/types";
+import type { ConceptoVista, DimensionVista, IdeaDisponible } from "@/components/convergir/types";
 
 export default async function ConvergirPage({
   params,
@@ -36,6 +37,10 @@ export default async function ConvergirPage({
     include: {
       origenes: { orderBy: { createdAt: "asc" } },
       supuestos: { orderBy: { position: "asc" } },
+      anclas: {
+        orderBy: { position: "asc" },
+        include: { fragment: { select: { reviewState: true, hidden: true } } },
+      },
     },
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
   });
@@ -81,6 +86,12 @@ export default async function ConvergirPage({
       // rechazo despues: dejaria de estar disponible en Combinar.
       huerfano: !o.ideaId || !vivas.has(o.ideaId),
     })),
+    anclas: c.anclas.map((a) => ({
+      id: a.id,
+      rowId: a.rowId,
+      text: a.textSnapshot,
+      huerfano: !a.fragment || a.fragment.reviewState !== "ACCEPTED" || a.fragment.hidden,
+    })),
     supuestos: c.supuestos.map((s) => ({
       id: s.id,
       text: s.text,
@@ -93,6 +104,21 @@ export default async function ConvergirPage({
 
   const { min, max } = TARGET_SOLUTION_CONCEPTS;
 
+  // Las dimensiones salen de la plantilla del mapa del proyecto, no de una
+  // lista fija: es la misma definicion que usa el Mapa de Oportunidades.
+  const mapa = await prisma.bomMap.findFirst({
+    where: { projectId: project.id },
+    orderBy: { createdAt: "asc" },
+    select: { template: { select: { rows: true, cols: true } } },
+  });
+  const dimensiones: DimensionVista[] = mapa
+    ? parseShape(mapa.template.rows, mapa.template.cols).rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        color: r.color,
+      }))
+    : [];
+
   return (
     <div className="mt-7">
       <div className="mb-6 max-w-[70ch]">
@@ -101,6 +127,7 @@ export default async function ConvergirPage({
           Aqui se estrecha. Las ideas que abrieron los insights se convierten en {min} a {max}{" "}
           conceptos de solucion, se puntuan por impacto y encaje, y se lista de que supuestos
           depende cada uno. Lo improbable de esa lista es el trabajo que queda por hacer.{" "}
+          {CONCEPTO_COMPLETO.regla}{" "}
           {ideas.length === 0 && (
             <>
               Este proyecto aun no tiene ideas de las que partir:{" "}
@@ -117,6 +144,7 @@ export default async function ConvergirPage({
         slug={slug}
         conceptos={conceptos}
         ideas={ideas}
+        dimensiones={dimensiones}
         editable={canEdit(role)}
       />
     </div>

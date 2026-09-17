@@ -21,7 +21,7 @@ import type { ConvergirProps } from "./types";
  * estrechar y quince conceptos no han convergido nada — pero bloquear el
  * decimosexto obligaria a borrar antes de haber decidido, que es al reves.
  */
-export function ConvergirBoard({ slug, conceptos, ideas, editable }: ConvergirProps) {
+export function ConvergirBoard({ slug, conceptos, ideas, dimensiones, editable }: ConvergirProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -198,6 +198,7 @@ export function ConvergirBoard({ slug, conceptos, ideas, editable }: ConvergirPr
               <ConceptCard
                 key={c.id}
                 concepto={c}
+                dimensiones={dimensiones}
                 numero={n + 1}
                 editable={editable}
                 resaltado={resaltado === c.id}

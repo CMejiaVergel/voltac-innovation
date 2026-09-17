@@ -9,6 +9,18 @@ export type OrigenVista = {
   huerfano: boolean;
 };
 
+/** Un fragmento del mapa que sostiene el concepto en una dimension. */
+export type AnclaVista = {
+  id: string;
+  rowId: string;
+  text: string;
+  /** El fragmento ya no esta aceptado y visible en el mapa. */
+  huerfano: boolean;
+};
+
+/** Una dimension del mapa, en el orden de la plantilla del proyecto. */
+export type DimensionVista = { id: string; name: string; color: string };
+
 export type SupuestoVista = {
   id: string;
   text: string;
@@ -37,6 +49,7 @@ export type ConceptoVista = {
   position: number;
   origenes: OrigenVista[];
   supuestos: SupuestoVista[];
+  anclas: AnclaVista[];
 };
 
 /** Una idea de Combinar, disponible para construir conceptos. */
@@ -55,5 +68,6 @@ export type ConvergirProps = {
   slug: string;
   conceptos: ConceptoVista[];
   ideas: IdeaDisponible[];
+  dimensiones: DimensionVista[];
   editable: boolean;
 };

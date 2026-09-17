@@ -492,6 +492,7 @@ export async function getProjectContext(
       include: {
         origenes: { select: { ideaId: true, insightId: true } },
         supuestos: { orderBy: [{ likelihood: "asc" }, { position: "asc" }] },
+        anclas: { orderBy: { position: "asc" }, select: { fragmentId: true, rowId: true } },
       },
     });
     salida.conceptos = conceptos.map((c) => ({
@@ -501,6 +502,10 @@ export async function getProjectContext(
       estado: c.reviewState,
       ideas: c.origenes.map((o) => o.ideaId).filter(Boolean),
       insights: [...new Set(c.origenes.map((o) => o.insightId).filter(Boolean))],
+      fragmentos: c.anclas.map((a) => ({ fragmentoId: a.fragmentId, fila: a.rowId })),
+      dimensionesFaltantes: shape.rows
+        .filter((r) => !c.anclas.some((a) => a.rowId === r.id))
+        .map((r) => r.id),
       supuestos: c.supuestos.map((a) => ({
         id: a.id,
         texto: a.text,

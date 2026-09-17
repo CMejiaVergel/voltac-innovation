@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { canEdit } from "@/lib/enums";
 import { PLANTILLA_CONCEPTO } from "@/lib/gimi";
+import { parseShape } from "@/lib/templates";
 import { getProjectRole } from "@/lib/projects";
 import { AgentApiError } from "@/lib/agentApi";
 import type { SessionUser } from "@/lib/auth";
@@ -39,7 +40,66 @@ export type IncomingConcept = {
   /** Ids de InsightIdea. */
   ideas: string[];
   supuestos?: { texto: string; probabilidad?: number }[];
+  /**
+   * Ids de fragmentos ACEPTADOS del mapa que sostienen el concepto. Un concepto
+   * completo recorre las cinco dimensiones con al menos uno en cada una.
+   */
+  fragmentos?: string[];
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Anclaje al mapa y cobertura de dimensiones
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Las dimensiones del mapa del proyecto, en el orden de su plantilla. */
+async function dimensionesDe(projectId: string) {
+  const map = await prisma.bomMap.findFirst({
+    where: { projectId },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, template: { select: { rows: true, cols: true } } },
+  });
+  if (!map) throw new AgentApiError("El proyecto no tiene mapa.", 409);
+  const shape = parseShape(map.template.rows, map.template.cols);
+  return { mapId: map.id, dimensiones: shape.rows.map((r) => ({ id: r.id, nombre: r.name })) };
+}
+
+/**
+ * Valida los fragmentos pedidos. Tienen que estar en el mapa del proyecto,
+ * aceptados y visibles: un concepto no se apoya en una propuesta sin revisar,
+ * igual que un insight.
+ */
+async function fragmentosValidos(mapId: string, ids: string[]) {
+  const unicos = [...new Set(ids)];
+  const encontrados = unicos.length
+    ? await prisma.fragment.findMany({
+        where: { id: { in: unicos }, mapId },
+        select: { id: true, rowId: true, text: true, reviewState: true, hidden: true },
+      })
+    : [];
+  const porId = new Map(encontrados.map((f) => [f.id, f]));
+  const ajenos = unicos.filter((id) => !porId.has(id));
+  if (ajenos.length > 0) {
+    throw new AgentApiError(`Estos fragmentos no estan en el mapa: ${ajenos.join(", ")}.`, 400);
+  }
+  const noAceptados = encontrados.filter((f) => f.reviewState !== "ACCEPTED" || f.hidden);
+  if (noAceptados.length > 0) {
+    throw new AgentApiError(
+      `Un concepto se apoya en fragmentos aceptados y visibles. No lo estan: ${noAceptados.map((f) => f.id).join(", ")}.`,
+      400,
+    );
+  }
+  return unicos.map((id) => porId.get(id)!);
+}
+
+function cobertura(dimensiones: { id: string; nombre: string }[], rowIds: string[]) {
+  const presentes = new Set(rowIds);
+  const faltantes = dimensiones.filter((d) => !presentes.has(d.id)).map((d) => d.nombre);
+  return {
+    porDimension: Object.fromEntries(dimensiones.map((d) => [d.id, rowIds.filter((r) => r === d.id).length])),
+    dimensionesFaltantes: faltantes,
+    completo: faltantes.length === 0,
+  };
+}
 
 function normalizar(t: string) {
   return t
@@ -99,8 +159,9 @@ export async function createConcepts(
     select: { position: true },
   });
   let posicion = (ultimo?.position ?? -1) + 1;
+  const { mapId, dimensiones } = await dimensionesDe(project.id);
 
-  const creados: { id: string; titulo: string }[] = [];
+  const creados: { id: string; titulo: string; dimensionesFaltantes: string[] }[] = [];
   const rechazados: { titulo: string; motivo: string }[] = [];
 
   for (const item of items) {
@@ -133,6 +194,14 @@ export async function createConcepts(
       continue;
     }
 
+    let anclas: Awaited<ReturnType<typeof fragmentosValidos>>;
+    try {
+      anclas = await fragmentosValidos(mapId, item.fragmentos ?? []);
+    } catch (e) {
+      rechazados.push({ titulo, motivo: e instanceof Error ? e.message : "Fragmentos invalidos." });
+      continue;
+    }
+
     const supuestos = (item.supuestos ?? [])
       .map((s) => ({
         text: (s.texto ?? "").trim(),
@@ -159,15 +228,36 @@ export async function createConcepts(
         supuestos: {
           create: supuestos.map((s, i) => ({ ...s, position: i, origin: "AGENT" })),
         },
+        anclas: {
+          create: anclas.map((f, i) => ({
+            fragmentId: f.id,
+            rowId: f.rowId,
+            textSnapshot: f.text,
+            position: i,
+          })),
+        },
       },
       select: { id: true, title: true },
     });
 
     yaEscritos.add(normalizar(titulo));
-    creados.push({ id: concepto.id, titulo: concepto.title });
+    creados.push({
+      id: concepto.id,
+      titulo: concepto.title,
+      dimensionesFaltantes: cobertura(dimensiones, anclas.map((f) => f.rowId)).dimensionesFaltantes,
+    });
   }
 
-  return { creados, rechazados };
+  return {
+    creados,
+    rechazados,
+    ...(creados.some((c) => c.dimensionesFaltantes.length > 0)
+      ? {
+          aviso:
+            "Hay conceptos incompletos: un concepto de negocio recorre las cinco dimensiones del mapa con al menos un fragmento en cada una.",
+        }
+      : {}),
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -204,6 +294,10 @@ export type ConceptPatch = {
    * fusionar a ciegas con el texto anterior. La justificacion de la puntuacion
    * se conserva.
    */
+  /** Reemplaza los fragmentos que sostienen el concepto. */
+  fragmentos?: string[];
+  /** Añade supuestos al final; los existentes no se tocan. */
+  supuestosNuevos?: { texto: string; probabilidad?: number }[];
   quienTieneElProblema?: string;
   necesidades?: string;
   solucion?: string;
@@ -271,8 +365,43 @@ export async function updateConceptById(user: SessionUser, id: string, cambios: 
       : nuevaBase;
   }
 
-  if (Object.keys(data).length === 0) {
+  const { mapId, dimensiones } = await dimensionesDe(concepto.projectId);
+  const anclas = cambios.fragmentos ? await fragmentosValidos(mapId, cambios.fragmentos) : null;
+  const nuevos = (cambios.supuestosNuevos ?? [])
+    .map((x) => ({
+      text: (x.texto ?? "").trim(),
+      likelihood: Math.min(5, Math.max(1, Math.round(Number(x.probabilidad ?? 3)))),
+    }))
+    .filter((x) => x.text);
+
+  if (Object.keys(data).length === 0 && !anclas && nuevos.length === 0) {
     throw new AgentApiError("El cambio no trae ningun campo reconocido.", 400);
+  }
+
+  if (anclas) {
+    await prisma.conceptFragment.deleteMany({ where: { conceptId: id } });
+    await prisma.conceptFragment.createMany({
+      data: anclas.map((f, i) => ({
+        conceptId: id,
+        fragmentId: f.id,
+        rowId: f.rowId,
+        textSnapshot: f.text,
+        position: i,
+      })),
+    });
+  }
+  if (nuevos.length > 0) {
+    const ultimoSup = await prisma.assumption.findFirst({
+      where: { conceptId: id },
+      orderBy: { position: "desc" },
+      select: { position: true },
+    });
+    let pos = (ultimoSup?.position ?? -1) + 1;
+    for (const n of nuevos) {
+      await prisma.assumption.create({
+        data: { conceptId: id, text: n.text, likelihood: n.likelihood, position: pos++, origin: "AGENT" },
+      });
+    }
   }
 
   const actualizado = await prisma.concept.update({
@@ -287,7 +416,13 @@ export async function updateConceptById(user: SessionUser, id: string, cambios: 
       fitProblema: true,
       fitEquipo: true,
       fitMetas: true,
+      anclas: { select: { rowId: true } },
     },
   });
-  return { actualizado };
+  const { anclas: filas, ...resto } = actualizado;
+  return {
+    actualizado: resto,
+    supuestosAgregados: nuevos.length,
+    ...cobertura(dimensiones, filas.map((a) => a.rowId)),
+  };
 }

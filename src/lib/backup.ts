@@ -138,6 +138,7 @@ export async function crearRespaldo(projectId: string) {
     include: {
       origenes: { orderBy: { createdAt: "asc" } },
       supuestos: { orderBy: { position: "asc" } },
+      anclas: { orderBy: { position: "asc" } },
       author: { select: { email: true } },
     },
     orderBy: { position: "asc" },
@@ -321,6 +322,12 @@ export async function crearRespaldo(projectId: string) {
             ideaId: o.ideaId,
             textSnapshot: o.textSnapshot,
             insightId: o.insightId,
+          })),
+          anclas: c.anclas.map((a) => ({
+            fragmentId: a.fragmentId,
+            rowId: a.rowId,
+            textSnapshot: a.textSnapshot,
+            position: a.position,
           })),
           supuestos: c.supuestos.map((a) => ({
             id: a.id,
@@ -694,6 +701,16 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
         hidden: c.hidden ?? false,
         position: c.position ?? 0,
         authorId: c.authorEmail ? (porCorreo.get(c.authorEmail) ?? null) : null,
+        anclas: {
+          create: (c.anclas ?? []).map((a: Record<string, unknown>) => ({
+            // Si el fragmento no se pudo reenlazar queda en null y la ficha lo
+            // marca: la dimension pierde su sostén a la vista.
+            fragmentId: a.fragmentId ? (idFragmento.get(String(a.fragmentId)) ?? null) : null,
+            rowId: String(a.rowId ?? ""),
+            textSnapshot: String(a.textSnapshot ?? ""),
+            position: Number(a.position ?? 0),
+          })),
+        },
         origenes: {
           create: (c.origenes ?? []).map((o: Record<string, unknown>) => ({
             // Si la idea no se pudo reenlazar queda en null y el concepto la
