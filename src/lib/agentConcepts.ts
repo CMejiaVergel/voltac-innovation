@@ -198,6 +198,18 @@ export type ConceptPatch = {
    * contra que discutirlo, que es para lo que existe la matriz.
    */
   justificacion?: string;
+  /**
+   * Los cinco elementos de la plantilla y el ancla. Si viene cualquiera, tienen
+   * que venir los cinco: la descripcion se recompone entera y no se intenta
+   * fusionar a ciegas con el texto anterior. La justificacion de la puntuacion
+   * se conserva.
+   */
+  quienTieneElProblema?: string;
+  necesidades?: string;
+  solucion?: string;
+  quienLaOfrece?: string;
+  comoLoResuelve?: string;
+  ancla?: string;
 };
 
 export async function updateConceptById(user: SessionUser, id: string, cambios: ConceptPatch) {
@@ -231,9 +243,32 @@ export async function updateConceptById(user: SessionUser, id: string, cambios: 
     data[columna] = n;
   }
 
-  if (typeof cambios.justificacion === "string" && cambios.justificacion.trim()) {
-    const base = concepto.description.split(`\n\n${ROTULO_JUSTIFICACION}\n`)[0].trimEnd();
-    data.description = `${base}\n\n${ROTULO_JUSTIFICACION}\n${cambios.justificacion.trim()}`;
+  const [baseActual, justificacionActual] = concepto.description.split(`\n\n${ROTULO_JUSTIFICACION}\n`);
+  const ELEMENTOS = PLANTILLA_CONCEPTO.map((e) => e.campo);
+  const traeElementos = ELEMENTOS.some((c) => typeof cambios[c] === "string");
+
+  if (traeElementos) {
+    const faltan = ELEMENTOS.filter((c) => !(typeof cambios[c] === "string" && cambios[c]!.trim()));
+    if (faltan.length > 0) {
+      throw new AgentApiError(
+        `Para corregir la descripcion hay que enviar los cinco elementos. Faltan: ${faltan.join(", ")}.`,
+        400,
+      );
+    }
+  }
+
+  const nuevaBase = traeElementos
+    ? describir({ ...(cambios as IncomingConcept), titulo: "", enunciado: "", ideas: [] })
+    : baseActual.trimEnd();
+  const nuevaJustificacion =
+    typeof cambios.justificacion === "string" && cambios.justificacion.trim()
+      ? cambios.justificacion.trim()
+      : justificacionActual?.trim();
+
+  if (traeElementos || (typeof cambios.justificacion === "string" && cambios.justificacion.trim())) {
+    data.description = nuevaJustificacion
+      ? `${nuevaBase}\n\n${ROTULO_JUSTIFICACION}\n${nuevaJustificacion}`
+      : nuevaBase;
   }
 
   if (Object.keys(data).length === 0) {
