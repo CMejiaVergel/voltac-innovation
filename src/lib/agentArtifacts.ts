@@ -1,7 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
-import { asEnum, canEdit, ARTIFACT_KINDS, CLAIM_KINDS } from "@/lib/enums";
+import { asEnum, canEdit, ARTIFACT_KINDS, ARTIFACT_STATUSES, CLAIM_KINDS } from "@/lib/enums";
 import { getProjectRole } from "@/lib/projects";
 import { AgentApiError } from "@/lib/agentApi";
 import type { SessionUser } from "@/lib/auth";
@@ -122,4 +122,41 @@ export async function createArtifactForAgent(user: SessionUser, slug: string, da
       : {}),
     siguiente: `Cargar el documento en el servidor: npm run artefacto:cargar -- ${creado.id} archivo.html`,
   };
+}
+
+/** Corrige los datos de un artefacto. Las cifras y los supuestos no se tocan aqui. */
+export async function updateArtifactForAgent(
+  user: SessionUser,
+  id: string,
+  cambios: { titulo?: string; promesa?: string; formato?: string; estado?: string; presentadoA?: string },
+) {
+  const artefacto = await prisma.artifact.findUnique({
+    where: { id },
+    select: { id: true, projectId: true, presentedAt: true },
+  });
+  if (!artefacto) throw new AgentApiError("El artefacto no existe.", 404);
+  const access = await getProjectRole(user, artefacto.projectId);
+  if (!access) throw new AgentApiError("El artefacto no existe.", 404);
+  if (!canEdit(access.role)) {
+    throw new AgentApiError("El token no tiene permiso de escritura en este proyecto.", 403);
+  }
+
+  const data: Record<string, unknown> = {};
+  if (typeof cambios.titulo === "string" && cambios.titulo.trim()) data.title = cambios.titulo.trim();
+  if (typeof cambios.promesa === "string") data.promise = cambios.promesa.trim();
+  if (cambios.formato) data.kind = asEnum(ARTIFACT_KINDS, cambios.formato, "LANDING");
+  if (typeof cambios.presentadoA === "string") data.presentedTo = cambios.presentadoA.trim();
+  if (cambios.estado) {
+    const estado = asEnum(ARTIFACT_STATUSES, cambios.estado, "BORRADOR");
+    data.status = estado;
+    if (estado === "PRESENTADO" && !artefacto.presentedAt) data.presentedAt = new Date();
+  }
+  if (Object.keys(data).length === 0) throw new AgentApiError("El cambio no trae ningun campo reconocido.", 400);
+
+  const r = await prisma.artifact.update({
+    where: { id },
+    data,
+    select: { id: true, title: true, kind: true, status: true },
+  });
+  return { id: r.id, titulo: r.title, formato: r.kind, estado: r.status };
 }

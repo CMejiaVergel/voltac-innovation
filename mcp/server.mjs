@@ -595,6 +595,25 @@ const TOOLS = [
     run: ({ slug, ...body }) => api(`${slugPath(slug)}/artefactos`, { method: "POST", body }),
   },
   {
+    name: "editar_artefacto",
+    description:
+      "Corrige el nombre, la promesa, el formato o el estado de un artefacto (BORRADOR, LISTO, PRESENTADO). Al pasar a PRESENTADO se fecha solo. Las cifras y los supuestos expuestos no se tocan aqui, y el documento se vuelve a cargar con npm run artefacto:cargar.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        titulo: { type: "string" },
+        promesa: { type: "string" },
+        formato: { type: "string", enum: ["LANDING", "ONE_PAGER", "FOLLETO", "OTRO"] },
+        estado: { type: "string", enum: ["BORRADOR", "LISTO", "PRESENTADO"] },
+        presentadoA: { type: "string" },
+      },
+      required: ["id"],
+    },
+    run: ({ id, ...body }) =>
+      api(`/api/agent/artefactos/${encodeURIComponent(id)}`, { method: "PATCH", body }),
+  },
+  {
     name: "editar_concepto",
     description:
       "Corrige un concepto de Convergir o puntua su matriz Impacto x Fit. Puntua SOLO si el equipo lo pidio: es su ejercicio. Escala 1 a 5, 0 deja el subcriterio sin puntuar. Impacto: demanda (tiene mas demanda), implementar (facil de implementar), escalar (facil de escalar). Fit: resuelveProblema, atractivoEquipo, metas (ayuda a alcanzar las metas del reto). Siempre con justificacion: el porque de cada numero, anclado en fragmentos, insights o supuestos. Un numero sin porque no se puede discutir.",
