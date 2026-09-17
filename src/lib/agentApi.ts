@@ -289,7 +289,8 @@ export type SeccionContexto =
   | "preguntas"
   | "fragmentos"
   | "insights"
-  | "conceptos";
+  | "conceptos"
+  | "artefactos";
 
 const SECCIONES_POR_DEFECTO: SeccionContexto[] = [
   "brief",
@@ -519,6 +520,42 @@ export async function getProjectContext(
             },
           }
         : {}),
+    }));
+  }
+
+  if (quiere.has("artefactos")) {
+    const artefactos = await prisma.artifact.findMany({
+      where: { projectId: project.id },
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        title: true,
+        kind: true,
+        status: true,
+        conceptId: true,
+        supuestos: { select: { assumptionId: true } },
+        cifras: { orderBy: { position: "asc" }, select: { value: true, label: true, kind: true } },
+        _count: { select: { reacciones: true } },
+      },
+    });
+    const conDocumento = new Set(
+      (
+        await prisma.artifact.findMany({
+          where: { projectId: project.id, NOT: { html: "" } },
+          select: { id: true },
+        })
+      ).map((a) => a.id),
+    );
+    salida.artefactos = artefactos.map((a) => ({
+      id: a.id,
+      titulo: a.title,
+      formato: a.kind,
+      estado: a.status,
+      concepto: a.conceptId,
+      tieneDocumento: conDocumento.has(a.id),
+      supuestosExpuestos: a.supuestos.map((s) => s.assumptionId),
+      cifras: a.cifras.map((c) => ({ valor: c.value, etiqueta: c.label, tipo: c.kind })),
+      reacciones: a._count.reacciones,
     }));
   }
 

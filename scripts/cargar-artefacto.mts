@@ -45,7 +45,12 @@ async function main() {
     ].join("\n"),
   );
 
-  const texto = html.replace(/<[^>]+>/g, " ");
+  // Estilos y scripts fuera antes de buscar cifras: un "100%" de CSS no es una
+  // afirmacion del artefacto, y contarlo convertia el aviso en ruido.
+  const texto = html
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ");
   const avisos: string[] = [];
 
   if (/\b(login|iniciar sesi[oó]n|entrar a la aplicaci[oó]n|ingresar)\b/i.test(texto)) {

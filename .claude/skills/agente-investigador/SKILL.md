@@ -58,6 +58,8 @@ de Claude Code no cargó `.mcp.json`: hay que reiniciarla y aprobar el servidor.
 | `editar_insight` | Corregir un insight existente en vez de duplicarlo. |
 | `eliminar_insight` | Solo si esta mal de raiz. |
 | `proponer_conceptos` | **Etapa Convergir.** Conceptos de solucion con los cinco elementos del GIMI y sus supuestos, a partir de ideas de uno o varios insights. No puntua la matriz: eso es del equipo. |
+| `editar_concepto` | Corregir un concepto o puntuar su matriz, solo si el equipo lo pide y siempre con justificacion. |
+| `proponer_artefacto` | **Etapa Actuar.** Artefacto sobre un concepto, con los supuestos que expone y cada cifra declarada meta, estimacion o hecho. |
 | `actualizar_brief` | Corregir la etapa Configurar cuando la investigación la contradiga. |
 | `registrar_fuentes` | Bibliografía del proyecto. |
 | `clonar_proyecto` | Copia para experimentar sin tocar el original. |

@@ -123,7 +123,7 @@ const TOOLS = [
           type: "array",
           items: {
             type: "string",
-            enum: ["brief", "plantilla", "celdas", "preguntas", "fragmentos", "insights", "conceptos"],
+            enum: ["brief", "plantilla", "celdas", "preguntas", "fragmentos", "insights", "conceptos", "artefactos"],
           },
           description:
             "Secciones a traer. Vacio = brief, plantilla, celdas y fragmentos. Para armar conceptos pide insights en detalle completo: ahi vienen las ideas con su id.",
@@ -561,6 +561,38 @@ const TOOLS = [
     },
     run: ({ slug, ...body }) =>
       api(`${slugPath(slug)}/conceptos`, { method: "POST", body }),
+  },
+  {
+    name: "proponer_artefacto",
+    description:
+      "Etapa ACTUAR. Crea un artefacto de innovacion: la representacion visual de un concepto de solucion (landing, one-pager, folleto) para que la empresa reaccione antes del MVP. Cuelga de un concepto, que puede juntar varios insights. Vende la idea, pero EXPONE sus supuestos mas debiles: pasa los ids de los supuestos del concepto que pone a la vista, empezando por los de menor probabilidad. Cada cifra que muestre el documento se declara aqui: META (lo que se propone lograr), ESTIMACION (calculo o referente, con su base) o HECHO (exige fragmentoId del mapa; sin el se guarda como estimacion). Prohibido presentar el concepto como producto existente (nada de login ni ingresar) y mostrar porcentajes de impacto como medidos. El llamado a la accion invita a reaccionar, no a comprar. El documento HTML no viaja por aqui: se carga en el servidor con npm run artefacto:cargar.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        slug: { type: "string" },
+        concepto: { type: "string", description: "Id del concepto de Convergir." },
+        titulo: { type: "string" },
+        formato: { type: "string", enum: ["LANDING", "ONE_PAGER", "FOLLETO", "OTRO"] },
+        promesa: { type: "string", description: "Lo que la empresa tiene que entender al verlo, en una frase." },
+        supuestos: { type: "array", items: { type: "string" }, description: "Ids de supuestos del concepto." },
+        cifras: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              valor: { type: "string", description: "Tal como aparece en el documento, ej. 94%." },
+              etiqueta: { type: "string", description: "Que mide." },
+              tipo: { type: "string", enum: ["META", "ESTIMACION", "HECHO"] },
+              base: { type: "string", description: "De donde sale. Obligatorio en la practica para ESTIMACION." },
+              fragmentoId: { type: "string", description: "Fragmento del mapa. Obligatorio para HECHO." },
+            },
+            required: ["valor", "etiqueta"],
+          },
+        },
+      },
+      required: ["slug", "concepto", "titulo"],
+    },
+    run: ({ slug, ...body }) => api(`${slugPath(slug)}/artefactos`, { method: "POST", body }),
   },
   {
     name: "editar_concepto",
