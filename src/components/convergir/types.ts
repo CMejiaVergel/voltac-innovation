@@ -1,4 +1,5 @@
-import type { AssumptionStatus } from "@/lib/enums";
+import type { AssumptionKind, AssumptionStatus } from "@/lib/enums";
+import type { TipoConcepto } from "@/lib/gimi";
 
 export type OrigenVista = {
   id: string;
@@ -24,6 +25,14 @@ export type DimensionVista = { id: string; name: string; color: string };
 export type SupuestoVista = {
   id: string;
   text: string;
+  /** CONDICION: tiene que llegar a existir. PRECEDENTE: ya dado por sentado. */
+  kind: AssumptionKind;
+  /** Detonante del Taller 3, o vacio. */
+  trigger: string;
+  /** Una de las tres menos probables. */
+  critical: boolean;
+  failFastTest: string;
+  expectedResult: string;
   likelihood: number;
   status: AssumptionStatus;
   note: string;
@@ -37,12 +46,24 @@ export type ConceptoVista = {
   statement: string;
   description: string;
   color: string;
-  impDemanda: number;
-  impImplementar: number;
-  impEscalar: number;
-  fitProblema: number;
-  fitEquipo: number;
-  fitMetas: number;
+  /** Ejercicio 1.1: piezas de la frase «Conecte los puntos». */
+  fraseOferta: string;
+  fraseMercado: string;
+  fraseNecesidad: string;
+  fraseEntrega: string;
+  fraseProduccion: string;
+  fraseModelo: string;
+  propuestaValor: string;
+  /** Vinetas del lienzo por dimension del mapa. */
+  lienzo: Record<string, string[]>;
+  /** Segun la columna de los fragmentos anclados: dentro o fuera del negocio base. */
+  tipo: TipoConcepto | null;
+  atrMercado: number;
+  atrOpciones: number;
+  atrRecompensa: number;
+  fitViabilidad: number;
+  fitEstrategia: number;
+  fitPasion: number;
   reviewState: "ACCEPTED" | "PROPOSED" | "REJECTED";
   origin: "HUMAN" | "AGENT";
   hidden: boolean;

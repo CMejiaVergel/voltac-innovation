@@ -3,11 +3,27 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireProject } from "@/lib/projects";
-import { canEdit, asEnum, colorDeTrazo, ASSUMPTION_STATUSES, REVIEW_STATES } from "@/lib/enums";
-import { TARGET_SOLUTION_CONCEPTS, CONCEPTO_COMPLETO } from "@/lib/gimi";
+import {
+  canEdit,
+  asEnum,
+  colorDeTrazo,
+  ASSUMPTION_KINDS,
+  ASSUMPTION_STATUSES,
+  REVIEW_STATES,
+} from "@/lib/enums";
+import { TARGET_SOLUTION_CONCEPTS, CONCEPTO_COMPLETO, tipoDeConcepto } from "@/lib/gimi";
 import { parseShape } from "@/lib/templates";
 import { ConvergirBoard } from "@/components/convergir/ConvergirBoard";
 import type { ConceptoVista, DimensionVista, IdeaDisponible } from "@/components/convergir/types";
+
+function leerLienzo(json: string): Record<string, string[]> {
+  try {
+    const v = JSON.parse(json || "{}");
+    return v && typeof v === "object" ? v : {};
+  } catch {
+    return {};
+  }
+}
 
 export default async function ConvergirPage({
   params,
@@ -39,7 +55,7 @@ export default async function ConvergirPage({
       supuestos: { orderBy: { position: "asc" } },
       anclas: {
         orderBy: { position: "asc" },
-        include: { fragment: { select: { reviewState: true, hidden: true } } },
+        include: { fragment: { select: { reviewState: true, hidden: true, colId: true } } },
       },
     },
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
@@ -67,12 +83,26 @@ export default async function ConvergirPage({
     statement: c.statement,
     description: c.description,
     color: c.color,
-    impDemanda: c.impDemanda,
-    impImplementar: c.impImplementar,
-    impEscalar: c.impEscalar,
-    fitProblema: c.fitProblema,
-    fitEquipo: c.fitEquipo,
-    fitMetas: c.fitMetas,
+    fraseOferta: c.fraseOferta,
+    fraseMercado: c.fraseMercado,
+    fraseNecesidad: c.fraseNecesidad,
+    fraseEntrega: c.fraseEntrega,
+    fraseProduccion: c.fraseProduccion,
+    fraseModelo: c.fraseModelo,
+    propuestaValor: c.propuestaValor,
+    lienzo: leerLienzo(c.lienzo),
+    // El tipo sale de la columna —el lente— de los puntos que lo sostienen.
+    tipo: tipoDeConcepto(
+      c.anclas
+        .filter((a) => a.fragment && a.fragment.reviewState === "ACCEPTED" && !a.fragment.hidden)
+        .map((a) => a.fragment!.colId),
+    ),
+    atrMercado: c.atrMercado,
+    atrOpciones: c.atrOpciones,
+    atrRecompensa: c.atrRecompensa,
+    fitViabilidad: c.fitViabilidad,
+    fitEstrategia: c.fitEstrategia,
+    fitPasion: c.fitPasion,
     reviewState: asEnum(REVIEW_STATES, c.reviewState, "ACCEPTED"),
     origin: c.origin === "AGENT" ? "AGENT" : "HUMAN",
     hidden: c.hidden,
@@ -95,6 +125,11 @@ export default async function ConvergirPage({
     supuestos: c.supuestos.map((s) => ({
       id: s.id,
       text: s.text,
+      kind: asEnum(ASSUMPTION_KINDS, s.kind, "CONDICION"),
+      trigger: s.trigger,
+      critical: s.critical,
+      failFastTest: s.failFastTest,
+      expectedResult: s.expectedResult,
       likelihood: s.likelihood,
       status: asEnum(ASSUMPTION_STATUSES, s.status, "OPEN"),
       note: s.note,
@@ -124,9 +159,11 @@ export default async function ConvergirPage({
       <div className="mb-6 max-w-[70ch]">
         <p className="kicker mb-2">Etapa 4 · Convergir</p>
         <p className="hint">
-          Aqui se estrecha. Las ideas que abrieron los insights se convierten en {min} a {max}{" "}
-          conceptos de solucion, se puntuan por impacto y encaje, y se lista de que supuestos
-          depende cada uno. Lo improbable de esa lista es el trabajo que queda por hacer.{" "}
+          Aqui se estrecha. Las ideas que abrieron los insights se convierten en hasta {max}{" "}
+          conceptos de negocio que conectan los puntos del mapa en una frase (Ejercicio 1.1),
+          se priorizan por atractividad y fit (Ejercicio 2), y a los {min} elegidos se les hace
+          ingenieria inversa: que tiene que llegar a existir, cuales son las tres condiciones
+          menos probables y con que prueba de falla rapida se atacan.{" "}
           {CONCEPTO_COMPLETO.regla}{" "}
           {ideas.length === 0 && (
             <>

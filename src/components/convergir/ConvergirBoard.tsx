@@ -183,7 +183,7 @@ export function ConvergirBoard({ slug, conceptos, ideas, dimensiones, editable }
           <p className="hint max-w-[64ch]">
             Todavia no hay conceptos. En esta etapa se toman las ideas que abrieron los
             insights de Combinar y se convierten en {min} a {max} conceptos de solucion, se
-            puntuan por impacto y encaje, y se lista de que supuestos dependen.
+            puntuan por atractividad y fit, y se hace la ingenieria inversa de los que se eligen.
             {editable && " Entra en «Construir concepto» para empezar."}
           </p>
         </div>

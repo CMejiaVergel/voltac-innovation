@@ -13,6 +13,7 @@ import {
   FEEDBACK_VERDICTS,
   FEEDBACK_VERDICT_META,
 } from "@/lib/enums";
+import { ITERACIONES_ARTEFACTO, MATRIZ_ARTEFACTOS } from "@/lib/gimi";
 import {
   addClaim,
   addFeedback,
@@ -83,6 +84,30 @@ export function ArtifactCard({
             {concepto?.insights.length
               ? ` · Insight ${concepto.insights.map((i) => i.numero).join(" + ")}`
               : ""}
+          </p>
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[9.5px] uppercase tracking-[0.08em] text-[#7d8a88]">
+            <span
+              style={{ color: a.iteration >= ITERACIONES_ARTEFACTO.minimo ? "#6FBFB2" : "#c9a94e" }}
+              title="Hacer → probar con el mercado → revisar hallazgos → cambiar"
+            >
+              Vuelta {a.iteration} de {ITERACIONES_ARTEFACTO.minimo}
+            </span>
+            {editable && (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => correr(() => updateArtifact(a.id, { iteration: a.iteration + 1 }))}
+                className="rounded-[3px] border border-[rgba(232,227,216,0.18)] px-1.5 text-[#8b9a97] hover:text-accent"
+                title="Registrar otra vuelta: se probó con el mercado y se hicieron cambios"
+              >
+                +1 vuelta
+              </button>
+            )}
+            {(MATRIZ_ARTEFACTOS[a.kind] ?? []).length > 0 && (
+              <span className="normal-case tracking-normal">
+                · valida {(MATRIZ_ARTEFACTOS[a.kind] ?? []).join(", ").toLowerCase()}
+              </span>
+            )}
           </p>
           {editable ? (
             <input

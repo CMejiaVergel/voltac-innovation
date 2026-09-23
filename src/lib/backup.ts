@@ -40,6 +40,7 @@ const ARCHIVOS = {
   conceptos: "conceptos.json",
   artefactos: "artefactos.json",
   presentaciones: "presentaciones.json",
+  lecciones: "lecciones.json",
   corridas: "corridas.json",
   leeme: "LEEME.txt",
 } as const;
@@ -70,6 +71,7 @@ QUE HAY EN CADA ARCHIVO
   artefactos.json   Los artefactos de innovacion: el documento, los supuestos
                     que exponen, sus cifras y lo que respondio la empresa.
   presentaciones.json  La presentacion del proyecto, tal como se expuso.
+  lecciones.json    Lecciones aprendidas y siguientes pasos de cada sesion.
   corridas.json     Las ejecuciones del agente investigador y su costo.
 
 COMO SE RESTAURA
@@ -162,6 +164,12 @@ export async function crearRespaldo(projectId: string) {
     orderBy: { createdAt: "asc" },
   });
 
+  const lecciones = await prisma.leccion.findMany({
+    where: { projectId },
+    orderBy: [{ sesion: "asc" }, { position: "asc" }, { createdAt: "asc" }],
+    include: { author: { select: { email: true } } },
+  });
+
   const manifiesto = {
     formato: "voltac-innovacion/respaldo",
     version: VERSION_RESPALDO,
@@ -176,6 +184,7 @@ export async function crearRespaldo(projectId: string) {
       conceptos: conceptos.length,
       artefactos: artefactos.length,
       presentaciones: presentaciones.length,
+      lecciones: lecciones.length,
       corridas: project.researchRuns.length,
     },
   };
@@ -307,12 +316,20 @@ export async function crearRespaldo(projectId: string) {
           statement: c.statement,
           description: c.description,
           color: c.color,
-          impDemanda: c.impDemanda,
-          impImplementar: c.impImplementar,
-          impEscalar: c.impEscalar,
-          fitProblema: c.fitProblema,
-          fitEquipo: c.fitEquipo,
-          fitMetas: c.fitMetas,
+          fraseOferta: c.fraseOferta,
+          fraseMercado: c.fraseMercado,
+          fraseNecesidad: c.fraseNecesidad,
+          fraseEntrega: c.fraseEntrega,
+          fraseProduccion: c.fraseProduccion,
+          fraseModelo: c.fraseModelo,
+          propuestaValor: c.propuestaValor,
+          lienzo: c.lienzo,
+          atrMercado: c.atrMercado,
+          atrOpciones: c.atrOpciones,
+          atrRecompensa: c.atrRecompensa,
+          fitViabilidad: c.fitViabilidad,
+          fitEstrategia: c.fitEstrategia,
+          fitPasion: c.fitPasion,
           reviewState: c.reviewState,
           origin: c.origin,
           hidden: c.hidden,
@@ -332,6 +349,11 @@ export async function crearRespaldo(projectId: string) {
           supuestos: c.supuestos.map((a) => ({
             id: a.id,
             text: a.text,
+            kind: a.kind,
+            trigger: a.trigger,
+            critical: a.critical,
+            failFastTest: a.failFastTest,
+            expectedResult: a.expectedResult,
             likelihood: a.likelihood,
             status: a.status,
             note: a.note,
@@ -350,6 +372,7 @@ export async function crearRespaldo(projectId: string) {
           kind: a.kind,
           promise: a.promise,
           html: a.html,
+          iteration: a.iteration,
           status: a.status,
           presentedAt: a.presentedAt,
           presentedTo: a.presentedTo,
@@ -387,6 +410,20 @@ export async function crearRespaldo(projectId: string) {
           source: d.source,
           presentedAt: d.presentedAt,
           presentedTo: d.presentedTo,
+        })),
+      ),
+    },
+    {
+      nombre: ARCHIVOS.lecciones,
+      contenido: json(
+        lecciones.map((l) => ({
+          sesion: l.sesion,
+          tipo: l.tipo,
+          texto: l.texto,
+          hecho: l.hecho,
+          position: l.position,
+          authorEmail: l.author?.email ?? null,
+          createdAt: l.createdAt,
         })),
       ),
     },
@@ -460,6 +497,7 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
   // Respaldos anteriores no traen estos archivos: quedan vacios, no fallan.
   const artefactos = leer(zip, ARCHIVOS.artefactos) ?? [];
   const presentaciones = leer(zip, ARCHIVOS.presentaciones) ?? [];
+  const lecciones = leer(zip, ARCHIVOS.lecciones) ?? [];
 
   // Los autores se reconectan por correo. Si esa persona no existe en esta
   // instalacion, el campo queda vacio y el nombre sobrevive en el historial.
@@ -690,12 +728,22 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
         statement: c.statement ?? "",
         description: c.description ?? "",
         color: c.color ?? "",
-        impDemanda: c.impDemanda ?? 0,
-        impImplementar: c.impImplementar ?? 0,
-        impEscalar: c.impEscalar ?? 0,
-        fitProblema: c.fitProblema ?? 0,
-        fitEquipo: c.fitEquipo ?? 0,
-        fitMetas: c.fitMetas ?? 0,
+        fraseOferta: String(c.fraseOferta ?? ""),
+        fraseMercado: String(c.fraseMercado ?? ""),
+        fraseNecesidad: String(c.fraseNecesidad ?? ""),
+        fraseEntrega: String(c.fraseEntrega ?? ""),
+        fraseProduccion: String(c.fraseProduccion ?? ""),
+        fraseModelo: String(c.fraseModelo ?? ""),
+        propuestaValor: String(c.propuestaValor ?? ""),
+        lienzo: String(c.lienzo ?? "{}"),
+        // Los respaldos anteriores al Taller 3 traen los nombres viejos; se
+        // renombran igual que en la migracion 20260923120000.
+        atrMercado: c.atrMercado ?? c.impDemanda ?? 0,
+        atrOpciones: c.atrOpciones ?? c.impEscalar ?? 0,
+        atrRecompensa: c.atrRecompensa ?? c.fitProblema ?? 0,
+        fitViabilidad: c.fitViabilidad ?? c.impImplementar ?? 0,
+        fitEstrategia: c.fitEstrategia ?? c.fitMetas ?? 0,
+        fitPasion: c.fitPasion ?? c.fitEquipo ?? 0,
         reviewState: c.reviewState ?? "ACCEPTED",
         origin: c.origin ?? "HUMAN",
         hidden: c.hidden ?? false,
@@ -732,6 +780,11 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
         data: {
           conceptId: conceptoCreado.id,
           text: String(a.text ?? ""),
+          kind: String(a.kind ?? "CONDICION"),
+          trigger: String(a.trigger ?? ""),
+          critical: Boolean(a.critical ?? false),
+          failFastTest: String(a.failFastTest ?? ""),
+          expectedResult: String(a.expectedResult ?? ""),
           likelihood: Number(a.likelihood ?? 3),
           status: String(a.status ?? "OPEN"),
           note: String(a.note ?? ""),
@@ -758,6 +811,7 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
         kind: String(a.kind ?? "LANDING"),
         promise: String(a.promise ?? ""),
         html: String(a.html ?? ""),
+        iteration: Number(a.iteration ?? 1),
         status: String(a.status ?? "BORRADOR"),
         presentedAt: a.presentedAt ? new Date(a.presentedAt) : null,
         presentedTo: String(a.presentedTo ?? ""),
@@ -794,6 +848,22 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
     });
   }
 
+  // ── Lecciones aprendidas y siguientes pasos ───────────────────────────────
+  for (const l of lecciones) {
+    await prisma.leccion.create({
+      data: {
+        projectId: nuevo.id,
+        sesion: String(l.sesion ?? ""),
+        tipo: String(l.tipo ?? "APRENDIZAJE"),
+        texto: String(l.texto ?? ""),
+        hecho: Boolean(l.hecho ?? false),
+        position: Number(l.position ?? 0),
+        authorId: l.authorEmail ? (porCorreo.get(String(l.authorEmail)) ?? null) : null,
+        createdAt: l.createdAt ? new Date(String(l.createdAt)) : undefined,
+      },
+    });
+  }
+
   // ── Presentacion ──────────────────────────────────────────────────────────
   for (const d of presentaciones) {
     await prisma.deck.create({
@@ -823,6 +893,7 @@ export async function restaurarRespaldo(user: SessionUser, archivo: Buffer) {
       conceptos: conceptos.length,
       artefactos: artefactos.length,
       presentaciones: presentaciones.length,
+      lecciones: lecciones.length,
     },
   };
 }

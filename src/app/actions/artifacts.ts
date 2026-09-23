@@ -117,7 +117,14 @@ export async function createArtifact(
 
 export async function updateArtifact(
   artifactId: string,
-  cambios: { title?: string; kind?: string; promise?: string; status?: string; presentedTo?: string },
+  cambios: {
+    title?: string;
+    kind?: string;
+    promise?: string;
+    status?: string;
+    presentedTo?: string;
+    iteration?: number;
+  },
 ): Promise<void> {
   const { artifact, slug } = await guardArtifact(artifactId);
 
@@ -130,6 +137,9 @@ export async function updateArtifact(
   if (cambios.kind) data.kind = asEnum(ARTIFACT_KINDS, cambios.kind, "LANDING");
   if (typeof cambios.promise === "string") data.promise = cambios.promise.trim();
   if (typeof cambios.presentedTo === "string") data.presentedTo = cambios.presentedTo.trim();
+  if (typeof cambios.iteration === "number") {
+    data.iteration = Math.min(99, Math.max(1, Math.round(cambios.iteration)));
+  }
   if (cambios.status) {
     const status = asEnum(ARTIFACT_STATUSES, cambios.status, "BORRADOR");
     data.status = status;

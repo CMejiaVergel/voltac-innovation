@@ -128,7 +128,15 @@ export async function createArtifactForAgent(user: SessionUser, slug: string, da
 export async function updateArtifactForAgent(
   user: SessionUser,
   id: string,
-  cambios: { titulo?: string; promesa?: string; formato?: string; estado?: string; presentadoA?: string },
+  cambios: {
+    titulo?: string;
+    promesa?: string;
+    formato?: string;
+    estado?: string;
+    presentadoA?: string;
+    /** Vuelta del ciclo hacer-probar-revisar-cambiar (el taller pide al menos siete). */
+    iteracion?: number;
+  },
 ) {
   const artefacto = await prisma.artifact.findUnique({
     where: { id },
@@ -145,6 +153,9 @@ export async function updateArtifactForAgent(
   if (typeof cambios.titulo === "string" && cambios.titulo.trim()) data.title = cambios.titulo.trim();
   if (typeof cambios.promesa === "string") data.promise = cambios.promesa.trim();
   if (cambios.formato) data.kind = asEnum(ARTIFACT_KINDS, cambios.formato, "LANDING");
+  if (cambios.iteracion !== undefined) {
+    data.iteration = Math.min(99, Math.max(1, Math.round(Number(cambios.iteracion))));
+  }
   if (typeof cambios.presentadoA === "string") data.presentedTo = cambios.presentadoA.trim();
   if (cambios.estado) {
     const estado = asEnum(ARTIFACT_STATUSES, cambios.estado, "BORRADOR");
@@ -156,7 +167,7 @@ export async function updateArtifactForAgent(
   const r = await prisma.artifact.update({
     where: { id },
     data,
-    select: { id: true, title: true, kind: true, status: true },
+    select: { id: true, title: true, kind: true, status: true, iteration: true },
   });
-  return { id: r.id, titulo: r.title, formato: r.kind, estado: r.status };
+  return { id: r.id, titulo: r.title, formato: r.kind, estado: r.status, iteracion: r.iteration };
 }

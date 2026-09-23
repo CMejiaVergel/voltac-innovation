@@ -1,7 +1,21 @@
 import Link from "next/link";
 
 import { requireUser } from "@/lib/auth";
-import { IDEX, HATS, THIN_CELL_THRESHOLD, ANATOMIA_INSIGHT, ARTEFACTO } from "@/lib/gimi";
+import {
+  IDEX,
+  HATS,
+  THIN_CELL_THRESHOLD,
+  ANATOMIA_INSIGHT,
+  ARTEFACTO,
+  CONECTE_LOS_PUNTOS,
+  TIPOS_CONCEPTO,
+  PRIORITIZATION_CRITERIA,
+  INGENIERIA_INVERSA,
+  DETONANTES,
+  BROCHURE,
+  ITERACIONES_ARTEFACTO,
+  LECCIONES,
+} from "@/lib/gimi";
 import {
   VERIFICATION_META,
   DOT_ROLES,
@@ -288,6 +302,64 @@ export default async function GuiaPage() {
         </Def>
       </Section>
 
+      {/* ── Taller 3: conceptos de negocio ────────────────────────────────── */}
+      <Section title="Conceptos de negocio — Taller 3">
+        <p>
+          Es la etapa 4, Convergir. Un concepto de negocio se arma conectando los puntos del mapa:
+          se parte de un ancla —el hotspot— y se toma al menos un punto de cada fila.
+        </p>
+
+        <Def term="Ejercicio 1.1 · Conecte los puntos">
+          La frase une las cinco dimensiones en una sola oración:
+          <p className="mt-2 italic text-[#cbd4d2]">
+            {CONECTE_LOS_PUNTOS.map((p) => `${p.antes} ___`).join(", ").replace(", y generamos", " y generamos")}.
+          </p>
+          <p className="mt-2">
+            Se completa con la propuesta de valor y un lienzo de viñetas por dimensión. Un concepto
+            está completo solo si cada dimensión se apoya en un fragmento aceptado del mapa.
+          </p>
+        </Def>
+
+        <Def term="Tipos de concepto">
+          <ul className="flex flex-col gap-1.5">
+            {Object.values(TIPOS_CONCEPTO).map((t) => (
+              <li key={t.label}>
+                <b className="text-[#cbd4d2]">{t.label}.</b> {t.definicion} {t.quien}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2">La plataforma lo calcula con la columna de los fragmentos anclados.</p>
+        </Def>
+
+        <Def term="Ejercicio 2 · Prioriza con atractividad y fit">
+          Escala de 1 a 5; cada eje es el promedio de sus tres preguntas. Se formulan hasta cinco
+          conceptos y se eligen tres.
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {Object.values(PRIORITIZATION_CRITERIA).map((e) => (
+              <li key={e.label}>
+                <b className="text-[#cbd4d2]">{e.label}</b> — {e.help} {e.items.join(" · ")}.
+              </li>
+            ))}
+          </ul>
+        </Def>
+
+        <Def term="Ingeniería inversa · hacer primero lo primero">
+          {INGENIERIA_INVERSA.pregunta}
+          <ul className="mt-2 flex list-disc flex-col gap-1 pl-4">
+            {INGENIERIA_INVERSA.reglas.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
+          <p className="mt-2">
+            Detonantes para no dejar zonas ciegas: {DETONANTES.map((d) => d.label).join(", ")}.
+          </p>
+          <p className="mt-2">
+            Ejemplo del taller: «{INGENIERIA_INVERSA.ejemplo.condicion}» → «
+            {INGENIERIA_INVERSA.ejemplo.prueba}» → «{INGENIERIA_INVERSA.ejemplo.resultado}».
+          </p>
+        </Def>
+      </Section>
+
       {/* ── Artefactos ────────────────────────────────────────────────────── */}
       <Section title="Artefactos — hacer tangible el concepto">
         <p>
@@ -305,6 +377,21 @@ export default async function GuiaPage() {
           marca que supuestos de su concepto pone a la vista, empezando por el menos probable.
           Lo que responda la empresa se registra, y si confirma o refuta un supuesto, el supuesto
           cambia de estado tambien en Convergir.
+        </Def>
+
+        <Def term="Brochure y protocepto (Taller 3)">
+          Se empieza con un brochure de {BROCHURE.paginas} páginas para ir rápido, validar y
+          encontrar los aliados adecuados; el protocepto es la versión extendida, de{" "}
+          {BROCHURE.hojasProtocepto} hojas como máximo. Secciones:{" "}
+          {BROCHURE.secciones.map((x) => x.titulo).join(", ")}. Cada artefacto se prueba con el
+          mercado y se itera al menos {ITERACIONES_ARTEFACTO.minimo} veces (
+          {ITERACIONES_ARTEFACTO.ciclo.join(" → ")}). La pantalla Artefactos trae la matriz de qué
+          valida cada formato y los prompts del taller para producirlos con IA.
+        </Def>
+
+        <Def term="Cierre de cada sesión">
+          {LECCIONES.tipos.APRENDIZAJE.pregunta} {LECCIONES.tipos.DISFRUTE.pregunta}{" "}
+          {LECCIONES.regla} Se cierra con los siguientes pasos para la próxima mentoría.
         </Def>
 
         <Def term="Las cifras dicen que son">
@@ -483,8 +570,13 @@ export default async function GuiaPage() {
             si solo reafirman el reto, se tiran.
           </li>
           <li>
-            En Convergir las ideas que abrieron se vuelven conceptos de solucion, puntuados
-            por impacto y encaje.
+            En Convergir las ideas que abrieron se vuelven conceptos de negocio que conectan
+            los puntos del mapa; se priorizan por atractividad y fit y a los tres elegidos se les
+            hace ingeniería inversa.
+          </li>
+          <li>
+            En Artefactos se produce el brochure y el protocepto de cada uno, se prueban con el
+            mercado y se iteran; la sesión cierra con lecciones aprendidas.
           </li>
           <li>
             Y en Presentacion se consolida todo en el documento con el que se le devuelve el

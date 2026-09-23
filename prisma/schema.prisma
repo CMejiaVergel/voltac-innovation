@@ -54,6 +54,7 @@ model User {
   insights         Insight[]          @relation("InsightAuthor")
   concepts         Concept[]          @relation("ConceptAuthor")
   artifactFeedback ArtifactFeedback[] @relation("ArtifactFeedbackAuthor")
+  lecciones        Leccion[]          @relation("LeccionAuthor")
 }
 
 /// Token de acceso para agentes externos (MCP, scripts, integraciones).
@@ -153,6 +154,7 @@ model Project {
   concepts      Concept[]
   decks         Deck[]
   artifacts     Artifact[]
+  lecciones     Leccion[]
 }
 
 model Membership {
@@ -631,17 +633,33 @@ model Concept {
   /// Desarrollo: como funcionaria, que hace falta.
   description String @default("")
 
-  /// Puntuacion 1-5 de los seis subcriterios (CV.pdf p4). 0 = sin puntuar.
+  /// Ejercicio 1.1 del Taller 3, «Conecte los puntos»: la frase que une las
+  /// cinco dimensiones. «Ofreceremos {oferta} a/para {mercado}, quien necesita
+  /// {necesidad}, entregado a traves de {entrega}, producido por {produccion},
+  /// y generamos dinero mediante {modelo}.»
+  fraseOferta     String @default("")
+  fraseMercado    String @default("")
+  fraseNecesidad  String @default("")
+  fraseEntrega    String @default("")
+  fraseProduccion String @default("")
+  fraseModelo     String @default("")
+  propuestaValor  String @default("")
+  /// Lienzo del Ejercicio 1.1: vinetas en palabras del equipo por dimension.
+  /// JSON { [rowId del mapa]: string[] }. Los fragmentos que las sostienen
+  /// viven aparte, en `anclas`.
+  lienzo          String @default("{}")
+
+  /// Puntuacion 1-5 de los seis subcriterios del Ejercicio 2 (Taller 3). 0 = sin puntuar.
   ///
   /// Se guardan los seis y no dos promedios a proposito: cuando el equipo
   /// discrepa sobre un concepto, discrepa sobre UNO de estos, y con solo el
   /// promedio no hay donde senalar.
-  impDemanda     Int @default(0)
-  impImplementar Int @default(0)
-  impEscalar     Int @default(0)
-  fitProblema    Int @default(0)
-  fitEquipo      Int @default(0)
-  fitMetas       Int @default(0)
+  atrMercado    Int @default(0)
+  atrOpciones   Int @default(0)
+  atrRecompensa Int @default(0)
+  fitViabilidad Int @default(0)
+  fitEstrategia Int @default(0)
+  fitPasion     Int @default(0)
 
   /// Color en la matriz. Vacio = el de la paleta segun posicion.
   color String @default("")
@@ -704,13 +722,26 @@ model Assumption {
   conceptId String
   concept   Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
 
-  text       String
+  text           String
+  /// Ingenieria inversa (Taller 3). CONDICION: algo que tiene que llegar a
+  /// existir para que el concepto se ejecute. PRECEDENTE: algo que el proceso
+  /// ya dio por sentado; se registra, pero no entra en la lista de condiciones.
+  kind           String  @default("CONDICION")
+  /// Detonante con que se encontro: OFERTA | CLIENTES | MODELO_NEGOCIO |
+  /// PRODUCCION | ENTREGA | ALIADOS | COMPETENCIA | PROVEEDOR | EMPLEADOS.
+  trigger        String  @default("")
+  /// Una de las tres menos probables: se trabaja primero.
+  critical       Boolean @default(false)
+  /// Prueba de falla rapida o experimento critico, con numero de interlocutores.
+  failFastTest   String  @default("")
+  /// Resultado deseado o decision esperada, en una meta que se pueda contar.
+  expectedResult String  @default("")
   /// 1 = muy improbable ... 5 = muy probable. Lo bajo es lo que importa.
-  likelihood Int    @default(3)
+  likelihood     Int     @default(3)
   /// OPEN | CONFIRMED | REFUTED
-  status     String @default("OPEN")
+  status         String  @default("OPEN")
   /// Que se averiguo. Se llena al confirmar o refutar.
-  note       String @default("")
+  note           String  @default("")
 
   /// Pregunta del banco que se creo para resolverlo, si se creo.
   questionId String?
@@ -820,6 +851,10 @@ model Artifact {
 
   /// El documento autocontenido, igual que Deck. Vacio hasta que se carga.
   html String @default("")
+
+  /// Vuelta del ciclo hacer → probar con el mercado → revisar → cambiar.
+  /// El Taller 3 pide al menos siete por artefacto.
+  iteration Int @default(1)
 
   /// BORRADOR | LISTO | PRESENTADO
   status      String    @default("BORRADOR")
@@ -936,4 +971,30 @@ model ConceptFragment {
 
   @@unique([conceptId, fragmentId])
   @@index([conceptId])
+}
+
+/// Cierre de cada taller (Taller 3, «Experiencia de la jornada»): que se
+/// aprendio, que se disfruto y cuales son los siguientes pasos. Se consolida
+/// por equipo sin repetir factores; queda por sesion para que el proceso se
+/// pueda repetir y comparar entre talleres.
+model Leccion {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  /// Nombre de la sesion: «Taller 3 · Conceptos de negocio», «Mentoria 2»…
+  sesion String  @default("")
+  /// APRENDIZAJE | DISFRUTE | PROXIMO_PASO
+  tipo   String  @default("APRENDIZAJE")
+  texto  String
+  /// Solo para PROXIMO_PASO.
+  hecho  Boolean @default(false)
+
+  authorId String?
+  author   User?   @relation("LeccionAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([projectId, sesion])
 }

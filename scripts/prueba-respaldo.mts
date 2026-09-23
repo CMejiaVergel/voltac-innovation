@@ -52,6 +52,7 @@ async function contar(projectId: string) {
     conceptos: await prisma.concept.count({ where: { projectId } }),
     artefactos: await prisma.artifact.count({ where: { projectId } }),
     presentaciones: await prisma.deck.count({ where: { projectId } }),
+    lecciones: await prisma.leccion.count({ where: { projectId } }),
   };
 }
 
@@ -187,16 +188,20 @@ if (cA.length > 0) {
     JSON.stringify(
       l.map((c) => [
         c.title, c.statement,
-        [c.impDemanda, c.impImplementar, c.impEscalar, c.fitProblema, c.fitEquipo, c.fitMetas],
+        [c.atrMercado, c.atrOpciones, c.atrRecompensa, c.fitViabilidad, c.fitEstrategia, c.fitPasion],
+        [c.fraseOferta, c.fraseMercado, c.fraseNecesidad, c.fraseEntrega, c.fraseProduccion, c.fraseModelo],
+        [c.propuestaValor, c.lienzo],
         c.origenes.map((o) => o.textSnapshot),
-        c.supuestos.map((a) => [a.text, a.likelihood, a.status]),
+        c.supuestos.map((a) => [
+          a.text, a.likelihood, a.status, a.kind, a.trigger, a.critical, a.failFastTest, a.expectedResult,
+        ]),
         c.anclas.map((a) => [a.rowId, a.textSnapshot]),
       ]),
     );
   const igual = resumen(cA) === resumen(cB);
   if (rotos > 0 || !igual || cA.length !== cB.length) fallas++;
   console.log(`${rotos === 0 ? "ok    " : "FALLA "} ideas de origen reenlazadas: ${ok} enlazadas, ${rotos} rotas`);
-  console.log(`${igual ? "ok    " : "FALLA "} conceptos (nombre, puntuacion, origenes, supuestos, anclas)`);
+  console.log(`${igual ? "ok    " : "FALLA "} conceptos (nombre, puntuacion, frase, lienzo, origenes, condiciones, anclas)`);
   const anclasRotas = cB.flatMap((c) => c.anclas).filter((a) => !a.fragmentId || a.fragment?.mapId !== mapB!.id).length;
   const anclasTotal = cB.flatMap((c) => c.anclas).length;
   if (anclasRotas > 0) fallas++;

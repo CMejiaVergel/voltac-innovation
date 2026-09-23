@@ -202,15 +202,50 @@ export function colorDeTrazo(color: string, posicion: number): string {
 // Etapa Convergir
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Los seis subcriterios de priorizacion, en su eje (CV.pdf p4). */
+/**
+ * Los seis subcriterios de priorizacion, en su eje (Taller 3, Ejercicio 2).
+ * `ayuda` es la pregunta que el equipo se hace al puntuar.
+ */
 export const SUBCRITERIOS = [
-  { campo: "impDemanda", eje: "impacto", label: "Tiene mas demanda" },
-  { campo: "impImplementar", eje: "impacto", label: "Facil de implementar" },
-  { campo: "impEscalar", eje: "impacto", label: "Facil de escalar" },
-  { campo: "fitProblema", eje: "fit", label: "Resuelve el problema" },
-  { campo: "fitEquipo", eje: "fit", label: "Atractivo para el equipo" },
-  { campo: "fitMetas", eje: "fit", label: "Ayuda a alcanzar las metas" },
+  {
+    campo: "atrMercado",
+    eje: "atractividad",
+    label: "Tamaño del mercado",
+    ayuda: "¿Cuántas empresas o usuarios podrían tomarlo, y cuánto pesa para la organización?",
+  },
+  {
+    campo: "atrOpciones",
+    eje: "atractividad",
+    label: "Opciones adicionales",
+    ayuda: "¿Abre otros negocios, recursos o corredores después del primero?",
+  },
+  {
+    campo: "atrRecompensa",
+    eje: "atractividad",
+    label: "Recompensa / riesgo",
+    ayuda: "¿Lo que gana compensa lo que arriesga?",
+  },
+  {
+    campo: "fitViabilidad",
+    eje: "fit",
+    label: "Viabilidad",
+    ayuda: "¿Tenemos los medios —nosotros y el sponsor— para hacerlo realidad?",
+  },
+  {
+    campo: "fitEstrategia",
+    eje: "fit",
+    label: "Ligado a la estrategia",
+    ayuda: "¿Responde al reto y a la estrategia declarada del sponsor?",
+  },
+  {
+    campo: "fitPasion",
+    eje: "fit",
+    label: "Pasión",
+    ayuda: "¿Cuánta sinergia hay entre el concepto y la mirada del mercado, del sponsor y del equipo?",
+  },
 ] as const;
+
+export type EjePriorizacion = (typeof SUBCRITERIOS)[number]["eje"];
 
 export type CampoSubcriterio = (typeof SUBCRITERIOS)[number]["campo"];
 
@@ -223,7 +258,7 @@ export type CampoSubcriterio = (typeof SUBCRITERIOS)[number]["campo"];
  */
 export function promedioEje(
   c: Record<CampoSubcriterio, number>,
-  eje: "impacto" | "fit",
+  eje: EjePriorizacion,
 ): number | null {
   const vals = SUBCRITERIOS.filter((s) => s.eje === eje)
     .map((s) => c[s.campo])
@@ -238,6 +273,25 @@ export function puntuados(c: Record<CampoSubcriterio, number>): number {
 }
 
 export const ASSUMPTION_STATUSES = ["OPEN", "CONFIRMED", "REFUTED"] as const;
+
+/**
+ * Ingenieria inversa: una CONDICION tiene que llegar a existir; un PRECEDENTE
+ * ya se dio por sentado y se registra aparte (ver INGENIERIA_INVERSA en gimi.ts).
+ */
+export const ASSUMPTION_KINDS = ["CONDICION", "PRECEDENTE"] as const;
+export type AssumptionKind = (typeof ASSUMPTION_KINDS)[number];
+
+export const DETONANTE_KEYS = [
+  "MODELO_NEGOCIO",
+  "PROVEEDOR",
+  "EMPLEADOS",
+  "PRODUCCION",
+  "OFERTA",
+  "ENTREGA",
+  "CLIENTES",
+  "ALIADOS",
+  "COMPETENCIA",
+] as const;
 export type AssumptionStatus = (typeof ASSUMPTION_STATUSES)[number];
 
 export const ASSUMPTION_STATUS_META: Record<
@@ -268,10 +322,36 @@ export const PROBABILIDAD = [
 // Etapa Actuar — artefactos de innovacion
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const ARTIFACT_KINDS = ["LANDING", "ONE_PAGER", "FOLLETO", "OTRO"] as const;
+/**
+ * Tipos de artefacto. Los seis del medio son los de la matriz del Taller 3
+ * (lamina 32); PROTOCEPTO y MOCKUP salen de la guia de produccion con IA, y
+ * LANDING / ONE_PAGER de la practica del equipo.
+ */
+export const ARTIFACT_KINDS = [
+  "BROCHURE",
+  "PROTOCEPTO",
+  "MOCKUP",
+  "ORDEN_COMPRA",
+  "PROTOTIPO",
+  "NDA",
+  "DISCURSO_VENTA",
+  "ACUERDO_ENTREGA",
+  "LANDING",
+  "ONE_PAGER",
+  "FOLLETO",
+  "OTRO",
+] as const;
 export type ArtifactKind = (typeof ARTIFACT_KINDS)[number];
 
 export const ARTIFACT_KIND_LABEL: Record<ArtifactKind, string> = {
+  BROCHURE: "Brochure",
+  PROTOCEPTO: "Protocepto",
+  MOCKUP: "Mockup",
+  ORDEN_COMPRA: "Orden de compra",
+  PROTOTIPO: "Prototipo",
+  NDA: "Acuerdo de confidencialidad",
+  DISCURSO_VENTA: "Discurso de venta",
+  ACUERDO_ENTREGA: "Acuerdo de entrega",
   LANDING: "Landing page",
   ONE_PAGER: "One-pager",
   FOLLETO: "Folleto",

@@ -11,6 +11,7 @@ import {
   type TemplateShape,
 } from "@/lib/templates";
 import type { SessionUser } from "@/lib/auth";
+import { fraseConectada } from "@/lib/gimi";
 
 /**
  * Operaciones que un agente externo puede ejecutar sobre un proyecto.
@@ -506,22 +507,35 @@ export async function getProjectContext(
       dimensionesFaltantes: shape.rows
         .filter((r) => !c.anclas.some((a) => a.rowId === r.id))
         .map((r) => r.id),
+      frase: fraseConectada(c),
+      propuestaValor: c.propuestaValor,
       supuestos: c.supuestos.map((a) => ({
         id: a.id,
         texto: a.text,
+        tipo: a.kind,
+        detonante: a.trigger,
+        critica: a.critical,
         probabilidad: a.likelihood,
         estado: a.status,
+        ...(a.critical ? { prueba: a.failFastTest, resultado: a.expectedResult } : {}),
       })),
       ...(completo
         ? {
             descripcion: c.description,
+            lienzo: (() => {
+              try {
+                return JSON.parse(c.lienzo);
+              } catch {
+                return {};
+              }
+            })(),
             puntuacion: {
-              demanda: c.impDemanda,
-              implementar: c.impImplementar,
-              escalar: c.impEscalar,
-              resuelveProblema: c.fitProblema,
-              atractivoEquipo: c.fitEquipo,
-              metas: c.fitMetas,
+              mercado: c.atrMercado,
+              opciones: c.atrOpciones,
+              recompensa: c.atrRecompensa,
+              viabilidad: c.fitViabilidad,
+              estrategia: c.fitEstrategia,
+              pasion: c.fitPasion,
             },
           }
         : {}),

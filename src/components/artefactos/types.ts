@@ -20,6 +20,9 @@ export type ConceptoOpcion = {
   id: string;
   title: string;
   statement: string;
+  /** Frase del Ejercicio 1.1 y propuesta de valor: alimentan los prompts de IA. */
+  frase: string;
+  propuestaValor: string;
   color: string;
   /** Numero de los insights de los que salen sus ideas: "Insight 1", "Insight 3". */
   insights: { numero: number; color: string }[];
@@ -51,6 +54,8 @@ export type ArtefactoVista = {
   kind: ArtifactKind;
   promise: string;
   status: ArtifactStatus;
+  /** Vuelta del ciclo hacer-probar-revisar-cambiar. */
+  iteration: number;
   presentedTo: string;
   presentedAt: string | null;
   tieneDocumento: boolean;

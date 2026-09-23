@@ -517,7 +517,7 @@ const TOOLS = [
   {
     name: "proponer_conceptos",
     description:
-      "Etapa CONVERGIR. Crea conceptos de solucion a partir de ideas de Combinar. Un concepto puede juntar ideas de VARIOS insights compatibles: asi se escala una solucion mas alla de lo que cada insight abria solo. Se describe con los cinco elementos de la plantilla del GIMI: quien tiene el problema, que necesita, cual es la solucion, quien la ofrece y como lo resolvera, mas el ancla en el mapa. Cada concepto declara sus supuestos: lo que tendria que ser cierto para que funcione, con probabilidad de 1 (muy improbable) a 5; lo improbable es el trabajo que queda. Los limites declarados en los insights suelen ser los mejores supuestos. NO puntues la matriz Impacto x Fit: es un ejercicio del equipo. No contradigas las restricciones del brief ni lo que afirma otro insight. COMPLETITUD: un concepto de negocio esta completo solo si recorre las cinco dimensiones del mapa —mercado, entrega, oferta, produccion y modelos de negocio— con al menos un fragmento ACEPTADO en cada una; puede usar varios. Pasalos en 'fragmentos'. Si el mapa no tiene fragmento que lo sostenga en una dimension, investiga o reformula el concepto: no lo rellenes. La respuesta devuelve las dimensiones que faltan. La meta del GIMI es de 4 a 5 conceptos. Los ids de las ideas salen de leer_proyecto con insights en detalle completo. Entran como PROPOSED.",
+      "Etapa CONVERGIR (Taller 3). Crea conceptos de negocio a partir de ideas de Combinar. Un concepto puede juntar ideas de VARIOS insights compatibles: asi se escala una solucion mas alla de lo que cada insight abria solo. CONECTE LOS PUNTOS (Ejercicio 1.1): se parte de un ancla (hotspot) y se une un punto de cada fila del mapa en una sola frase: «Ofreceremos {oferta} a/para {mercado}, quien necesita {necesidad}, entregado a traves de {entrega}, producido por {produccion}, y generamos dinero mediante {modelo}», mas la propuesta de valor y un lienzo con viñetas por dimension (claves: mercado, entrega, oferta, produccion, modelos). Hazlo robusto respondiendo por dimension: a quien va dirigida y que mas se usa hoy; donde, por que canal y cuando se ofrece; que productos, servicios y marca; que activos, tecnologias y competencias; como se hace dinero y con que aliados. Cada concepto declara su INGENIERIA INVERSA en 'supuestos': que tiene que llegar a existir para que se ejecute (tipo CONDICION, con detonante); lo que el proceso ya dio por sentado va como PRECEDENTE, no como condicion; si una condicion solo existe cuando otra ocurre, consolidalas en una sola; pocas e independientes, hasta 10; marca EXACTAMENTE tres como critica (las menos probables), cada una con prueba de falla rapida y resultado contable. NO puntues la matriz Atractividad x Fit: es un ejercicio del equipo. No contradigas las restricciones del brief ni lo que afirma otro insight. COMPLETITUD: un concepto de negocio esta completo solo si recorre las cinco dimensiones del mapa —mercado, entrega, oferta, produccion y modelos de negocio— con al menos un fragmento ACEPTADO en cada una; puede usar varios. Pasalos en 'fragmentos'. Si el mapa no tiene fragmento que lo sostenga en una dimension, investiga o reformula el concepto: no lo rellenes. La respuesta devuelve las dimensiones que faltan. El taller pide formular hasta 5 conceptos y elegir 3. Los ids de las ideas salen de leer_proyecto con insights en detalle completo. Entran como PROPOSED.",
     inputSchema: {
       type: "object",
       properties: {
@@ -530,11 +530,18 @@ const TOOLS = [
             properties: {
               titulo: { type: "string", description: "Nombre corto, para poder señalarlo en una discusion." },
               enunciado: { type: "string", description: "Que es, en una frase." },
-              quienTieneElProblema: { type: "string" },
-              necesidades: { type: "string" },
-              solucion: { type: "string" },
-              quienLaOfrece: { type: "string" },
-              comoLoResuelve: { type: "string", description: "Aliados, modelo de negocio y activos." },
+              oferta: { type: "string", description: "Frase: Ofreceremos ___ (productos, servicios, marca)." },
+              mercado: { type: "string", description: "Frase: a/para ___ (segmento)." },
+              necesidad: { type: "string", description: "Frase: quien necesita ___." },
+              entrega: { type: "string", description: "Frase: entregado a traves de ___ (ocasion, ubicacion, canal)." },
+              produccion: { type: "string", description: "Frase: producido por ___ (competencias, activos, tecnologias)." },
+              modelo: { type: "string", description: "Frase: y generamos dinero mediante ___ (redes, socios, precio)." },
+              propuestaValor: { type: "string", description: "En una frase." },
+              lienzo: {
+                type: "object",
+                description: "Viñetas por dimension del mapa: { mercado: [...], entrega: [...], oferta: [...], produccion: [...], modelos: [...] }.",
+                additionalProperties: { type: "array", items: { type: "string" } },
+              },
               ancla: { type: "string", description: "El punto caliente del mapa del que parte." },
               ideas: {
                 type: "array",
@@ -549,11 +556,24 @@ const TOOLS = [
               },
               supuestos: {
                 type: "array",
+                description: "Ingenieria inversa: condiciones y precedentes.",
                 items: {
                   type: "object",
                   properties: {
                     texto: { type: "string" },
                     probabilidad: { type: "integer", minimum: 1, maximum: 5 },
+                    tipo: {
+                      type: "string",
+                      enum: ["CONDICION", "PRECEDENTE"],
+                      description: "CONDICION: tiene que llegar a existir. PRECEDENTE: el proceso ya lo dio por sentado; se registra aparte y no cuenta.",
+                    },
+                    detonante: {
+                      type: "string",
+                      enum: ["MODELO_NEGOCIO", "PROVEEDOR", "EMPLEADOS", "PRODUCCION", "OFERTA", "ENTREGA", "CLIENTES", "ALIADOS", "COMPETENCIA"],
+                    },
+                    critica: { type: "boolean", description: "Una de las TRES menos probables." },
+                    prueba: { type: "string", description: "Prueba de falla rapida, con numero de interlocutores. Ej. Hablar con 3 sellos." },
+                    resultado: { type: "string", description: "Resultado deseado o decision esperada, contable. Ej. Aprobacion de al menos 2 alianzas." },
                   },
                   required: ["texto"],
                 },
@@ -578,7 +598,11 @@ const TOOLS = [
         slug: { type: "string" },
         concepto: { type: "string", description: "Id del concepto de Convergir." },
         titulo: { type: "string" },
-        formato: { type: "string", enum: ["LANDING", "ONE_PAGER", "FOLLETO", "OTRO"] },
+        formato: {
+          type: "string",
+          enum: ["BROCHURE", "PROTOCEPTO", "MOCKUP", "ORDEN_COMPRA", "PROTOTIPO", "NDA", "DISCURSO_VENTA", "ACUERDO_ENTREGA", "LANDING", "ONE_PAGER", "FOLLETO", "OTRO"],
+          description: "Taller 3: se empieza por BROCHURE (2 paginas) y PROTOCEPTO (maximo 3 hojas); cada formato valida insights distintos: brochure precio/ventas/especificacion/cliente/produccion; orden de compra suma riesgo y distribucion; prototipo riesgo/especificacion/produccion/inversion; NDA riesgo/produccion/inversion; discurso de venta precio/ventas/cliente; acuerdo de entrega riesgo/produccion/distribucion.",
+        },
         promesa: { type: "string", description: "Lo que la empresa tiene que entender al verlo, en una frase." },
         supuestos: { type: "array", items: { type: "string" }, description: "Ids de supuestos del concepto." },
         cifras: {
@@ -603,16 +627,21 @@ const TOOLS = [
   {
     name: "editar_artefacto",
     description:
-      "Corrige el nombre, la promesa, el formato o el estado de un artefacto (BORRADOR, LISTO, PRESENTADO). Al pasar a PRESENTADO se fecha solo. Las cifras y los supuestos expuestos no se tocan aqui, y el documento se vuelve a cargar con npm run artefacto:cargar.",
+      "Corrige el nombre, la promesa, el formato, el estado (BORRADOR, LISTO, PRESENTADO) o la vuelta del ciclo de un artefacto. Al pasar a PRESENTADO se fecha solo. 'iteracion' es la vuelta de hacer -> probar con el mercado -> revisar -> cambiar: el taller pide al menos siete. Las cifras y los supuestos expuestos no se tocan aqui, y el documento se vuelve a cargar con npm run artefacto:cargar.",
     inputSchema: {
       type: "object",
       properties: {
         id: { type: "string" },
         titulo: { type: "string" },
         promesa: { type: "string" },
-        formato: { type: "string", enum: ["LANDING", "ONE_PAGER", "FOLLETO", "OTRO"] },
+        formato: {
+          type: "string",
+          enum: ["BROCHURE", "PROTOCEPTO", "MOCKUP", "ORDEN_COMPRA", "PROTOTIPO", "NDA", "DISCURSO_VENTA", "ACUERDO_ENTREGA", "LANDING", "ONE_PAGER", "FOLLETO", "OTRO"],
+          description: "Taller 3: se empieza por BROCHURE (2 paginas) y PROTOCEPTO (maximo 3 hojas); cada formato valida insights distintos: brochure precio/ventas/especificacion/cliente/produccion; orden de compra suma riesgo y distribucion; prototipo riesgo/especificacion/produccion/inversion; NDA riesgo/produccion/inversion; discurso de venta precio/ventas/cliente; acuerdo de entrega riesgo/produccion/distribucion.",
+        },
         estado: { type: "string", enum: ["BORRADOR", "LISTO", "PRESENTADO"] },
         presentadoA: { type: "string" },
+        iteracion: { type: "integer", minimum: 1 },
       },
       required: ["id"],
     },
@@ -622,7 +651,7 @@ const TOOLS = [
   {
     name: "editar_concepto",
     description:
-      "Corrige un concepto de Convergir o puntua su matriz Impacto x Fit. Puntua SOLO si el equipo lo pidio: es su ejercicio. Escala 1 a 5, 0 deja el subcriterio sin puntuar. Impacto: demanda (tiene mas demanda), implementar (facil de implementar), escalar (facil de escalar). Fit: resuelveProblema, atractivoEquipo, metas (ayuda a alcanzar las metas del reto). Siempre con justificacion: el porque de cada numero, anclado en fragmentos, insights o supuestos. Un numero sin porque no se puede discutir.",
+      "Corrige un concepto de Convergir, su frase del Ejercicio 1.1, su lienzo, su ingenieria inversa, o puntua su matriz Atractividad x Fit (Ejercicio 2). Puntua SOLO si el equipo lo pidio: es su ejercicio. Escala 1 a 5, 0 deja el subcriterio sin puntuar. Atractividad —el impacto potencial en la organizacion—: mercado (tamaño del mercado), opciones (opciones adicionales), recompensa (recompensa/riesgo). Fit —si hay medios del equipo y del sponsor—: viabilidad, estrategia (ligado a la estrategia), pasion (sinergia entre el concepto y la mirada del mercado, el sponsor y el equipo). Siempre con justificacion: el porque de cada numero, anclado en fragmentos, insights o condiciones. Para la ingenieria inversa: supuestosNuevos agrega, supuestosEditar corrige por id, supuestosEliminar borra por id (para consolidar las que dependen de otra). La respuesta trae avisos si no hay exactamente tres criticas o si les falta prueba o resultado.",
     inputSchema: {
       type: "object",
       properties: {
@@ -633,12 +662,12 @@ const TOOLS = [
         puntuacion: {
           type: "object",
           properties: {
-            demanda: { type: "integer", minimum: 0, maximum: 5 },
-            implementar: { type: "integer", minimum: 0, maximum: 5 },
-            escalar: { type: "integer", minimum: 0, maximum: 5 },
-            resuelveProblema: { type: "integer", minimum: 0, maximum: 5 },
-            atractivoEquipo: { type: "integer", minimum: 0, maximum: 5 },
-            metas: { type: "integer", minimum: 0, maximum: 5 },
+            mercado: { type: "integer", minimum: 0, maximum: 5 },
+            opciones: { type: "integer", minimum: 0, maximum: 5 },
+            recompensa: { type: "integer", minimum: 0, maximum: 5 },
+            viabilidad: { type: "integer", minimum: 0, maximum: 5 },
+            estrategia: { type: "integer", minimum: 0, maximum: 5 },
+            pasion: { type: "integer", minimum: 0, maximum: 5 },
           },
         },
         justificacion: { type: "string" },
@@ -654,16 +683,45 @@ const TOOLS = [
             properties: {
               texto: { type: "string" },
               probabilidad: { type: "integer", minimum: 1, maximum: 5 },
+              tipo: {
+                type: "string",
+                enum: ["CONDICION", "PRECEDENTE"],
+                description: "CONDICION: tiene que llegar a existir. PRECEDENTE: el proceso ya lo dio por sentado; se registra aparte y no cuenta.",
+              },
+              detonante: {
+                type: "string",
+                enum: ["MODELO_NEGOCIO", "PROVEEDOR", "EMPLEADOS", "PRODUCCION", "OFERTA", "ENTREGA", "CLIENTES", "ALIADOS", "COMPETENCIA"],
+              },
+              critica: { type: "boolean", description: "Una de las TRES menos probables." },
+              prueba: { type: "string", description: "Prueba de falla rapida, con numero de interlocutores. Ej. Hablar con 3 sellos." },
+              resultado: { type: "string", description: "Resultado deseado o decision esperada, contable. Ej. Aprobacion de al menos 2 alianzas." },
             },
             required: ["texto"],
           },
-          description: "Supuestos que se añaden al final; los existentes no se tocan.",
+          description: "Condiciones o precedentes que se añaden al final.",
         },
-        quienTieneElProblema: { type: "string", description: "Si envias uno de los cinco elementos, envia los cinco: la descripcion se recompone entera." },
-        necesidades: { type: "string" },
-        solucion: { type: "string" },
-        quienLaOfrece: { type: "string" },
-        comoLoResuelve: { type: "string" },
+        supuestosEditar: {
+          type: "array",
+          description: "Corrige condiciones existentes por id (texto, probabilidad, tipo, detonante, critica, prueba, resultado).",
+          items: { type: "object", properties: { id: { type: "string" } }, required: ["id"], additionalProperties: true },
+        },
+        supuestosEliminar: {
+          type: "array",
+          items: { type: "string" },
+          description: "Ids de condiciones a eliminar, por ejemplo al consolidar una que depende de otra.",
+        },
+        oferta: { type: "string" },
+        mercado: { type: "string" },
+        necesidad: { type: "string" },
+        entrega: { type: "string" },
+        produccion: { type: "string" },
+        modelo: { type: "string" },
+        propuestaValor: { type: "string" },
+        lienzo: {
+          type: "object",
+          description: "Reemplaza el lienzo: { mercado: [...], entrega: [...], oferta: [...], produccion: [...], modelos: [...] }.",
+          additionalProperties: { type: "array", items: { type: "string" } },
+        },
         ancla: { type: "string" },
       },
       required: ["id"],

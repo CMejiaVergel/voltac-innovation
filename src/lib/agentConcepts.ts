@@ -2,7 +2,8 @@ import "server-only";
 
 import { prisma } from "@/lib/db";
 import { canEdit } from "@/lib/enums";
-import { PLANTILLA_CONCEPTO } from "@/lib/gimi";
+import { PLANTILLA_CONCEPTO, CONECTE_LOS_PUNTOS, INGENIERIA_INVERSA, fraseConectada } from "@/lib/gimi";
+import { DETONANTE_KEYS } from "@/lib/enums";
 import { parseShape } from "@/lib/templates";
 import { getProjectRole } from "@/lib/projects";
 import { AgentApiError } from "@/lib/agentApi";
@@ -17,7 +18,7 @@ import type { SessionUser } from "@/lib/auth";
  * inexistente se rechaza entero, igual que un insight que cita un punto que
  * no esta en el mapa.
  *
- * El agente NO puntua por iniciativa propia. La matriz Impacto × Fit es un
+ * El agente NO puntua por iniciativa propia. La matriz Atractividad × Fit es un
  * ejercicio del equipo (CV.pdf: evaluar, intercambiar el ranking con un par,
  * votar si hay empate). Un agente que llega con los seis numeros puestos le
  * quita al equipo justo la discusion que la etapa existe para provocar. Si el
@@ -39,13 +40,127 @@ export type IncomingConcept = {
   ancla?: string | null;
   /** Ids de InsightIdea. */
   ideas: string[];
-  supuestos?: { texto: string; probabilidad?: number }[];
+  /**
+   * Ejercicio 1.1 del Taller 3: las piezas de la frase «Conecte los puntos».
+   * Cada una sale de una dimension del mapa.
+   */
+  oferta?: string | null;
+  mercado?: string | null;
+  necesidad?: string | null;
+  entrega?: string | null;
+  produccion?: string | null;
+  modelo?: string | null;
+  propuestaValor?: string | null;
+  /** Vinetas del lienzo por dimension del mapa: { mercado: [...], oferta: [...] }. */
+  lienzo?: Record<string, string[]> | null;
+  /** Condiciones de ingenieria inversa (o precedentes dados por sentado). */
+  supuestos?: CondicionEntrante[];
   /**
    * Ids de fragmentos ACEPTADOS del mapa que sostienen el concepto. Un concepto
    * completo recorre las cinco dimensiones con al menos uno en cada una.
    */
   fragmentos?: string[];
 };
+
+/** Una condicion de ingenieria inversa, tal como la manda el agente. */
+export type CondicionEntrante = {
+  texto: string;
+  probabilidad?: number;
+  /** CONDICION (defecto) | PRECEDENTE: lo que el proceso ya dio por sentado. */
+  tipo?: string;
+  /** Detonante del Taller 3: MODELO_NEGOCIO, PROVEEDOR, EMPLEADOS, PRODUCCION, OFERTA, ENTREGA, CLIENTES, ALIADOS, COMPETENCIA. */
+  detonante?: string;
+  /** Una de las tres menos probables. */
+  critica?: boolean;
+  /** Prueba de falla rapida. */
+  prueba?: string;
+  /** Resultado deseado o decision esperada. */
+  resultado?: string;
+};
+
+function datosCondicion(x: CondicionEntrante) {
+  const tipo = x.tipo === "PRECEDENTE" ? "PRECEDENTE" : "CONDICION";
+  const detonante = (DETONANTE_KEYS as readonly string[]).includes(x.detonante ?? "") ? x.detonante! : "";
+  return {
+    text: (x.texto ?? "").trim(),
+    likelihood: Math.min(5, Math.max(1, Math.round(Number(x.probabilidad ?? 3)))),
+    kind: tipo,
+    trigger: detonante,
+    // Un precedente no se trabaja: no puede ser una de las tres.
+    critical: tipo === "CONDICION" && Boolean(x.critica),
+    failFastTest: (x.prueba ?? "").trim(),
+    expectedResult: (x.resultado ?? "").trim(),
+  };
+}
+
+/** Avisos del ejercicio de ingenieria inversa. No bloquean, igual que el resto. */
+function avisosIngenieria(
+  filas: { kind: string; critical: boolean; failFastTest: string; expectedResult: string; text: string }[],
+): string[] {
+  const condiciones = filas.filter((f) => f.kind === "CONDICION");
+  const criticas = condiciones.filter((f) => f.critical);
+  const avisos: string[] = [];
+  if (condiciones.length > INGENIERIA_INVERSA.maxCondiciones) {
+    avisos.push(`Hay ${condiciones.length} condiciones: el ejercicio pide hasta ${INGENIERIA_INVERSA.maxCondiciones}. Consolida las que dependen de otra.`);
+  }
+  if (condiciones.length > 0 && criticas.length !== INGENIERIA_INVERSA.menosProbables) {
+    avisos.push(`Hay ${criticas.length} condiciones marcadas como menos probables: el ejercicio pide exactamente ${INGENIERIA_INVERSA.menosProbables}.`);
+  }
+  for (const c of criticas) {
+    if (!c.failFastTest || !c.expectedResult) {
+      avisos.push(`«${c.text.slice(0, 60)}» es de las menos probables y le falta ${!c.failFastTest ? "la prueba de falla rapida" : "el resultado esperado"}.`);
+    }
+  }
+  return avisos;
+}
+
+/** Valida el lienzo contra las dimensiones del mapa y lo guarda como JSON. */
+function lienzoValido(
+  lienzo: Record<string, string[]> | null | undefined,
+  dimensiones: { id: string }[],
+): string | null {
+  if (!lienzo) return null;
+  const ids = new Set(dimensiones.map((d) => d.id));
+  const ajenas = Object.keys(lienzo).filter((k) => !ids.has(k));
+  if (ajenas.length > 0) {
+    throw new AgentApiError(
+      `El lienzo usa dimensiones que no estan en el mapa: ${ajenas.join(", ")}. Validas: ${[...ids].join(", ")}.`,
+      400,
+    );
+  }
+  const limpio = Object.fromEntries(
+    Object.entries(lienzo).map(([k, v]) => [
+      k,
+      (Array.isArray(v) ? v : []).map((x) => String(x).trim()).filter(Boolean).slice(0, 8),
+    ]),
+  );
+  return JSON.stringify(limpio);
+}
+
+/** Las piezas de la frase que trae un concepto entrante, en columnas. */
+function piezasFrase(c: {
+  oferta?: string | null;
+  mercado?: string | null;
+  necesidad?: string | null;
+  entrega?: string | null;
+  produccion?: string | null;
+  modelo?: string | null;
+}): Record<string, string> {
+  const valores: Record<string, string | null | undefined> = {
+    fraseOferta: c.oferta,
+    fraseMercado: c.mercado,
+    fraseNecesidad: c.necesidad,
+    fraseEntrega: c.entrega,
+    fraseProduccion: c.produccion,
+    fraseModelo: c.modelo,
+  };
+  const salida: Record<string, string> = {};
+  for (const p of CONECTE_LOS_PUNTOS) {
+    const v = valores[p.campo];
+    if (typeof v === "string") salida[p.campo] = v.trim();
+  }
+  return salida;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Anclaje al mapa y cobertura de dimensiones
@@ -202,12 +317,16 @@ export async function createConcepts(
       continue;
     }
 
-    const supuestos = (item.supuestos ?? [])
-      .map((s) => ({
-        text: (s.texto ?? "").trim(),
-        likelihood: Math.min(5, Math.max(1, Math.round(Number(s.probabilidad ?? 3)))),
-      }))
-      .filter((s) => s.text);
+    const supuestos = (item.supuestos ?? []).map(datosCondicion).filter((s) => s.text);
+
+    let lienzo: string | null;
+    try {
+      lienzo = lienzoValido(item.lienzo, dimensiones);
+    } catch (e) {
+      rechazados.push({ titulo, motivo: e instanceof Error ? e.message : "Lienzo invalido." });
+      continue;
+    }
+    const frase = piezasFrase(item);
 
     const concepto = await prisma.concept.create({
       data: {
@@ -219,6 +338,9 @@ export async function createConcepts(
         title: titulo.slice(0, 120),
         statement: enunciado,
         description: describir(item),
+        ...frase,
+        propuestaValor: (item.propuestaValor ?? "").trim(),
+        ...(lienzo ? { lienzo } : {}),
         origenes: {
           create: unicas.map((id) => {
             const idea = porId.get(id)!;
@@ -264,14 +386,33 @@ export async function createConcepts(
 // Correccion y puntuacion
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Nombres de la API, en español, contra las columnas de los seis subcriterios. */
-const PUNTUACION: Record<string, "impDemanda" | "impImplementar" | "impEscalar" | "fitProblema" | "fitEquipo" | "fitMetas"> = {
-  demanda: "impDemanda",
-  implementar: "impImplementar",
-  escalar: "impEscalar",
-  resuelveProblema: "fitProblema",
-  atractivoEquipo: "fitEquipo",
-  metas: "fitMetas",
+type ColumnaPuntaje =
+  | "atrMercado"
+  | "atrOpciones"
+  | "atrRecompensa"
+  | "fitViabilidad"
+  | "fitEstrategia"
+  | "fitPasion";
+
+/**
+ * Nombres de la API, en español, contra las columnas de los seis subcriterios
+ * del Ejercicio 2. Los nombres anteriores al Taller 3 siguen aceptandose y caen
+ * en la columna a la que se renombraron en la migracion.
+ */
+const PUNTUACION: Record<string, ColumnaPuntaje> = {
+  mercado: "atrMercado",
+  opciones: "atrOpciones",
+  recompensa: "atrRecompensa",
+  viabilidad: "fitViabilidad",
+  estrategia: "fitEstrategia",
+  pasion: "fitPasion",
+  // alias anteriores
+  demanda: "atrMercado",
+  escalar: "atrOpciones",
+  resuelveProblema: "atrRecompensa",
+  implementar: "fitViabilidad",
+  metas: "fitEstrategia",
+  atractivoEquipo: "fitPasion",
 };
 
 const ROTULO_JUSTIFICACION = "Por qué esta puntuación";
@@ -296,8 +437,25 @@ export type ConceptPatch = {
    */
   /** Reemplaza los fragmentos que sostienen el concepto. */
   fragmentos?: string[];
-  /** Añade supuestos al final; los existentes no se tocan. */
-  supuestosNuevos?: { texto: string; probabilidad?: number }[];
+  /** Añade condiciones al final; las existentes no se tocan. */
+  supuestosNuevos?: CondicionEntrante[];
+  /** Corrige condiciones existentes de este concepto, por id. */
+  supuestosEditar?: (Partial<CondicionEntrante> & { id: string })[];
+  /**
+   * Elimina condiciones de este concepto, por id. Sirve para consolidar las que
+   * dependian de otra. Si un artefacto las exponia, se pierde ese enlace.
+   */
+  supuestosEliminar?: string[];
+  /** Piezas de la frase «Conecte los puntos». Se corrigen de a una. */
+  oferta?: string;
+  mercado?: string;
+  necesidad?: string;
+  entrega?: string;
+  produccion?: string;
+  modelo?: string;
+  propuestaValor?: string;
+  /** Reemplaza el lienzo entero. */
+  lienzo?: Record<string, string[]>;
   quienTieneElProblema?: string;
   necesidades?: string;
   solucion?: string;
@@ -367,15 +525,57 @@ export async function updateConceptById(user: SessionUser, id: string, cambios: 
 
   const { mapId, dimensiones } = await dimensionesDe(concepto.projectId);
   const anclas = cambios.fragmentos ? await fragmentosValidos(mapId, cambios.fragmentos) : null;
-  const nuevos = (cambios.supuestosNuevos ?? [])
-    .map((x) => ({
-      text: (x.texto ?? "").trim(),
-      likelihood: Math.min(5, Math.max(1, Math.round(Number(x.probabilidad ?? 3)))),
-    }))
-    .filter((x) => x.text);
+  const nuevos = (cambios.supuestosNuevos ?? []).map(datosCondicion).filter((x) => x.text);
 
-  if (Object.keys(data).length === 0 && !anclas && nuevos.length === 0) {
+  Object.assign(data, piezasFrase(cambios));
+  if (typeof cambios.propuestaValor === "string") data.propuestaValor = cambios.propuestaValor.trim();
+  const lienzo = lienzoValido(cambios.lienzo, dimensiones);
+  if (lienzo) data.lienzo = lienzo;
+
+  // Las condiciones a corregir o eliminar tienen que ser de ESTE concepto.
+  const idsTocados = [
+    ...(cambios.supuestosEditar ?? []).map((x) => x.id),
+    ...(cambios.supuestosEliminar ?? []),
+  ];
+  if (idsTocados.length > 0) {
+    const propios = await prisma.assumption.findMany({
+      where: { id: { in: idsTocados }, conceptId: id },
+      select: { id: true },
+    });
+    const suyos = new Set(propios.map((x) => x.id));
+    const ajenos = idsTocados.filter((x) => !suyos.has(x));
+    if (ajenos.length > 0) {
+      throw new AgentApiError(`Estas condiciones no son de este concepto: ${ajenos.join(", ")}.`, 400);
+    }
+  }
+  const editar = cambios.supuestosEditar ?? [];
+  const eliminar = cambios.supuestosEliminar ?? [];
+
+  if (
+    Object.keys(data).length === 0 &&
+    !anclas &&
+    nuevos.length === 0 &&
+    editar.length === 0 &&
+    eliminar.length === 0
+  ) {
     throw new AgentApiError("El cambio no trae ningun campo reconocido.", 400);
+  }
+
+  for (const x of editar) {
+    const d: Record<string, unknown> = {};
+    if (typeof x.texto === "string" && x.texto.trim()) d.text = x.texto.trim();
+    if (x.probabilidad !== undefined) d.likelihood = Math.min(5, Math.max(1, Math.round(Number(x.probabilidad))));
+    if (x.tipo === "CONDICION" || x.tipo === "PRECEDENTE") d.kind = x.tipo;
+    if (typeof x.detonante === "string") {
+      d.trigger = (DETONANTE_KEYS as readonly string[]).includes(x.detonante) ? x.detonante : "";
+    }
+    if (typeof x.critica === "boolean") d.critical = x.critica && x.tipo !== "PRECEDENTE";
+    if (typeof x.prueba === "string") d.failFastTest = x.prueba.trim();
+    if (typeof x.resultado === "string") d.expectedResult = x.resultado.trim();
+    if (Object.keys(d).length > 0) await prisma.assumption.update({ where: { id: x.id }, data: d });
+  }
+  if (eliminar.length > 0) {
+    await prisma.assumption.deleteMany({ where: { id: { in: eliminar }, conceptId: id } });
   }
 
   if (anclas) {
@@ -399,7 +599,7 @@ export async function updateConceptById(user: SessionUser, id: string, cambios: 
     let pos = (ultimoSup?.position ?? -1) + 1;
     for (const n of nuevos) {
       await prisma.assumption.create({
-        data: { conceptId: id, text: n.text, likelihood: n.likelihood, position: pos++, origin: "AGENT" },
+        data: { conceptId: id, ...n, position: pos++, origin: "AGENT" },
       });
     }
   }
@@ -410,19 +610,32 @@ export async function updateConceptById(user: SessionUser, id: string, cambios: 
     select: {
       id: true,
       title: true,
-      impDemanda: true,
-      impImplementar: true,
-      impEscalar: true,
-      fitProblema: true,
-      fitEquipo: true,
-      fitMetas: true,
+      atrMercado: true,
+      atrOpciones: true,
+      atrRecompensa: true,
+      fitViabilidad: true,
+      fitEstrategia: true,
+      fitPasion: true,
+      fraseOferta: true,
+      fraseMercado: true,
+      fraseNecesidad: true,
+      fraseEntrega: true,
+      fraseProduccion: true,
+      fraseModelo: true,
       anclas: { select: { rowId: true } },
+      supuestos: {
+        select: { kind: true, critical: true, failFastTest: true, expectedResult: true, text: true },
+      },
     },
   });
-  const { anclas: filas, ...resto } = actualizado;
+  const { anclas: filas, supuestos: condiciones, ...resto } = actualizado;
+  const avisos = avisosIngenieria(condiciones);
   return {
-    actualizado: resto,
+    actualizado: { ...resto, frase: fraseConectada(resto) },
     supuestosAgregados: nuevos.length,
+    supuestosEditados: editar.length,
+    supuestosEliminados: eliminar.length,
     ...cobertura(dimensiones, filas.map((a) => a.rowId)),
+    ...(avisos.length > 0 ? { avisosIngenieriaInversa: avisos } : {}),
   };
 }

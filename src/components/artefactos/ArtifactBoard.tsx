@@ -7,6 +7,7 @@ import { ARTEFACTO } from "@/lib/gimi";
 import { ARTIFACT_KINDS, ARTIFACT_KIND_LABEL } from "@/lib/enums";
 import { createArtifact } from "@/app/actions/artifacts";
 import { ArtifactCard } from "./ArtifactCard";
+import { GuiaTaller } from "./GuiaTaller";
 import type { ArtefactoVista, ConceptoOpcion } from "./types";
 
 /**
@@ -32,7 +33,7 @@ export function ArtifactBoard({
   const [creando, setCreando] = useState(false);
   const [conceptId, setConceptId] = useState(conceptos[0]?.id ?? "");
   const [title, setTitle] = useState("");
-  const [kind, setKind] = useState<string>("LANDING");
+  const [kind, setKind] = useState<string>("BROCHURE");
   const [promise, setPromise] = useState("");
 
   const porConcepto = new Map(conceptos.map((c) => [c.id, c]));
@@ -167,6 +168,8 @@ export function ArtifactBoard({
           </div>
         )
       )}
+
+      <GuiaTaller conceptos={conceptos} />
 
       {/* ── Los artefactos ──────────────────────────────────────────────── */}
       {artefactos.length === 0 && conceptos.length > 0 && (

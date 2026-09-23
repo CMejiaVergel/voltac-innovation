@@ -4,7 +4,14 @@ import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { canEdit, asEnum, ASSUMPTION_STATUSES, SUBCRITERIOS } from "@/lib/enums";
+import {
+  canEdit,
+  asEnum,
+  ASSUMPTION_STATUSES,
+  ASSUMPTION_KINDS,
+  DETONANTE_KEYS,
+  SUBCRITERIOS,
+} from "@/lib/enums";
 import { getProjectRole } from "@/lib/projects";
 
 /**
@@ -106,7 +113,22 @@ export async function createConcept(
   return concepto;
 }
 
-export type CampoConcepto = "title" | "statement" | "description" | "color";
+const CAMPOS_TEXTO = [
+  "title",
+  "statement",
+  "description",
+  "color",
+  // Ejercicio 1.1: frase «Conecte los puntos» y propuesta de valor
+  "fraseOferta",
+  "fraseMercado",
+  "fraseNecesidad",
+  "fraseEntrega",
+  "fraseProduccion",
+  "fraseModelo",
+  "propuestaValor",
+] as const;
+
+export type CampoConcepto = (typeof CAMPOS_TEXTO)[number];
 
 export async function updateConcept(
   conceptId: string,
@@ -115,7 +137,7 @@ export async function updateConcept(
   const { concept, slug } = await guardConcept(conceptId);
 
   const data: Record<string, string> = {};
-  for (const campo of ["title", "statement", "description", "color"] as CampoConcepto[]) {
+  for (const campo of CAMPOS_TEXTO) {
     const v = campos[campo];
     if (typeof v === "string") data[campo] = v.trim();
   }
@@ -129,6 +151,33 @@ export async function updateConcept(
   }
 
   await prisma.concept.update({ where: { id: concept.id }, data });
+  refrescar(slug);
+}
+
+/**
+ * Guarda las vinetas del lienzo de una dimension (Ejercicio 1.1). Una por
+ * renglon; los renglones vacios se descartan.
+ */
+export async function updateLienzo(
+  conceptId: string,
+  dimension: string,
+  vinetas: string[],
+): Promise<void> {
+  const { concept, slug } = await guardConcept(conceptId);
+  const actual = await prisma.concept.findUnique({
+    where: { id: concept.id },
+    select: { lienzo: true },
+  });
+  let lienzo: Record<string, string[]> = {};
+  try {
+    lienzo = JSON.parse(actual?.lienzo || "{}");
+  } catch {
+    lienzo = {};
+  }
+  const limpias = vinetas.map((v) => v.trim()).filter(Boolean).slice(0, 8);
+  if (limpias.length > 0) lienzo[dimension] = limpias;
+  else delete lienzo[dimension];
+  await prisma.concept.update({ where: { id: concept.id }, data: { lienzo: JSON.stringify(lienzo) } });
   refrescar(slug);
 }
 
@@ -210,6 +259,7 @@ export async function addAssumption(
   conceptId: string,
   text: string,
   likelihood = 3,
+  kind: string = "CONDICION",
 ): Promise<void> {
   const { concept, slug } = await guardConcept(conceptId);
   const limpio = text.trim();
@@ -225,6 +275,7 @@ export async function addAssumption(
     data: {
       conceptId: concept.id,
       text: limpio,
+      kind: asEnum(ASSUMPTION_KINDS, kind, "CONDICION"),
       likelihood: Math.min(5, Math.max(1, Math.round(likelihood))),
       position: (ultimo?.position ?? -1) + 1,
     },
@@ -234,7 +285,17 @@ export async function addAssumption(
 
 export async function updateAssumption(
   assumptionId: string,
-  cambios: { text?: string; likelihood?: number; status?: string; note?: string },
+  cambios: {
+    text?: string;
+    likelihood?: number;
+    status?: string;
+    note?: string;
+    kind?: string;
+    trigger?: string;
+    critical?: boolean;
+    failFastTest?: string;
+    expectedResult?: string;
+  },
 ): Promise<void> {
   const user = await requireUser();
   const sup = await prisma.assumption.findUnique({
@@ -257,6 +318,19 @@ export async function updateAssumption(
   }
   if (cambios.status) data.status = asEnum(ASSUMPTION_STATUSES, cambios.status, "OPEN");
   if (typeof cambios.note === "string") data.note = cambios.note.trim();
+  if (cambios.kind) {
+    data.kind = asEnum(ASSUMPTION_KINDS, cambios.kind, "CONDICION");
+    // Un precedente ya se dio por sentado: no se trabaja, no puede ser de las tres.
+    if (data.kind === "PRECEDENTE") data.critical = false;
+  }
+  if (typeof cambios.trigger === "string") {
+    data.trigger = (DETONANTE_KEYS as readonly string[]).includes(cambios.trigger) ? cambios.trigger : "";
+  }
+  if (typeof cambios.critical === "boolean" && data.kind !== "PRECEDENTE") {
+    data.critical = cambios.critical && sup.kind !== "PRECEDENTE";
+  }
+  if (typeof cambios.failFastTest === "string") data.failFastTest = cambios.failFastTest.trim();
+  if (typeof cambios.expectedResult === "string") data.expectedResult = cambios.expectedResult.trim();
 
   if (Object.keys(data).length === 0) return;
   await prisma.assumption.update({ where: { id: assumptionId }, data });

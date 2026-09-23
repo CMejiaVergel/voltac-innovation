@@ -11,7 +11,9 @@ import {
   CLAIM_KINDS,
   FEEDBACK_VERDICTS,
 } from "@/lib/enums";
+import { fraseConectada, TIPOS_LECCION } from "@/lib/gimi";
 import { ArtifactBoard } from "@/components/artefactos/ArtifactBoard";
+import { Lecciones, type LeccionVista } from "@/components/artefactos/Lecciones";
 import type { ArtefactoVista, ConceptoOpcion } from "@/components/artefactos/types";
 
 export default async function ArtefactosPage({
@@ -65,6 +67,8 @@ export default async function ArtefactosPage({
       id: c.id,
       title: c.title,
       statement: c.statement,
+      frase: fraseConectada(c),
+      propuestaValor: c.propuestaValor,
       color: colorDeTrazo(c.color, c.position),
       insights: origen.map((o) => ({ numero: o.numero, color: colorDeTrazo(o.ins.color, o.ins.position) })),
       supuestos: c.supuestos.map((s) => ({
@@ -86,6 +90,7 @@ export default async function ArtefactosPage({
       kind: true,
       promise: true,
       status: true,
+      iteration: true,
       presentedTo: true,
       presentedAt: true,
       conceptId: true,
@@ -117,6 +122,7 @@ export default async function ArtefactosPage({
     kind: asEnum(ARTIFACT_KINDS, a.kind, "LANDING"),
     promise: a.promise,
     status: asEnum(ARTIFACT_STATUSES, a.status, "BORRADOR"),
+    iteration: a.iteration,
     presentedTo: a.presentedTo,
     presentedAt: a.presentedAt?.toISOString() ?? null,
     tieneDocumento: conDocumento.has(a.id),
@@ -140,14 +146,23 @@ export default async function ArtefactosPage({
     })),
   }));
 
+  const lecciones: LeccionVista[] = (
+    await prisma.leccion.findMany({
+      where: { projectId: project.id },
+      orderBy: [{ createdAt: "asc" }, { position: "asc" }],
+      select: { id: true, sesion: true, tipo: true, texto: true, hecho: true },
+    })
+  ).map((l) => ({ ...l, tipo: asEnum(TIPOS_LECCION, l.tipo, "APRENDIZAJE") }));
+
   return (
-    <div className="mt-7">
+    <div className="mt-7 flex flex-col gap-8">
       <ArtifactBoard
         slug={slug}
         artefactos={artefactos}
         conceptos={conceptos}
         editable={canEdit(role)}
       />
+      <Lecciones slug={slug} lecciones={lecciones} editable={canEdit(role)} />
     </div>
   );
 }

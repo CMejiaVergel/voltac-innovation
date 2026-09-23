@@ -6,9 +6,9 @@ import { colorDeTrazo, promedioEje, puntuados, SUBCRITERIOS } from "@/lib/enums"
 import type { ConceptoVista } from "./types";
 
 /**
- * La matriz de priorizacion: Fit en horizontal, Impacto en vertical.
+ * La matriz de priorizacion del Ejercicio 2: Fit en horizontal, Atractividad en vertical.
  *
- * Los ejes salen del promedio de sus tres subcriterios (CV.pdf p4). Un concepto
+ * Los ejes salen del promedio de sus tres subcriterios (Taller 3, lamina 21). Un concepto
  * SIN PUNTUAR no aparece flotando en el centro —eso lo haria parecer mediocre
  * cuando en realidad nadie lo ha mirado— sino en una lista aparte debajo. La
  * matriz solo muestra lo que el equipo ya evaluo.
@@ -38,14 +38,14 @@ export function Matriz({
 
   const colocados = conceptos
     .map((c) => {
-      const imp = promedioEje(c, "impacto");
+      const imp = promedioEje(c, "atractividad");
       const fit = promedioEje(c, "fit");
       return imp !== null && fit !== null ? { c, imp, fit } : null;
     })
     .filter((x): x is { c: ConceptoVista; imp: number; fit: number } => x !== null);
 
   const sinPuntuar = conceptos.filter(
-    (c) => promedioEje(c, "impacto") === null || promedioEje(c, "fit") === null,
+    (c) => promedioEje(c, "atractividad") === null || promedioEje(c, "fit") === null,
   );
 
   const señalado = encima ?? activo;
@@ -57,10 +57,10 @@ export function Matriz({
           viewBox={`0 0 ${LADO} ${LADO}`}
           className="block w-full max-w-[520px]"
           role="img"
-          aria-label="Matriz de priorizacion: impacto contra fit"
+          aria-label="Matriz de priorizacion: atractividad contra fit"
         >
           {/* Cuadrantes. El de arriba a la derecha es el unico que dice
-              "seguir": alto impacto y buen encaje con el reto. */}
+              "seguir": alta atractividad y buen encaje (Taller 3, Ejercicio 2). */}
           <rect
             x={ejeX(3)}
             y={MARGEN}
@@ -74,14 +74,14 @@ export function Matriz({
             textAnchor="end"
             style={{ fontSize: 10, fill: "#6FBFB2", letterSpacing: "0.08em" }}
           >
-            PERSEGUIR
+            PRIORIDAD ALTA
           </text>
           <text
             x={MARGEN + 6}
             y={MARGEN + UTIL - 8}
             style={{ fontSize: 10, fill: "#5e7370", letterSpacing: "0.08em" }}
           >
-            DESCARTAR
+            PRIORIDAD BAJA
           </text>
 
           {/* Rejilla */}
@@ -150,7 +150,7 @@ export function Matriz({
             transform={`rotate(-90 14 ${MARGEN + UTIL / 2})`}
             style={{ fontSize: 11, fill: "#8b9a97", letterSpacing: "0.1em" }}
           >
-            IMPACTO
+            ATRACTIVIDAD
           </text>
 
           {/* Conceptos */}
@@ -230,7 +230,7 @@ export function Matriz({
                   {c.title}
                 </span>
                 <span className="flex-none font-mono text-[10px] text-[#7d8a88] [font-variant-numeric:tabular-nums]">
-                  imp {imp.toFixed(1)} · fit {fit.toFixed(1)}
+                  atr {imp.toFixed(1)} · fit {fit.toFixed(1)}
                 </span>
               </button>
             </li>
