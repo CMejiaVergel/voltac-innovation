@@ -87,3 +87,20 @@ Para corregir: `supuestosEditar` (por id), `supuestosEliminar` (al consolidar),
 Cada taller cierra con **lecciones aprendidas** (3 aprendizajes y lo que más se
 disfrutó, consolidados sin repetir factores) y **siguientes pasos**. Viven en la
 pantalla Artefactos, por sesión. El agente no las escribe: son del equipo.
+
+## 6. Producir un artefacto de punta a punta (replicable en cualquier proyecto)
+
+1. `prompt_artefacto` con el concepto y el formato (`BROCHURE`, `PROTOCEPTO` o
+   `MOCKUP`). Devuelve un prompt con todos los datos del proyecto y las reglas
+   de diseño; con `guardarEn` lo escribe en un .md local.
+2. Producir el HTML siguiendo ese prompt al pie de la letra (hojas exactas,
+   cifras con etiqueta, ícono por bloque, letra legible). Medir que nada se
+   desborde antes de entregar.
+3. `proponer_artefacto`: concepto, título, formato, promesa, las tres
+   condiciones críticas en `supuestos` y cada cifra visible en `cifras`
+   (HECHO solo con `fragmentoId`).
+4. `cargar_documento_artefacto` con el id y la ruta local del .html. Si
+   devuelve avisos de porcentajes no declarados, se corrige el documento o la
+   ficha.
+5. Cada vez que el equipo lo prueba y lo cambia: nueva versión con
+   `cargar_documento_artefacto` y `editar_artefacto` → `iteracion` + 1.

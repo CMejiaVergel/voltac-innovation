@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 
+import { BROCHURE, INSIGHTS_DE_ARTEFACTO, ITERACIONES_ARTEFACTO, MATRIZ_ARTEFACTOS } from "@/lib/gimi";
 import {
-  BROCHURE,
-  INSIGHTS_DE_ARTEFACTO,
-  ITERACIONES_ARTEFACTO,
-  MATRIZ_ARTEFACTOS,
-  promptBrochure,
-  promptMockup,
-} from "@/lib/gimi";
+  construirPromptArtefacto,
+  FORMATOS_PROMPT,
+  FORMATO_PROMPT_LABEL,
+  type FormatoPrompt,
+} from "@/lib/promptArtefacto";
 import { ARTIFACT_KIND_LABEL, type ArtifactKind } from "@/lib/enums";
 import type { ConceptoOpcion } from "./types";
 
@@ -18,7 +17,7 @@ import type { ConceptoOpcion } from "./types";
  *
  *   Que valida cada artefacto   la matriz de la lamina 32 y el ciclo de siete vueltas
  *   Brochure y protocepto       las cinco secciones y las preguntas por dimension
- *   Producir con IA             los prompts del taller, llenos con el concepto
+ *   Producir con IA             el prompt de produccion, lleno con el proyecto
  *
  * Esta todo aqui para que el taller se pueda repetir sin las laminas a la mano.
  */
@@ -27,10 +26,10 @@ export function GuiaTaller({ conceptos }: { conceptos: ConceptoOpcion[] }) {
   const [conceptId, setConceptId] = useState(conceptos[0]?.id ?? "");
   const [copiado, setCopiado] = useState<string | null>(null);
 
+  const [formato, setFormato] = useState<FormatoPrompt>("BROCHURE");
+
   const concepto = conceptos.find((c) => c.id === conceptId) ?? null;
-  const datos = concepto
-    ? { titulo: concepto.title, frase: concepto.frase || concepto.statement, propuestaValor: concepto.propuestaValor }
-    : null;
+  const prompt = concepto?.datosPrompt ? construirPromptArtefacto(concepto.datosPrompt, formato) : "";
 
   async function copiar(clave: string, texto: string) {
     try {
@@ -169,51 +168,78 @@ export function GuiaTaller({ conceptos }: { conceptos: ConceptoOpcion[] }) {
 
       {pestaña === "ia" && (
         <div className="flex flex-col gap-3">
-          <p className="max-w-[72ch] text-[12.5px] leading-relaxed text-[#a9b5b3]">
-            Alista tres imágenes: la foto de la descripción del concepto (el lienzo del Ejercicio
-            1.1), el logo de la empresa sponsor y un pantallazo de su sitio web. Copia el prompt,
-            adjunta las imágenes y revisa siempre el resultado antes de enviarle los ajustes a la IA.
+          <p className="max-w-[76ch] text-[12.5px] leading-relaxed text-[#a9b5b3]">
+            Prompt de producción armado con los datos de este proyecto: la frase y el lienzo del
+            concepto, los fragmentos del mapa que lo sostienen —los únicos hechos citables—, los
+            insights de origen, la ingeniería inversa y las reglas de diseño que aprendió el
+            programa. Sirve igual en cualquier proyecto.
           </p>
+          <ol className="flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-[#8b9a97]">
+            <li>1. Copia el prompt y adjunta el lienzo, el logo y un pantallazo del sitio del sponsor.</li>
+            <li>2. Revisa el HTML y pide ajustes a la IA.</li>
+            <li>3. Crea el artefacto aquí y declara sus cifras.</li>
+            <li>4. Sube el documento (MCP cargar_documento_artefacto) y suma la vuelta.</li>
+          </ol>
           {conceptos.length === 0 ? (
             <p className="text-[12px] text-[#8b9a97]">Primero hay que construir conceptos en Convergir.</p>
           ) : (
             <>
-              <select
-                className="field max-w-[48ch] text-[13px]"
-                value={conceptId}
-                onChange={(e) => setConceptId(e.target.value)}
-              >
-                {conceptos.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title}
-                  </option>
-                ))}
-              </select>
-              {datos && (
-                <div className="grid gap-3 lg:grid-cols-2">
-                  {[
-                    { clave: "brochure", titulo: "Prompt del brochure", texto: promptBrochure(datos) },
-                    { clave: "mockup", titulo: "Prompt del mockup", texto: promptMockup(datos) },
-                  ].map((p) => (
-                    <div key={p.clave} className="flex flex-col gap-2 rounded-[4px] border border-[rgba(232,227,216,0.12)] p-2.5">
-                      <div className="flex items-center gap-2">
-                        <p className="text-[12.5px] font-semibold text-[#e8e3d8]">{p.titulo}</p>
-                        <span className="flex-1" />
-                        <button type="button" className="btn" onClick={() => copiar(p.clave, p.texto)}>
-                          {copiado === p.clave ? "Copiado" : "Copiar"}
-                        </button>
-                      </div>
-                      <pre className="max-h-[260px] overflow-auto whitespace-pre-wrap text-[11.5px] leading-relaxed text-[#a9b5b3]">
-                        {p.texto}
-                      </pre>
-                    </div>
+              <div className="flex flex-wrap gap-2">
+                <select
+                  className="field max-w-[48ch] text-[13px]"
+                  value={conceptId}
+                  onChange={(e) => setConceptId(e.target.value)}
+                >
+                  {conceptos.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}
+                    </option>
                   ))}
-                </div>
+                </select>
+                <select
+                  className="field w-auto text-[13px]"
+                  value={formato}
+                  onChange={(e) => setFormato(e.target.value as FormatoPrompt)}
+                >
+                  {FORMATOS_PROMPT.map((f) => (
+                    <option key={f} value={f}>
+                      {FORMATO_PROMPT_LABEL[f]}
+                    </option>
+                  ))}
+                </select>
+                <span className="flex-1" />
+                {prompt && (
+                  <>
+                    <button type="button" className="btn" onClick={() => copiar("prompt", prompt)}>
+                      {copiado === "prompt" ? "Copiado" : "Copiar"}
+                    </button>
+                    <a
+                      className="btn"
+                      download={`prompt-${formato.toLowerCase()}-${(concepto?.title ?? "concepto").toLowerCase().replace(/[^a-z0-9]+/g, "-")}.md`}
+                      href={`data:text/markdown;charset=utf-8,${encodeURIComponent(prompt)}`}
+                    >
+                      Descargar .md
+                    </a>
+                  </>
+                )}
+              </div>
+              {prompt ? (
+                <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-[4px] border border-[rgba(232,227,216,0.12)] p-3 text-[11.5px] leading-relaxed text-[#a9b5b3]">
+                  {prompt}
+                </pre>
+              ) : (
+                <p className="text-[12px] text-[#8b9a97]">No se pudieron reunir los datos de este concepto.</p>
               )}
               {concepto && !concepto.frase && (
                 <p className="text-[11.5px] text-[#c9a94e]">
                   Este concepto todavía no tiene la frase del Ejercicio 1.1: el prompt sale más pobre.
                   Complétala en Convergir.
+                </p>
+              )}
+              {concepto?.datosPrompt && concepto.datosPrompt.condiciones.criticas.length !== 3 && (
+                <p className="text-[11.5px] text-[#c9a94e]">
+                  Sin las tres condiciones menos probables, el artefacto no tiene qué exponer. Haz la
+                  ingeniería inversa en Convergir antes de producirlo.
                 </p>
               )}
             </>

@@ -16,6 +16,7 @@
  *   VOLTAC_API_TOKEN  el token de `npm run token:crear`
  */
 
+import { readFileSync, writeFileSync } from "node:fs";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -591,7 +592,7 @@ const TOOLS = [
   {
     name: "proponer_artefacto",
     description:
-      "Etapa ACTUAR. Crea un artefacto de innovacion: la representacion visual de un concepto de solucion (landing, one-pager, folleto) para que la empresa reaccione antes del MVP. Cuelga de un concepto, que puede juntar varios insights. Vende la idea, pero EXPONE sus supuestos mas debiles: pasa los ids de los supuestos del concepto que pone a la vista, empezando por los de menor probabilidad. Cada cifra que muestre el documento se declara aqui: META (lo que se propone lograr), ESTIMACION (calculo o referente, con su base) o HECHO (exige fragmentoId del mapa; sin el se guarda como estimacion). Prohibido presentar el concepto como producto existente (nada de login ni ingresar) y mostrar porcentajes de impacto como medidos. El llamado a la accion invita a reaccionar, no a comprar. El documento HTML no viaja por aqui: se carga en el servidor con npm run artefacto:cargar.",
+      "Etapa ACTUAR. Crea un artefacto de innovacion: la representacion visual de un concepto de solucion (landing, one-pager, folleto) para que la empresa reaccione antes del MVP. Cuelga de un concepto, que puede juntar varios insights. Vende la idea, pero EXPONE sus supuestos mas debiles: pasa los ids de los supuestos del concepto que pone a la vista, empezando por los de menor probabilidad. Cada cifra que muestre el documento se declara aqui: META (lo que se propone lograr), ESTIMACION (calculo o referente, con su base) o HECHO (exige fragmentoId del mapa; sin el se guarda como estimacion). Prohibido presentar el concepto como producto existente (nada de login ni ingresar) y mostrar porcentajes de impacto como medidos. El llamado a la accion invita a reaccionar, no a comprar. Formatos del Taller 3: BROCHURE (2 paginas) y PROTOCEPTO (3 hojas); pide antes el prompt con prompt_artefacto. El documento HTML no viaja por aqui: se sube despues con cargar_documento_artefacto.",
     inputSchema: {
       type: "object",
       properties: {
@@ -625,9 +626,49 @@ const TOOLS = [
     run: ({ slug, ...body }) => api(`${slugPath(slug)}/artefactos`, { method: "POST", body }),
   },
   {
+    name: "prompt_artefacto",
+    description:
+      "Etapa ACTUAR. Devuelve el prompt especifico para PRODUCIR un artefacto de un concepto: BROCHURE (2 paginas A4), PROTOCEPTO (3 hojas 16:9) o MOCKUP. Trae los datos del proyecto, la frase y el lienzo del concepto, los fragmentos del mapa que lo sostienen (unicos hechos citables), los insights de origen, la ingenieria inversa y las reglas de diseño y verificacion que aprendio el programa. Flujo: prompt_artefacto -> producir el HTML -> proponer_artefacto (con cifras y condiciones expuestas) -> cargar_documento_artefacto. Si pasas 'guardarEn', el prompt se escribe en ese archivo local en vez de devolverse entero.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        concepto: { type: "string", description: "Id del concepto." },
+        formato: { type: "string", enum: ["BROCHURE", "PROTOCEPTO", "MOCKUP"] },
+        guardarEn: { type: "string", description: "Ruta local .md donde guardar el prompt." },
+      },
+      required: ["concepto", "formato"],
+    },
+    run: async ({ concepto, formato, guardarEn }) => {
+      const r = await api(`/api/agent/conceptos/${encodeURIComponent(concepto)}/prompt?formato=${encodeURIComponent(formato)}`);
+      if (guardarEn && r && typeof r.prompt === "string") {
+        writeFileSync(guardarEn, r.prompt, "utf8");
+        return { formato: r.formato, guardadoEn: guardarEn, caracteres: r.prompt.length };
+      }
+      return r;
+    },
+  },
+  {
+    name: "cargar_documento_artefacto",
+    description:
+      "Etapa ACTUAR. Sube el documento HTML de un artefacto leyendolo de un archivo LOCAL (ruta absoluta), para no pasar megabytes por la conversacion. Reemplaza el documento anterior; usalo para cada nueva vuelta del ciclo y luego suma la vuelta con editar_artefacto -> iteracion. Devuelve el peso y avisos: botones de ingreso o porcentajes no declarados como cifra.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Id del artefacto." },
+        ruta: { type: "string", description: "Ruta absoluta del archivo .html." },
+      },
+      required: ["id", "ruta"],
+    },
+    run: ({ id, ruta }) =>
+      api(`/api/agent/artefactos/${encodeURIComponent(id)}/documento`, {
+        method: "PUT",
+        body: { html: readFileSync(ruta, "utf8") },
+      }),
+  },
+  {
     name: "editar_artefacto",
     description:
-      "Corrige el nombre, la promesa, el formato, el estado (BORRADOR, LISTO, PRESENTADO) o la vuelta del ciclo de un artefacto. Al pasar a PRESENTADO se fecha solo. 'iteracion' es la vuelta de hacer -> probar con el mercado -> revisar -> cambiar: el taller pide al menos siete. Las cifras y los supuestos expuestos no se tocan aqui, y el documento se vuelve a cargar con npm run artefacto:cargar.",
+      "Corrige el nombre, la promesa, el formato, el estado (BORRADOR, LISTO, PRESENTADO) o la vuelta del ciclo de un artefacto. Al pasar a PRESENTADO se fecha solo. 'iteracion' es la vuelta de hacer -> probar con el mercado -> revisar -> cambiar: el taller pide al menos siete. Las cifras y los supuestos expuestos no se tocan aqui; el documento se vuelve a subir con cargar_documento_artefacto.",
     inputSchema: {
       type: "object",
       properties: {

@@ -5,6 +5,7 @@ import type {
   ClaimKind,
   FeedbackVerdict,
 } from "@/lib/enums";
+import type { DatosPromptArtefacto } from "@/lib/promptArtefacto";
 
 export type SupuestoVista = {
   id: string;
@@ -23,6 +24,8 @@ export type ConceptoOpcion = {
   /** Frase del Ejercicio 1.1 y propuesta de valor: alimentan los prompts de IA. */
   frase: string;
   propuestaValor: string;
+  /** Todo lo que el prompt de produccion necesita de este concepto. */
+  datosPrompt: DatosPromptArtefacto | null;
   color: string;
   /** Numero de los insights de los que salen sus ideas: "Insight 1", "Insight 3". */
   insights: { numero: number; color: string }[];

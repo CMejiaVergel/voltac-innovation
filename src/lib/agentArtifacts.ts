@@ -120,7 +120,7 @@ export async function createArtifactForAgent(user: SessionUser, slug: string, da
     ...(degradadas.length
       ? { degradadasAEstimacion: degradadas, nota: "Declaradas hecho sin fragmento del mapa." }
       : {}),
-    siguiente: `Cargar el documento en el servidor: npm run artefacto:cargar -- ${creado.id} archivo.html`,
+    siguiente: `Cargar el documento con cargar_documento_artefacto (id ${creado.id}, ruta del .html local).`,
   };
 }
 
@@ -170,4 +170,69 @@ export async function updateArtifactForAgent(
     select: { id: true, title: true, kind: true, status: true, iteration: true },
   });
   return { id: r.id, titulo: r.title, formato: r.kind, estado: r.status, iteracion: r.iteration };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Documento del artefacto y prompt para producirlo
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Peso maximo del documento: Nginx acepta 8 MB por peticion. */
+const MAX_DOCUMENTO = 7 * 1024 * 1024;
+
+/**
+ * Carga el HTML del artefacto por la API, con los mismos avisos que el script
+ * `artefacto:cargar`: botones de ingreso y porcentajes no declarados.
+ */
+export async function uploadArtifactDocument(user: SessionUser, id: string, html: string) {
+  const artefacto = await prisma.artifact.findUnique({
+    where: { id },
+    select: { id: true, projectId: true, title: true, cifras: { select: { value: true } } },
+  });
+  if (!artefacto) throw new AgentApiError("El artefacto no existe.", 404);
+  const access = await getProjectRole(user, artefacto.projectId);
+  if (!access) throw new AgentApiError("El artefacto no existe.", 404);
+  if (!canEdit(access.role)) {
+    throw new AgentApiError("El token no tiene permiso de escritura en este proyecto.", 403);
+  }
+  const doc = typeof html === "string" ? html : "";
+  if (!/<html[\s>]/i.test(doc) && !/<body[\s>]/i.test(doc)) {
+    throw new AgentApiError("El documento tiene que ser un HTML completo.", 400);
+  }
+  const peso = Buffer.byteLength(doc, "utf8");
+  if (peso > MAX_DOCUMENTO) {
+    throw new AgentApiError(`El documento pesa ${(peso / 1048576).toFixed(1)} MB; el maximo es 7 MB.`, 413);
+  }
+
+  await prisma.artifact.update({ where: { id }, data: { html: doc } });
+
+  const texto = doc
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ");
+  const avisos: string[] = [];
+  if (/\b(login|iniciar sesi[oó]n|entrar a la aplicaci[oó]n|ingresar)\b/i.test(texto)) {
+    avisos.push("El documento tiene botones de ingreso o inicio de sesion: presenta el concepto como producto existente.");
+  }
+  const declaradas = new Set(artefacto.cifras.map((c) => c.value.replace(/\s/g, "")));
+  const sueltas = [...new Set(texto.match(/[+-]?\d+(?:[.,]\d+)?(?:\s*-\s*\d+(?:[.,]\d+)?)?\s*%/g) ?? [])]
+    .map((c) => c.replace(/\s/g, ""))
+    .filter((c) => !declaradas.has(c));
+  if (sueltas.length > 0) {
+    avisos.push(`Porcentajes no declarados como cifra: ${sueltas.slice(0, 8).join(", ")}.`);
+  }
+  return { id, titulo: artefacto.title, pesoKB: Math.round(peso / 1024), ...(avisos.length ? { avisos } : {}) };
+}
+
+/** El prompt especifico para producir un artefacto de este concepto. */
+export async function promptForConcept(user: SessionUser, conceptId: string, formato: string) {
+  const { construirPromptArtefacto, FORMATOS_PROMPT } = await import("@/lib/promptArtefacto");
+  const { datosPromptArtefacto } = await import("@/lib/promptArtefactoDatos");
+  const concepto = await prisma.concept.findUnique({ where: { id: conceptId }, select: { projectId: true } });
+  if (!concepto) throw new AgentApiError("El concepto no existe.", 404);
+  const access = await getProjectRole(user, concepto.projectId);
+  if (!access) throw new AgentApiError("El concepto no existe.", 404);
+  const f = (FORMATOS_PROMPT as readonly string[]).includes(formato) ? (formato as (typeof FORMATOS_PROMPT)[number]) : "BROCHURE";
+  const datos = await datosPromptArtefacto(conceptId);
+  if (!datos) throw new AgentApiError("El concepto no existe.", 404);
+  return { formato: f, prompt: construirPromptArtefacto(datos, f) };
 }

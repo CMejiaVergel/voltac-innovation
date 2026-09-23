@@ -12,6 +12,7 @@ import {
   FEEDBACK_VERDICTS,
 } from "@/lib/enums";
 import { fraseConectada, TIPOS_LECCION } from "@/lib/gimi";
+import { datosPromptArtefacto } from "@/lib/promptArtefactoDatos";
 import { ArtifactBoard } from "@/components/artefactos/ArtifactBoard";
 import { Lecciones, type LeccionVista } from "@/components/artefactos/Lecciones";
 import type { ArtefactoVista, ConceptoOpcion } from "@/components/artefactos/types";
@@ -51,6 +52,10 @@ export default async function ArtefactosPage({
     },
   });
 
+  const datosPorConcepto = new Map(
+    await Promise.all(conceptosDb.map(async (c) => [c.id, await datosPromptArtefacto(c.id)] as const)),
+  );
+
   const conceptos: ConceptoOpcion[] = conceptosDb.map((c) => {
     const ids = [...new Set(c.origenes.map((o) => o.insightId).filter(Boolean))];
     const origen = ids.map((id) => porInsight.get(id)).filter((x) => x !== undefined);
@@ -69,6 +74,7 @@ export default async function ArtefactosPage({
       statement: c.statement,
       frase: fraseConectada(c),
       propuestaValor: c.propuestaValor,
+      datosPrompt: datosPorConcepto.get(c.id) ?? null,
       color: colorDeTrazo(c.color, c.position),
       insights: origen.map((o) => ({ numero: o.numero, color: colorDeTrazo(o.ins.color, o.ins.position) })),
       supuestos: c.supuestos.map((s) => ({
