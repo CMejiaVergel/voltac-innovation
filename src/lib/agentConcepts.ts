@@ -103,7 +103,7 @@ function avisosIngenieria(
   if (condiciones.length > INGENIERIA_INVERSA.maxCondiciones) {
     avisos.push(`Hay ${condiciones.length} condiciones: el ejercicio pide hasta ${INGENIERIA_INVERSA.maxCondiciones}. Consolida las que dependen de otra.`);
   }
-  if (condiciones.length > 0 && criticas.length !== INGENIERIA_INVERSA.menosProbables) {
+  if (criticas.length > 0 && criticas.length !== INGENIERIA_INVERSA.menosProbables) {
     avisos.push(`Hay ${criticas.length} condiciones marcadas como menos probables: el ejercicio pide exactamente ${INGENIERIA_INVERSA.menosProbables}.`);
   }
   for (const c of criticas) {

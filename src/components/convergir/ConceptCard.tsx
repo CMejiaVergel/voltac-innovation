@@ -103,7 +103,9 @@ export function ConceptCard({
       `${condiciones.length} condiciones: el ejercicio pide hasta ${INGENIERIA_INVERSA.maxCondiciones}. Consolida las que dependen de otra.`,
     );
   }
-  if (condiciones.length > 0 && criticas.length !== INGENIERIA_INVERSA.menosProbables) {
+  // Sin ninguna marcada el ejercicio no ha empezado (conceptos no elegidos):
+  // no se avisa. Con una o dos, o con mas de tres, si.
+  if (criticas.length > 0 && criticas.length !== INGENIERIA_INVERSA.menosProbables) {
     avisosII.push(
       `${criticas.length} marcada${criticas.length === 1 ? "" : "s"} como menos probable${criticas.length === 1 ? "" : "s"}: el ejercicio pide exactamente ${INGENIERIA_INVERSA.menosProbables}.`,
     );
