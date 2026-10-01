@@ -217,6 +217,7 @@ mcp/server.mjs              Servidor MCP. Habla con /api/agent, no con la BD.
 .claude/skills/             Reglas que sigue Claude Code como agente.
 scripts/token.ts            Emitir, listar y revocar tokens.
 scripts/aplicar-bom.mjs     Aplicar un mapa versionado a un proyecto.
+scripts/exportar-artefacto.ps1  Medir, imprimir a PDF y capturar un brochure o protocepto.
 
 src/app/actions/            Mutaciones. Todas verifican permiso y dejan historial.
 src/components/bom/         El tablero (rejilla en escritorio, lentes en movil).

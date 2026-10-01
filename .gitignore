@@ -47,3 +47,6 @@ node_modules/
 *.db-shm
 *.db-wal
 *.pem
+
+# Fotos del equipo: datos de personas reales, no se versionan.
+/Equipo/
