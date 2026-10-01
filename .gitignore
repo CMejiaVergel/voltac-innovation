@@ -31,3 +31,19 @@ npm-debug.log*
 
 # Consultas sueltas contra la base mientras se trabaja.
 scratch/
+
+# --- Agregado en la migracion a VOLTAC_DEV (no subir secretos ni datos reales) ---
+node_modules/
+.next/
+.env
+.env.*
+!.env.example
+!.env.*.example
+.data/
+.datos/
+.sessions/
+.tokens/
+*.db
+*.db-shm
+*.db-wal
+*.pem
