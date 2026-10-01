@@ -1,0 +1,14 @@
+Confluencia Hídrica · paleta medida sobre el logo original
+
+Fondo      #07101E
+Azul       #0286F2
+Azul claro #039FF1
+Cian       #00BCCA
+Verde agua #00B6A7
+Verde      #26C976
+IA inicio  #00BADF
+IA fin     #01D7A2
+Eslogan    #9EACC0
+
+Tipografía del logotipo: Montserrat (título y HÍDRICA espaciada).
+Los recortes con transparencia son para fondo oscuro: el texto es blanco.
