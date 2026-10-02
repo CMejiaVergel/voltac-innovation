@@ -44,7 +44,11 @@ document.querySelectorAll('$selector').forEach((h,i)=>{
     if(e!==h && getComputedStyle(e).overflow!=='visible' && e.scrollHeight>e.clientHeight+2){det.push('  recortado: <'+e.tagName.toLowerCase()+' class="'+e.className+'"> '+e.clientHeight+'/'+e.scrollHeight+'px');}
   });
   const cont=h.querySelector('.pad,.body,.h1grid'); let hueco='';
-  if(cont && cont.lastElementChild){hueco=' - hueco al pie '+Math.round(cont.getBoundingClientRect().bottom-cont.lastElementChild.getBoundingClientRect().bottom)+'px';}
+  if(cont && cont.lastElementChild){
+    const g=Math.round(cont.getBoundingClientRect().bottom-cont.lastElementChild.getBoundingClientRect().bottom);
+    hueco=' - hueco al pie '+g+'px';
+    if(g<0) det.push('  el contenido se pasa '+(-g)+'px de su zona y queda tapado por el pie o la franja final');
+  }
   out.push('Hoja '+(i+1)+': '+(det.length?det.length+' problema(s)':'ok')+hueco, ...det);
 });
 const pre=document.createElement('pre');pre.id='MEDIDA';pre.textContent=out.join('\n');document.body.appendChild(pre);});
