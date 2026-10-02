@@ -18,7 +18,7 @@ E&E Ingeniería.
   - El aviso «4% no declarado» en los artefactos v2 del concepto 01 es solo una diferencia de texto: la cifra se declaró como «4% del sitio».
 
 ## Siguiente paso
-Rehacer el **Concepto 03** con la misma estructura (pitch de 1 minuto + brochure + protocepto v2).
+Aprobar y subir el **Concepto 03 · Red de agua lluvia de Mamonal** (diseño para un año seco: 3 ha, ≈1.100 m³, operador con cuota bajo tarifa y cesión final). Después, decidir el 04 (candidato: «Calor en vez de agua»). Antes era: rehacer el Concepto 03 con la misma estructura (pitch de 1 minuto + brochure + protocepto v2).
 Falta que Carlos decida cuál concepto es el 03 entre:
 - Enfriamiento evitado;
 - Medición de efluentes como servicio;
@@ -35,6 +35,17 @@ Las dos últimas se cruzan con la plataforma Custodio del concepto 02.
 6. Si tanque y bombeo en el predio de Cabot exigen ajustar algún permiso o plan ambiental.
 7. Vecinos en zona franca: posible trámite aduanero.
 8. Certificados de impacto: solo los emite un organismo acreditado por ONAC (ISO/IEC 17029, ISO 14065; huella hídrica NTC-ISO 14046, por ejemplo ICONTEC). Voltac entrega datos trazables y verificables, y busca un verificador aliado.
+9. **Agua lluvia (concepto 03).** El Decreto 1076 de 2015 (art. 2.2.3.2.16.13, con el Decreto 1090 de 2018):
+   - usar el agua lluvia que cae en el propio predio no requiere concesión mientras discurra por él;
+   - sí la requiere si forma cauce entre varios predios o sale del predio, como la de techos de vecinos llevada a Cabot.
+
+   Hay que confirmar:
+   - si la excepción aplica a uso industrial con bombeo, porque algunas lecturas la limitan a usos domésticos sin bombeo;
+   - que la escorrentía de patios con contacto de proceso no se trate como agua residual;
+   - que la cuota del operador se cobre por el servicio de infraestructura y no como venta de agua, porque el agua lluvia es de dominio público;
+   - si un tercero que entrega agua a una empresa cae en la Ley 142 de servicios públicos.
+
+   La Ley 373 de 1997 juega a favor: pide incluir la oferta de agua lluvia en los proyectos que consumen agua.
 
 ## Decisiones tomadas
 - **Retroalimentación de los mentores (sept 2026).** Cada concepto recorre las 5 dimensiones del BOM y trae indicadores de impacto traducidos a pesos. El ROI no se escribe explícito. Los pasos y los puntos débiles salen de la ingeniería inversa.
