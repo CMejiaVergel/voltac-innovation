@@ -18,16 +18,23 @@ E&E Ingeniería.
   - El aviso «4% no declarado» en los artefactos v2 del concepto 01 es solo una diferencia de texto: la cifra se declaró como «4% del sitio».
 
 ## Siguiente paso
-Rehacer el **Concepto 02 · Operador de Agua de Rechazo** (brochure y protocepto v2), con la misma
-estructura del concepto 01. Antes hay que tomar tres decisiones con Carlos:
-1. Quién invierte en la conducción corta y el tanque. Recomendado: el operador, que la recupera por tarifa.
-2. Si se le paga al generador. Recomendado: cesión sin costo, con reparto del ahorro solo si hoy paga por disponer el agua.
-3. El nivel de continuidad. Recomendado: 60% de las horas, y 90% al entrar la segunda fuente.
+Rehacer el **Concepto 03** con la misma estructura (pitch de 1 minuto + brochure + protocepto v2).
+Falta que Carlos decida cuál concepto es el 03 entre:
+- Enfriamiento evitado;
+- Medición de efluentes como servicio;
+- Agua verificada.
 
-Cifras base:
-- techo de costo de operar: $4.384,90 ÷ 1,10 (AIU) = $3.986/m³;
-- costo anual máximo: $34,9 M;
-- cada 1% de continuidad vale $384 mil/año.
+Las dos últimas se cruzan con la plataforma Custodio del concepto 02.
+
+**Pendiente de investigación jurídica.** Estos puntos NO se mencionan en los conceptos; se investigan para la próxima versión:
+1. La Res. 1256/2021 solo reconoce al usuario generador y al usuario receptor: no contempla intermediario ni operador. Por eso el operador del concepto 02 es de Cabot.
+2. Concesión de aguas del receptor (Cabot): tiempos, costos, información técnica, y si la otorga Cardique o el EPA Cartagena.
+3. La responsabilidad de cumplimiento recae en el receptor (art. 4, parágrafo 2).
+4. Qué pasa con el permiso de vertimiento del vecino cuando cede parte de su agua.
+5. Tubería entre predios: servidumbres y ocupación de vías (trámites municipales).
+6. Si tanque y bombeo en el predio de Cabot exigen ajustar algún permiso o plan ambiental.
+7. Vecinos en zona franca: posible trámite aduanero.
+8. Certificados de impacto: solo los emite un organismo acreditado por ONAC (ISO/IEC 17029, ISO 14065; huella hídrica NTC-ISO 14046, por ejemplo ICONTEC). Voltac entrega datos trazables y verificables, y busca un verificador aliado.
 
 ## Decisiones tomadas
 - **Retroalimentación de los mentores (sept 2026).** Cada concepto recorre las 5 dimensiones del BOM y trae indicadores de impacto traducidos a pesos. El ROI no se escribe explícito. Los pasos y los puntos débiles salen de la ingeniería inversa.
@@ -36,6 +43,11 @@ Cifras base:
   - Agua: tarifa pública de Acuacar, uso industrial, 2.º semestre de 2026: $4.384,90/m³ (fragmento aceptado). 1 m³/h = 8.760 m³/año ≈ $38,4 M/año.
   - Flete de carrotanque: $250–400 mil por viaje, según el equipo (por confirmar), es decir $12.500–40.000/m³. Por carretera no es viable: hace falta conducción directa.
 - **Concepto 01 · Custodio Hídrico:** modelo B. Es la puerta de entrada gratis y cobra por servicios adicionales.
+- **Concepto 02 · Operador de agua de rechazo de Cabot:**
+  - Es una extensión de Cabot que opera en su predio.
+  - Los vecinos ceden el agua sin costo.
+  - El ahorro ($38,4 M/año por m³/h) paga la inversión; ≈ $115 M equivalen a 3 años de ahorro.
+  - Voltac pone el diseño del sistema (una sola vez) y la plataforma Custodio, con canon mensual tipo SaaS: muestra indicadores económicos y ambientales y datos verificables.
 - **Renumeración de conceptos:**
   - 01 = Custodio Hídrico;
   - 02 = Operador de Agua de Rechazo;
@@ -54,6 +66,13 @@ powershell -File scripts\exportar-artefacto.ps1 -Html "<ruta del .html>"
 ```
 
 ## Bitácora
+### 2026-10-02 — Conceptos 01 y 02 publicados
+- **Concepto 01:** v2.1 sin el dato del carrotanque; el algoritmo ahora explica compatibilidad y viabilidad. Los v2 con flete quedaron como historial.
+- **Concepto 02:** replanteado como operador propio de Cabot y publicado (concepto y artefactos v2).
+- Pitch consolidado en `VOLTAC_DOCSCARIBE INNOVA 2026Artifacts V2Pitch de conceptos - 1 minuto cada uno.md`.
+- Fragmento de la Res. 1256 corregido: no fija criterios ambientales para el reúso industrial.
+- `exportar-artefacto.ps1` ahora avisa cuando el contenido se pasa de su zona.
+
 ### 2026-09-30 — Retomar tras la migración
 - Se verificó el entorno nuevo: `npm install`, Prisma (15 migraciones al día) y typecheck sin errores. El token del MCP funciona contra producción.
 - Nueva herramienta `scripts/exportar-artefacto.ps1`. Reemplaza los scripts sueltos que se usaron para el concepto 01.
