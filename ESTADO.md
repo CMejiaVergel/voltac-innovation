@@ -18,13 +18,13 @@ E&E Ingeniería.
   - El aviso «4% no declarado» en los artefactos v2 del concepto 01 es solo una diferencia de texto: la cifra se declaró como «4% del sitio».
 
 ## Siguiente paso
-Aprobar y subir el **Concepto 03 · Red de agua lluvia de Mamonal** (diseño para un año seco: 3 ha, ≈1.100 m³, operador con cuota bajo tarifa y cesión final). Después, decidir el 04 (candidato: «Calor en vez de agua»). Antes era: rehacer el Concepto 03 con la misma estructura (pitch de 1 minuto + brochure + protocepto v2).
-Falta que Carlos decida cuál concepto es el 03 entre:
-- Enfriamiento evitado;
-- Medición de efluentes como servicio;
-- Agua verificada.
-
-Las dos últimas se cruzan con la plataforma Custodio del concepto 02.
+**Show & Tell del Taller 3 hecho (2026-10-02). Cabot eligió el Concepto 01 · Custodio Hídrico.** Siguiente en la metodología:
+- ~~reflejar la decisión en la plataforma~~ hecho (2026-10-02):
+  - 01 ACCEPTED, con el modelo de ingresos pasado a comisión por éxito;
+  - 02 y 03 REJECTED con el motivo de Cabot (el 03 se registró en la plataforma solo para trazabilidad);
+  - Medición, Agua verificada y Enfriamiento evitado quedaron como funcionalidades del 01;
+- profundizar el modelo de negocio del Custodio (cobro por éxito; ver `confluencia-hidrica/docs/15`) y su plan de acción (etapa Actuar);
+- el software del Custodio se construye en otra sesión, con raíz en `VOLTAC_DEV\innovacion\confluencia-hidrica` (plan en sus `docs/12`–`docs/17` y `PROMPTS-CUSTODIO-HIDRICO.md`).
 
 **Pendiente de investigación jurídica.** Estos puntos NO se mencionan en los conceptos; se investigan para la próxima versión:
 1. La Res. 1256/2021 solo reconoce al usuario generador y al usuario receptor: no contempla intermediario ni operador. Por eso el operador del concepto 02 es de Cabot.
@@ -48,6 +48,10 @@ Las dos últimas se cruzan con la plataforma Custodio del concepto 02.
    La Ley 373 de 1997 juega a favor: pide incluir la oferta de agua lluvia en los proyectos que consumen agua.
 
 ## Decisiones tomadas
+- **Retroalimentación de Cabot en el Show & Tell del Taller 3 (2026-10-02).**
+  - Concepto 03 (agua lluvia): **no viable**. Cabot ya redirige toda el agua lluvia a una laguna y la usa en planta (parte del consumo de los equipos ya es agua lluvia), y no instalará tanques por razones internas.
+  - Concepto 02 (operador propio): **descartado** por la inversión inicial alta y porque Cabot perdería autonomía para diseñar lo que considere necesario.
+  - Recomendación directa: seguir con el **Concepto 01 · Custodio Hídrico**. El cobro se reorienta a una comisión por caso de éxito, sin costo de entrada, y escala después a monitoreo y verificación de los tratos, para Cabot y para otros actores del ecosistema.
 - **Retroalimentación de los mentores (sept 2026).** Cada concepto recorre las 5 dimensiones del BOM y trae indicadores de impacto traducidos a pesos. El ROI no se escribe explícito. Los pasos y los puntos débiles salen de la ingeniería inversa.
 - **Cabot primero.** El potencial para el ecosistema queda implícito.
 - **Precios de referencia:**
@@ -77,10 +81,14 @@ powershell -File scripts\exportar-artefacto.ps1 -Html "<ruta del .html>"
 ```
 
 ## Bitácora
+### 2026-10-02 — Show & Tell del Taller 3
+- Deck de 14 láminas, pitch de 6 minutos y mockups generados con IA en `VOLTAC_DOCS\CARIBE INNOVA 2026\Show & Tell Taller 3\`; brochures y protoceptos v2 actualizados con los mockups nuevos.
+- Retroalimentación de Cabot registrada en Decisiones. Plan del software del Custodio escrito en `confluencia-hidrica` (docs/12–17 y prompts por fase).
+
 ### 2026-10-02 — Conceptos 01 y 02 publicados
 - **Concepto 01:** v2.1 sin el dato del carrotanque; el algoritmo ahora explica compatibilidad y viabilidad. Los v2 con flete quedaron como historial.
 - **Concepto 02:** replanteado como operador propio de Cabot y publicado (concepto y artefactos v2).
-- Pitch consolidado en `VOLTAC_DOCSCARIBE INNOVA 2026Artifacts V2Pitch de conceptos - 1 minuto cada uno.md`.
+- Pitch consolidado en `VOLTAC_DOCS\CARIBE INNOVA 2026\Artifacts V2\Pitch de conceptos - 1 minuto cada uno.md`.
 - Fragmento de la Res. 1256 corregido: no fija criterios ambientales para el reúso industrial.
 - `exportar-artefacto.ps1` ahora avisa cuando el contenido se pasa de su zona.
 
