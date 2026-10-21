@@ -105,3 +105,14 @@ powershell -File scripts\exportar-artefacto.ps1 -Html "<ruta del .html>"
 ### 2026-09-30 — Migración
 - Movido desde `G:\My Drive\VOLTAC_SYSTEMS\PROJECTS\CARIBE INNOVA 2026\Metodology Software` a `VOLTAC_DEV\innovacion\plataforma-innovacion` (fuera de Google Drive).
 - `node_modules` y `.next` no se copiaron: correr `npm install`.
+
+### 2026-10-21 — Rediseño v2 (rama local `feat/v2-configurar`, NO desplegar)
+- Retroalimentación del mentor (Andrés, IXL Center): ver `VOLTAC_DOCS\VOLTAC\Reunion-mentor-2026-10\Analisis retroalimentacion mentor - plataforma de innovacion.md`.
+- Archivo completo de la v1 (JSON por tabla, documentos por proyecto, entregables, metodología, respaldo SQLite y código): `VOLTAC_DOCS\VOLTAC\Archivo Plataforma Innovacion v1\`.
+- Hecho: esquema aditivo `Organizacion`, `OrgMembership`, `PerfilInnovacion`, `DesafioPropuesto`, `VotoDesafio`, `Project.organizacionId` (migración `20261021223140_v2_setup_organizacion`, verificada sin pérdida de datos en local).
+- Siguiente (Configurar / Set Up):
+  1. `src/lib/v2.ts` (bandera `NEXT_PUBLIC_PLATAFORMA_V2=1`) y `middleware.ts` que redirige las etapas viejas a `/configurar`; `ProjectTabs` solo con Vista general (embudo), Configurar, Equipo, Ajustes.
+  2. Constantes en `gimi.ts`: tipos de innovación, ejes del perfil (local↔global, incremental↔avance, núcleo↔lejos, pequeña↔gran), horizonte, autoevaluación 2.1.1.
+  3. `src/lib/organizaciones.ts` + `src/app/actions/organizaciones.ts`.
+  4. Páginas `/organizaciones/[org]`: 1 Intención de innovar (perfil), 2 Proponer desafíos (2.1.1 + encaje con el perfil), 3 Seleccionar (2.1.2, votación), 4 Diseñar el reto (2.1.3 → crea el proyecto).
+  5. `/proyectos/[slug]/configurar` (alcance del reto + encaje) y vista general como embudo.
