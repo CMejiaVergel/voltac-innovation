@@ -429,6 +429,16 @@ export async function addSource(slug: string, formData: FormData): Promise<void>
 // Miembros del proyecto y usuarios de la plataforma
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Vuelve a la pagina con un aviso en la URL. Los errores de validacion que el
+ * usuario puede corregir (un correo sin cuenta, una clave corta) no se lanzan:
+ * en produccion Next oculta el mensaje de cualquier error lanzado en una accion
+ * y muestra «Algo se rompio», y la persona no sabe que corregir.
+ */
+function volverCon(ruta: string, tipo: "hecho" | "error", mensaje: string): never {
+  redirect(`${ruta}?${tipo}=${encodeURIComponent(mensaje)}`);
+}
+
 export async function addMember(slug: string, formData: FormData): Promise<void> {
   const user = await requireUser();
   const project = await prisma.project.findUnique({ where: { slug } });
@@ -438,7 +448,15 @@ export async function addMember(slug: string, formData: FormData): Promise<void>
 
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const target = await prisma.user.findUnique({ where: { email } });
-  if (!target) throw new Error(`No hay ningun usuario con el correo ${email}. Creelo primero en Administracion.`);
+  const ruta = `/proyectos/${slug}/equipo`;
+  if (!email) volverCon(ruta, "error", "Escribe el correo de la persona.");
+  if (!target) {
+    volverCon(
+      ruta,
+      "error",
+      `No hay ninguna cuenta con el correo ${email}. Primero hay que crearla en Administracion > Usuarios; luego vuelve aqui y agregala.`,
+    );
+  }
 
   await prisma.membership.upsert({
     where: { projectId_userId: { projectId: project.id, userId: target.id } },
@@ -449,7 +467,8 @@ export async function addMember(slug: string, formData: FormData): Promise<void>
       role: String(formData.get("role") ?? "EDITOR"),
     },
   });
-  revalidatePath(`/proyectos/${slug}/equipo`);
+  revalidatePath(ruta);
+  volverCon(ruta, "hecho", `${target.name} (${email}) ya es parte del equipo del proyecto.`);
 }
 
 export async function removeMember(slug: string, userId: string): Promise<void> {
@@ -470,12 +489,12 @@ export async function createUser(formData: FormData): Promise<void> {
   const name = String(formData.get("name") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   if (!email || !name || password.length < 8) {
-    throw new Error("Correo, nombre y una contraseña de al menos 8 caracteres son obligatorios.");
+    volverCon("/admin/usuarios", "error", "Correo, nombre y una contraseña de al menos 8 caracteres son obligatorios.");
   }
 
   const yaExiste = await prisma.user.findUnique({ where: { email }, select: { id: true } });
   if (yaExiste) {
-    throw new Error(`Ya hay una cuenta con el correo ${email}.`);
+    volverCon("/admin/usuarios", "error", `Ya hay una cuenta con el correo ${email}.`);
   }
 
   await prisma.user.create({
@@ -519,7 +538,7 @@ export async function setUserActive(userId: string, active: boolean): Promise<vo
 export async function resetUserPassword(userId: string, formData: FormData): Promise<void> {
   const admin = await requireAdmin();
   const password = String(formData.get("password") ?? "");
-  if (password.length < 8) throw new Error("La contraseña debe tener al menos 8 caracteres.");
+  if (password.length < 8) volverCon("/admin/usuarios", "error", "La contraseña debe tener al menos 8 caracteres.");
 
   const objetivo = await prisma.user.findUnique({
     where: { id: userId },

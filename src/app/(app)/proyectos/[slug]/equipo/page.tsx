@@ -4,8 +4,15 @@ import { requireProject } from "@/lib/projects";
 import { canAdminProject, PROJECT_ROLES, PROJECT_ROLE_LABEL, asEnum } from "@/lib/enums";
 import { addMember, removeMember } from "@/app/actions/projects";
 
-export default async function TeamPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function TeamPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ hecho?: string; error?: string }>;
+}) {
   const { slug } = await params;
+  const { hecho, error } = await searchParams;
   const user = await requireUser();
   const { project, role } = await requireProject(user, slug);
   const isOwner = canAdminProject(role);
@@ -25,6 +32,25 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
         Solo los miembros ven este proyecto. Los lectores pueden consultar el mapa pero no
         modificarlo ni correr el agente.
       </p>
+
+      {hecho && (
+        <p className="mb-5 rounded-[4px] border border-[rgba(111,191,178,0.45)] bg-[rgba(111,191,178,0.1)] p-3 text-[12.5px] leading-relaxed text-accent">
+          {hecho}
+        </p>
+      )}
+      {error && (
+        <p className="mb-5 rounded-[4px] border border-[rgba(142,51,36,0.5)] bg-[rgba(142,51,36,0.15)] p-3 text-[12.5px] leading-relaxed text-[#e8a99c]">
+          {error}
+          {user.role === "ADMIN" && (
+            <>
+              {" "}
+              <a href="/admin/usuarios" className="underline">
+                Ir a Administracion &gt; Usuarios
+              </a>
+            </>
+          )}
+        </p>
+      )}
 
       <ul className="flex flex-col gap-2">
         {members.map((m) => {

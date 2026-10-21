@@ -12,10 +12,10 @@ export const metadata = { title: "Usuarios — Voltac Innovacion" };
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ hecho?: string }>;
+  searchParams: Promise<{ hecho?: string; error?: string }>;
 }) {
   const admin = await requireAdmin();
-  const { hecho } = await searchParams;
+  const { hecho, error } = await searchParams;
 
   const users = await prisma.user.findMany({
     orderBy: [{ active: "desc" }, { createdAt: "asc" }],
@@ -40,6 +40,11 @@ export default async function UsersPage({
       {hecho && (
         <p className="mt-6 rounded-[4px] border border-[rgba(111,191,178,0.45)] bg-[rgba(111,191,178,0.1)] p-3 text-[12.5px] leading-relaxed text-accent">
           {hecho}
+        </p>
+      )}
+      {error && (
+        <p className="mt-6 rounded-[4px] border border-[rgba(142,51,36,0.5)] bg-[rgba(142,51,36,0.15)] p-3 text-[12.5px] leading-relaxed text-[#e8a99c]">
+          {error}
         </p>
       )}
 
