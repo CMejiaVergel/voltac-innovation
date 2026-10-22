@@ -52,10 +52,10 @@ function projectTabs(slug: string): Tab[] {
   if (V2) {
     return [
       { href: base, label: "Embudo", icon: <Icon d={ICONS.laminas} /> },
-      { href: `${base}/configurar`, label: "Configurar", icon: <Icon d={ICONS.target} /> },
       { href: `${base}/divergir`, label: "Mapa", icon: <Icon d={ICONS.grid} /> },
       { href: `${base}/combinar`, label: "Conceptos", icon: <Icon d={ICONS.link} /> },
       { href: `${base}/convergir`, label: "Priorizar", icon: <Icon d={ICONS.matriz} /> },
+      { href: `${base}/actuar`, label: "Actuar", icon: <Icon d={ICONS.artefacto} /> },
       { href: `${base}/equipo`, label: "Equipo", icon: <Icon d={ICONS.users} /> },
     ];
   }

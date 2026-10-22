@@ -7,6 +7,7 @@ import { IDEX, HATS, THIN_CELL_THRESHOLD } from "@/lib/gimi";
 import { VERIFICATION_META, puntuados, type Verification } from "@/lib/enums";
 import { V2 } from "@/lib/v2";
 import { Embudo } from "@/components/v2/Embudo";
+import { avanceLinea, pasosEnOrden } from "@/lib/actuar";
 import { Avisos } from "@/components/v2/ui";
 
 export default async function ProjectOverview({
@@ -34,6 +35,10 @@ export default async function ProjectOverview({
       select: {
         title: true,
         priorizado: true,
+        actuar: true,
+        propuestaValor: true,
+        artefactos: { select: { status: true } },
+        supuestos: { select: { critical: true, failFastTest: true } },
         atrMercado: true,
         atrOpciones: true,
         atrRecompensa: true,
@@ -80,7 +85,8 @@ export default async function ProjectOverview({
                   : undefined,
             },
           ]}
-          conceptos={priorizados.map((c) => ({ nombre: c.title, hechos: 0, href: `/proyectos/${slug}/convergir` }))}
+          conceptos={priorizados.map((c) => ({ nombre: c.title, pasos: pasosEnOrden(avanceLinea(c)), href: `/proyectos/${slug}/actuar` }))}
+          actuarHref={priorizados.length ? `/proyectos/${slug}/actuar` : undefined}
         />
         {b?.challengeText && (
           <section className="panel">

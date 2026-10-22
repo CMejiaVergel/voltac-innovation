@@ -13,8 +13,8 @@ export type EtapaEmbudo = {
 
 export type ConceptoEnLinea = {
   nombre: string;
-  /** Cuántos pasos de la línea ya completó. */
-  hechos: number;
+  /** Qué pasos de la línea ya completó, en orden. */
+  pasos: boolean[];
   href?: string;
 };
 
@@ -26,10 +26,19 @@ const EMBUDO = IDEX.filter((s) => s.key !== "actuar");
  * concepto con los mismos pasos. En pantalla ancha corre de izquierda a
  * derecha; en el celular, de arriba abajo.
  */
-export function Embudo({ etapas, conceptos }: { etapas: EtapaEmbudo[]; conceptos: ConceptoEnLinea[] }) {
+export function Embudo({
+  etapas,
+  conceptos,
+  actuarHref,
+}: {
+  etapas: EtapaEmbudo[];
+  conceptos: ConceptoEnLinea[];
+  /** Enlace a Actuar cuando ya hay conceptos priorizados. */
+  actuarHref?: string;
+}) {
   const lineas: (ConceptoEnLinea & { fantasma?: boolean })[] = conceptos.length
     ? conceptos
-    : [1, 2, 3].map((n) => ({ nombre: `Concepto ${n}`, hechos: 0, fantasma: true }));
+    : [1, 2, 3].map((n) => ({ nombre: `Concepto ${n}`, pasos: [], fantasma: true }));
 
   return (
     <div className="panel">
@@ -88,9 +97,15 @@ export function Embudo({ etapas, conceptos }: { etapas: EtapaEmbudo[]; conceptos
 
         {/* Una línea recta por concepto priorizado */}
         <div className="flex flex-col justify-center gap-2 border-t border-dashed border-[rgba(232,227,216,0.14)] pt-4 lg:ml-3 lg:flex-[2] lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
-          <span className="text-[13px] font-semibold text-[#7f8f8c]">
-            5 · Actuar <span className="font-normal">· cada concepto, la misma línea</span>
-          </span>
+          {actuarHref ? (
+            <Link href={actuarHref} className="text-[13px] font-semibold text-[#e8e3d8] hover:text-accent">
+              5 · Actuar <span className="font-normal text-[#7f8f8c]">· cada concepto, la misma línea →</span>
+            </Link>
+          ) : (
+            <span className="text-[13px] font-semibold text-[#7f8f8c]">
+              5 · Actuar <span className="font-normal">· cada concepto, la misma línea</span>
+            </span>
+          )}
           <div className="grid grid-cols-[66px_repeat(5,minmax(0,1fr))] items-center gap-x-0.5 gap-y-2.5 md:grid-cols-[130px_repeat(5,minmax(0,1fr))]">
             <span />
             {LINEA_CONCEPTO.map((p) => (
@@ -111,11 +126,11 @@ export function Embudo({ etapas, conceptos }: { etapas: EtapaEmbudo[]; conceptos
                 </span>
                 {LINEA_CONCEPTO.map((p, j) => (
                   <span key={p.key} className={`relative flex justify-center ${c.fantasma ? "opacity-40" : ""}`} title={p.nombre}>
-                    {j > 0 && <span className={`absolute left-0 right-1/2 top-1/2 h-px ${j < c.hechos ? "bg-accent" : "bg-[#3a4745]"}`} />}
+                    {j > 0 && <span className={`absolute left-0 right-1/2 top-1/2 h-px ${c.pasos[j - 1] && c.pasos[j] ? "bg-accent" : "bg-[#3a4745]"}`} />}
                     {j < LINEA_CONCEPTO.length - 1 && (
-                      <span className={`absolute left-1/2 right-0 top-1/2 h-px ${j < c.hechos - 1 ? "bg-accent" : "bg-[#3a4745]"}`} />
+                      <span className={`absolute left-1/2 right-0 top-1/2 h-px ${c.pasos[j] && c.pasos[j + 1] ? "bg-accent" : "bg-[#3a4745]"}`} />
                     )}
-                    <span className={`relative h-3 w-3 rounded-full ${j < c.hechos ? "bg-accent" : "border border-[#4d5a58] bg-panel"}`} />
+                    <span className={`relative h-3 w-3 rounded-full ${c.pasos[j] ? "bg-accent" : "border border-[#4d5a58] bg-panel"}`} />
                   </span>
                 ))}
               </Fragment>

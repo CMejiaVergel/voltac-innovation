@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { colorDeTrazo, promedioEje, puntuados, SUBCRITERIOS, type CampoSubcriterio } from "@/lib/enums";
@@ -32,10 +33,12 @@ const EJES = [
  * los ubica y el equipo decide cuáles siguen adelante.
  */
 export function Priorizar({
+  slug,
   conceptos: iniciales,
   editable,
   estrategia,
 }: {
+  slug: string;
   conceptos: ConceptoPriorizar[];
   editable: boolean;
   /** La intención de innovar de la organización, para tenerla a la vista al puntuar el Fit. */
@@ -138,6 +141,11 @@ export function Priorizar({
 
       {/* Los conceptos */}
       <div className="flex min-w-0 flex-col gap-3">
+        {conceptos.some((c) => c.priorizado) && (
+          <Link href={`/proyectos/${slug}/actuar`} className="btn btn-primary self-end">
+            Ir a Actuar →
+          </Link>
+        )}
         {error && (
           <p className="rounded-[4px] border border-[rgba(142,51,36,0.5)] bg-[rgba(142,51,36,0.15)] p-3 text-[12.5px] text-[#e8a99c]">{error}</p>
         )}

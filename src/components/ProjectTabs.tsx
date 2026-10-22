@@ -13,6 +13,7 @@ const TABS = [
   { href: "/bom", label: "Mapa de Oportunidades" },
   { href: "/combinar", label: "Combinar" },
   { href: "/convergir", label: "Convergir" },
+  { href: "/actuar", label: "Actuar" },
   { href: "/artefactos", label: "Artefactos" },
   { href: "/presentacion", label: "Presentación" },
   { href: "/agente", label: "Agente investigador" },
@@ -29,7 +30,7 @@ export function ProjectTabs({ slug }: { slug: string }) {
     // En movil estas pestañas se sustituyen por la barra inferior: repetirlas
     // arriba solo gasta altura de pantalla.
     <nav className="no-print mt-5 hidden flex-wrap gap-x-5 gap-y-2 border-b border-[rgba(232,227,216,0.12)] pb-0 md:flex">
-      {TABS.filter((t) => (V2 ? (TABS_V2 as readonly string[]).includes(t.href) : t.href !== "/configurar" && t.href !== "/divergir")).map((t) => {
+      {TABS.filter((t) => (V2 ? (TABS_V2 as readonly string[]).includes(t.href) : !["/configurar", "/divergir", "/actuar"].includes(t.href))).map((t) => {
         const href = `${base}${t.href}`;
         const active = t.href === "" ? pathname === base : pathname.startsWith(href);
         return (

@@ -682,6 +682,12 @@ model Concept {
   /// priorizacion. Desde aqui recorre la linea recta (brochure, artefacto...).
   priorizado Boolean @default(false)
 
+  /// v2, Actuar: lo que el equipo escribe en la linea recta del concepto, como
+  /// JSON { brochure: {titular, problema, solucion, beneficios, llamado},
+  /// caso: {inversion, ingresos, costos, retorno, riesgos, siguiente} }. El
+  /// artefacto y la ingenieria inversa usan sus propias tablas.
+  actuar String @default("{}")
+
   /// ACCEPTED | PROPOSED | REJECTED
   reviewState String  @default("ACCEPTED")
   /// HUMAN | AGENT

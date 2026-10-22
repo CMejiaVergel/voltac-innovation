@@ -10,7 +10,7 @@
 export const V2 = process.env.NEXT_PUBLIC_PLATAFORMA_V2 === "1";
 
 /** Pestañas del proyecto visibles en la v2, en orden. */
-export const TABS_V2 = ["", "/configurar", "/divergir", "/combinar", "/convergir", "/equipo", "/ajustes"] as const;
+export const TABS_V2 = ["", "/configurar", "/divergir", "/combinar", "/convergir", "/actuar", "/equipo", "/ajustes"] as const;
 
 /** Rutas de la v1 que la v2 oculta mientras se rediseñan. */
 export const RUTAS_V1_OCULTAS = [
@@ -31,4 +31,14 @@ export function tituloPostit(f: { titulo: string; text: string }, palabras = 7):
   const frase = f.text.trim().split(/(?<=[.:;])\s|\n/)[0] ?? "";
   const ws = frase.replace(/[.:;,]+$/, "").split(/\s+/);
   return ws.length > palabras ? ws.slice(0, palabras).join(" ") + "…" : ws.join(" ");
+}
+
+/** JSON.parse que no revienta: el valor por defecto si el texto no es JSON válido. */
+export function leerJsonSeguro<T>(raw: string | null | undefined, porDefecto: T): T {
+  try {
+    const v = JSON.parse(raw || "");
+    return v && typeof v === "object" ? (v as T) : porDefecto;
+  } catch {
+    return porDefecto;
+  }
 }

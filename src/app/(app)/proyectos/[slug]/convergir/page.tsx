@@ -51,6 +51,7 @@ export default async function ConvergirPage({
     return (
       <div className="mt-6 pb-16">
         <Priorizar
+          slug={slug}
           editable={canEdit(role)}
           estrategia={org ? { definicion: org.definicion, restricciones: leerJson<string[]>(org.restricciones, []) } : null}
           conceptos={conceptos.map((c) => ({

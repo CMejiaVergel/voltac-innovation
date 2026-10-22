@@ -50,3 +50,6 @@ node_modules/
 
 # Fotos del equipo: datos de personas reales, no se versionan.
 /Equipo/
+
+# Credenciales de la cuenta de prueba local (nunca al repo).
+CREDENCIALES-PRUEBA.local.md
