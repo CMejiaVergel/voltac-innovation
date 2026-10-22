@@ -678,6 +678,10 @@ model Concept {
   /// Color en la matriz. Vacio = el de la paleta segun posicion.
   color String @default("")
 
+  /// v2: el equipo decidio que este concepto sigue adelante tras la matriz de
+  /// priorizacion. Desde aqui recorre la linea recta (brochure, artefacto...).
+  priorizado Boolean @default(false)
+
   /// ACCEPTED | PROPOSED | REJECTED
   reviewState String  @default("ACCEPTED")
   /// HUMAN | AGENT

@@ -91,7 +91,7 @@ export function Embudo({ etapas, conceptos }: { etapas: EtapaEmbudo[]; conceptos
           <span className="text-[13px] font-semibold text-[#7f8f8c]">
             5 · Actuar <span className="font-normal">· cada concepto, la misma línea</span>
           </span>
-          <div className="grid grid-cols-[66px_repeat(5,minmax(0,1fr))] items-center gap-x-0.5 gap-y-2.5 md:grid-cols-[84px_repeat(5,minmax(0,1fr))]">
+          <div className="grid grid-cols-[66px_repeat(5,minmax(0,1fr))] items-center gap-x-0.5 gap-y-2.5 md:grid-cols-[130px_repeat(5,minmax(0,1fr))]">
             <span />
             {LINEA_CONCEPTO.map((p) => (
               <span key={p.key} className="text-center text-[9px] leading-tight md:text-[10px] text-[#7f8f8c]">

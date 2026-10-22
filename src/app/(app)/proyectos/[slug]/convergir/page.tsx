@@ -15,6 +15,9 @@ import { TARGET_SOLUTION_CONCEPTS, CONCEPTO_COMPLETO, tipoDeConcepto } from "@/l
 import { parseShape } from "@/lib/templates";
 import { ConvergirBoard } from "@/components/convergir/ConvergirBoard";
 import type { ConceptoVista, DimensionVista, IdeaDisponible } from "@/components/convergir/types";
+import { V2 } from "@/lib/v2";
+import { leerJson } from "@/lib/organizaciones";
+import { Priorizar } from "@/components/v2/Priorizar";
 
 function leerLienzo(json: string): Record<string, string[]> {
   try {
@@ -33,6 +36,41 @@ export default async function ConvergirPage({
   const { slug } = await params;
   const user = await requireUser();
   const { project, role } = await requireProject(user, slug);
+
+  if (V2) {
+    const [conceptos, org] = await Promise.all([
+      prisma.concept.findMany({
+        where: { projectId: project.id, reviewState: "ACCEPTED", hidden: false },
+        orderBy: { position: "asc" },
+        include: { _count: { select: { anclas: true } } },
+      }),
+      project.organizacionId
+        ? prisma.perfilInnovacion.findUnique({ where: { organizacionId: project.organizacionId } })
+        : null,
+    ]);
+    return (
+      <div className="mt-6 pb-16">
+        <Priorizar
+          editable={canEdit(role)}
+          estrategia={org ? { definicion: org.definicion, restricciones: leerJson<string[]>(org.restricciones, []) } : null}
+          conceptos={conceptos.map((c) => ({
+            id: c.id,
+            title: c.title,
+            statement: c.statement,
+            color: c.color,
+            priorizado: c.priorizado,
+            postits: c._count.anclas,
+            atrMercado: c.atrMercado,
+            atrOpciones: c.atrOpciones,
+            atrRecompensa: c.atrRecompensa,
+            fitViabilidad: c.fitViabilidad,
+            fitEstrategia: c.fitEstrategia,
+            fitPasion: c.fitPasion,
+          }))}
+        />
+      </div>
+    );
+  }
 
   // Las ideas vienen de los insights ACEPTADOS: una propuesta del agente sin
   // revisar no puede sostener un concepto, igual que un fragmento propuesto no

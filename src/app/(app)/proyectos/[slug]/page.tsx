@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireProject, getPrimaryMap } from "@/lib/projects";
 import { IDEX, HATS, THIN_CELL_THRESHOLD } from "@/lib/gimi";
-import { VERIFICATION_META, type Verification } from "@/lib/enums";
+import { VERIFICATION_META, puntuados, type Verification } from "@/lib/enums";
 import { V2 } from "@/lib/v2";
 import { Embudo } from "@/components/v2/Embudo";
 import { Avisos } from "@/components/v2/ui";
@@ -31,9 +31,21 @@ export default async function ProjectOverview({
     const conceptos = await prisma.concept.findMany({
       where: { projectId: project.id, reviewState: "ACCEPTED", hidden: false },
       orderBy: { position: "asc" },
-      select: { title: true, _count: { select: { anclas: true } } },
+      select: {
+        title: true,
+        priorizado: true,
+        atrMercado: true,
+        atrOpciones: true,
+        atrRecompensa: true,
+        fitViabilidad: true,
+        fitEstrategia: true,
+        fitPasion: true,
+        _count: { select: { anclas: true } },
+      },
     });
     const armados = conceptos.filter((c) => c._count.anclas > 0).length;
+    const evaluados = conceptos.filter((c) => puntuados(c) > 0).length;
+    const priorizados = conceptos.filter((c) => c.priorizado);
     return (
       <div className="mt-8 flex flex-col gap-6">
         <Avisos hecho={hecho} />
@@ -53,13 +65,22 @@ export default async function ProjectOverview({
             },
             {
               key: "combinar",
-              estado: armados ? "ACTUAL" : "PENDIENTE",
+              estado: evaluados || priorizados.length ? "HECHA" : armados ? "ACTUAL" : "PENDIENTE",
               href: postits ? `/proyectos/${slug}/combinar` : undefined,
               cifra: conceptos.length ? `${conceptos.length} concepto${conceptos.length === 1 ? "" : "s"}` : undefined,
             },
-            { key: "convergir", estado: "PENDIENTE" },
+            {
+              key: "convergir",
+              estado: priorizados.length ? "HECHA" : evaluados ? "ACTUAL" : "PENDIENTE",
+              href: conceptos.length ? `/proyectos/${slug}/convergir` : undefined,
+              cifra: priorizados.length
+                ? `${priorizados.length} sigue${priorizados.length === 1 ? "" : "n"} adelante`
+                : evaluados
+                  ? `${evaluados} de ${conceptos.length} evaluados`
+                  : undefined,
+            },
           ]}
-          conceptos={conceptos.map((c) => ({ nombre: c.title, hechos: 0, href: `/proyectos/${slug}/combinar` }))}
+          conceptos={priorizados.map((c) => ({ nombre: c.title, hechos: 0, href: `/proyectos/${slug}/convergir` }))}
         />
         {b?.challengeText && (
           <section className="panel">

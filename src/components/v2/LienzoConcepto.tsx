@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import type { TemplateShape } from "@/lib/templates";
@@ -190,6 +191,11 @@ export function LienzoConcepto({
             <button type="button" onClick={nuevo} disabled={pendiente} className="rounded-full border border-dashed border-[rgba(232,227,216,0.25)] px-3 py-1.5 text-[12.5px] text-[#a9b5b3] hover:border-accent hover:text-accent">
               + Nuevo concepto
             </button>
+          )}
+          {conceptos.some((c) => c.anclas.length > 0) && (
+            <Link href={`/proyectos/${slug}/convergir`} className="btn btn-primary ml-auto">
+              Priorizar →
+            </Link>
           )}
         </div>
 
