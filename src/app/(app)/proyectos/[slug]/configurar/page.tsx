@@ -9,7 +9,7 @@ import { TIPOS_INNOVACION } from "@/lib/gimi";
 import { ENCAJE_VACIO, resumirEncaje, VEREDICTO_META, type Encaje } from "@/lib/encaje";
 import { actualizarReto } from "@/app/actions/organizaciones";
 import { CamposReto } from "@/components/v2/CamposReto";
-import { Avisos, DecideElEquipo } from "@/components/v2/ui";
+import { Avisos } from "@/components/v2/ui";
 import { SaveBar } from "@/components/SaveBar";
 
 export default async function ConfigurarRetoPage({
@@ -37,10 +37,6 @@ export default async function ConfigurarRetoPage({
   return (
     <div className="mt-7 pb-24">
       <Avisos hecho={hecho} error={error} />
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <p className="kicker">Etapa 1 · Configurar · el reto</p>
-        <DecideElEquipo />
-      </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <form action={actualizarReto.bind(null, slug)} className="flex flex-col gap-6">
@@ -52,11 +48,10 @@ export default async function ConfigurarRetoPage({
 
         <aside className="flex flex-col gap-4">
           <section className="panel">
-            <h2 className="kicker mb-2">De dónde nace este reto</h2>
+            <h2 className="kicker mb-2">Origen</h2>
             {org ? (
               <div className="flex flex-col gap-3 text-[12.5px] text-[#a9b5b3]">
                 <p>
-                  Organización:{" "}
                   <Link href={`/organizaciones/${org.slug}`} className="text-accent underline">
                     {org.name}
                   </Link>
@@ -83,21 +78,13 @@ export default async function ConfigurarRetoPage({
               </div>
             ) : (
               <p className="hint">
-                Este reto viene de la versión anterior y no está ligado a una organización. Para seguir la metodología,
-                creen la organización y su intención de innovar en{" "}
+                Este reto aún no está ligado a una organización. Pueden crearla en{" "}
                 <Link href="/organizaciones" className="text-accent underline">
                   Organizaciones
                 </Link>
                 .
               </p>
             )}
-          </section>
-          <section className="panel">
-            <h2 className="kicker mb-2">Siguiente etapa</h2>
-            <p className="hint">
-              Con el reto definido sigue Divergir: el Mapa de Oportunidades de Negocio, el corazón de la plataforma. Se
-              está rediseñando.
-            </p>
           </section>
         </aside>
       </div>

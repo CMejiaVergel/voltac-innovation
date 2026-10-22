@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { requireProject } from "@/lib/projects";
 import { PROJECT_ROLE_LABEL } from "@/lib/enums";
 import { ProjectTabs } from "@/components/ProjectTabs";
+import { V2 } from "@/lib/v2";
 
 export default async function ProjectLayout({
   children,
@@ -29,9 +30,11 @@ export default async function ProjectLayout({
           </h1>
         </div>
         <div className="flex-1" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#5e7370]">
-          Tu rol: {PROJECT_ROLE_LABEL[role]}
-        </span>
+        {!V2 && (
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#5e7370]">
+            Tu rol: {PROJECT_ROLE_LABEL[role]}
+          </span>
+        )}
       </div>
 
       <ProjectTabs slug={slug} />

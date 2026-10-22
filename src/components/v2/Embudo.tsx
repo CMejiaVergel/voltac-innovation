@@ -1,73 +1,127 @@
+import { Fragment } from "react";
 import Link from "next/link";
 
-import { HATS, IDEX } from "@/lib/gimi";
+import { IDEX, LINEA_CONCEPTO } from "@/lib/gimi";
 
 export type EtapaEmbudo = {
   key: string;
   /** Cifra que resume la etapa (ej. «202 fragmentos»). */
   cifra?: string;
-  estado: "HECHA" | "ACTUAL" | "PENDIENTE" | "REDISENO";
+  estado: "HECHA" | "ACTUAL" | "PENDIENTE";
   href?: string;
 };
 
-const ESTADO_META: Record<EtapaEmbudo["estado"], { label: string; color: string }> = {
-  HECHA: { label: "Hecha", color: "#6FBFB2" },
-  ACTUAL: { label: "En curso", color: "#E8C66A" },
-  PENDIENTE: { label: "Pendiente", color: "#7f8f8c" },
-  REDISENO: { label: "En rediseño", color: "#5e7370" },
+export type ConceptoEnLinea = {
+  nombre: string;
+  /** Cuántos pasos de la línea ya completó. */
+  hechos: number;
+  href?: string;
 };
 
+const EMBUDO = IDEX.filter((s) => s.key !== "actuar");
+
 /**
- * El proceso como un embudo (recomendación del mentor, 15-oct-2026): muchas
- * ideas a la izquierda, un solo concepto que sigue «en línea recta» a la
- * derecha. Cada etapa se estrecha y la gente ve siempre dónde está.
+ * El proceso como lo dibujó el mentor (15-oct-2026): un embudo que va de muchas
+ * ideas a unos pocos conceptos priorizados y, desde ahí, una línea recta por
+ * concepto con los mismos pasos. En pantalla ancha corre de izquierda a
+ * derecha; en el celular, de arriba abajo.
  */
-export function Embudo({ etapas }: { etapas: EtapaEmbudo[] }) {
+export function Embudo({ etapas, conceptos }: { etapas: EtapaEmbudo[]; conceptos: ConceptoEnLinea[] }) {
+  const lineas: (ConceptoEnLinea & { fantasma?: boolean })[] = conceptos.length
+    ? conceptos
+    : [1, 2, 3].map((n) => ({ nombre: `Concepto ${n}`, hechos: 0, fantasma: true }));
+
   return (
-    <div className="panel overflow-x-auto">
-      <h2 className="kicker mb-5">El proceso como un embudo</h2>
-      <div className="flex min-w-[760px] items-center">
-        {IDEX.map((s, i) => {
-          const e = etapas.find((x) => x.key === s.key) ?? { key: s.key, estado: "PENDIENTE" as const };
-          const meta = ESTADO_META[e.estado];
-          const alto = 190 - i * 28;
-          const contenido = (
-            <div
-              className="relative flex flex-col justify-center px-4 transition"
-              style={{
-                height: alto,
-                background: e.estado === "ACTUAL" ? "rgba(232,198,106,0.12)" : e.estado === "HECHA" ? "rgba(111,191,178,0.12)" : "rgba(232,227,216,0.04)",
-                borderTop: `2px solid ${meta.color}`,
-                borderBottom: `2px solid ${meta.color}`,
-                clipPath: "polygon(0 0, calc(100% - 14px) 8%, 100% 50%, calc(100% - 14px) 92%, 0 100%)",
-                opacity: e.estado === "REDISENO" ? 0.55 : 1,
-              }}
-            >
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: meta.color }}>
-                {s.n} · {meta.label}
+    <div className="panel">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-0">
+        {/* El embudo */}
+        <ol className="flex flex-col items-center gap-1.5 lg:flex-[3] lg:flex-row lg:items-center lg:gap-0">
+          {EMBUDO.map((s, i) => {
+            const e = etapas.find((x) => x.key === s.key) ?? { key: s.key, estado: "PENDIENTE" as const };
+            const actual = e.estado === "ACTUAL";
+            const hecha = e.estado === "HECHA";
+            const ancho = 100 - i * 12;
+            const alto = 168 - i * 26;
+            const caja = (
+              <div
+                className="embudo-etapa relative flex flex-col justify-center px-4 py-3 transition lg:py-0"
+                style={
+                  {
+                    "--ancho": `${ancho}%`,
+                    "--alto": `${alto}px`,
+                    background: actual ? "rgba(232,198,106,0.14)" : hecha ? "rgba(111,191,178,0.14)" : "rgba(232,227,216,0.04)",
+                    borderColor: actual ? "#E8C66A" : hecha ? "#6FBFB2" : "rgba(232,227,216,0.12)",
+                  } as React.CSSProperties
+                }
+              >
+                <span className="flex items-center gap-2">
+                  <span
+                    className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-semibold ${
+                      hecha ? "bg-accent text-accentDeep" : actual ? "border-2 border-[#E8C66A] text-[#E8C66A]" : "border border-[#4d5a58] text-[#7f8f8c]"
+                    }`}
+                  >
+                    {hecha ? "✓" : s.n}
+                  </span>
+                  <span className={`text-[15px] font-semibold ${e.estado === "PENDIENTE" ? "text-[#7f8f8c]" : "text-[#e8e3d8]"}`}>
+                    {s.name}
+                  </span>
+                  {actual && (
+                    <span className="rounded-full bg-[#E8C66A] px-2 py-px text-[10px] font-semibold text-[#1b1f1f]">Ahora</span>
+                  )}
+                </span>
+                <span className="mt-1 text-[11.5px] text-[#8b9a97]">{e.cifra ?? s.purpose}</span>
+              </div>
+            );
+            return (
+              <li key={s.key} className="flex w-full justify-center lg:w-auto lg:flex-1">
+                {e.href && e.estado !== "PENDIENTE" ? (
+                  <Link href={e.href} className="contents hover:brightness-125">
+                    {caja}
+                  </Link>
+                ) : (
+                  caja
+                )}
+              </li>
+            );
+          })}
+        </ol>
+
+        {/* Una línea recta por concepto priorizado */}
+        <div className="flex flex-col justify-center gap-2 border-t border-dashed border-[rgba(232,227,216,0.14)] pt-4 lg:ml-3 lg:flex-[2] lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
+          <span className="text-[13px] font-semibold text-[#7f8f8c]">
+            5 · Actuar <span className="font-normal">· cada concepto, la misma línea</span>
+          </span>
+          <div className="grid grid-cols-[66px_repeat(5,minmax(0,1fr))] items-center gap-x-0.5 gap-y-2.5 md:grid-cols-[84px_repeat(5,minmax(0,1fr))]">
+            <span />
+            {LINEA_CONCEPTO.map((p) => (
+              <span key={p.key} className="text-center text-[9px] leading-tight md:text-[10px] text-[#7f8f8c]">
+                {p.nombre}
               </span>
-              <span className="mt-1 text-[15px] font-semibold text-[#e8e3d8]">{s.name}</span>
-              <span className="text-[11px] text-[#8b9a97]">{s.purpose}</span>
-              {e.cifra && <span className="mt-1.5 font-mono text-[11px] text-[#c0ccca]">{e.cifra}</span>}
-              <span className="mt-2 flex gap-1">
-                {s.hats.map((h) => (
-                  <span key={h} title={`Sombrero ${HATS[h].name}`} className="inline-block h-2 w-2 rounded-full" style={{ background: HATS[h].color }} />
+            ))}
+            {lineas.map((c, k) => (
+              <Fragment key={k}>
+                <span className={`truncate text-[12px] text-[#c0ccca] ${c.fantasma ? "opacity-40" : ""}`}>
+                  {c.href ? (
+                    <Link href={c.href} className="hover:text-accent">
+                      {c.nombre}
+                    </Link>
+                  ) : (
+                    c.nombre
+                  )}
+                </span>
+                {LINEA_CONCEPTO.map((p, j) => (
+                  <span key={p.key} className={`relative flex justify-center ${c.fantasma ? "opacity-40" : ""}`} title={p.nombre}>
+                    {j > 0 && <span className={`absolute left-0 right-1/2 top-1/2 h-px ${j < c.hechos ? "bg-accent" : "bg-[#3a4745]"}`} />}
+                    {j < LINEA_CONCEPTO.length - 1 && (
+                      <span className={`absolute left-1/2 right-0 top-1/2 h-px ${j < c.hechos - 1 ? "bg-accent" : "bg-[#3a4745]"}`} />
+                    )}
+                    <span className={`relative h-3 w-3 rounded-full ${j < c.hechos ? "bg-accent" : "border border-[#4d5a58] bg-panel"}`} />
+                  </span>
                 ))}
-              </span>
-            </div>
-          );
-          return (
-            <div key={s.key} className="flex-1">
-              {e.href && e.estado !== "REDISENO" ? (
-                <Link href={e.href} className="block hover:brightness-125">
-                  {contenido}
-                </Link>
-              ) : (
-                contenido
-              )}
-            </div>
-          );
-        })}
+              </Fragment>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

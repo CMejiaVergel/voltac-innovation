@@ -26,10 +26,9 @@ export default async function OrgEquipoPage({
   return (
     <div className="mt-8 max-w-[720px]">
       <Avisos hecho={hecho} error={error} />
-      <h2 className="kicker mb-2">Equipo de la organización</h2>
+      <h2 className="kicker mb-2">Equipo</h2>
       <p className="hint mb-5">
-        Quienes definen la intención de innovar, proponen y votan desafíos. Al crear un reto, este equipo pasa a ser
-        el equipo del proyecto.
+        Al crear un reto, este equipo pasa al proyecto.
       </p>
       <ul className="flex flex-col gap-2">
         {miembros.map((m) => {

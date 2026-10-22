@@ -4,11 +4,10 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireOrg, leerJson } from "@/lib/organizaciones";
 import { canAdminProject } from "@/lib/enums";
-import { PASOS_CONFIGURAR } from "@/lib/gimi";
 import { ENCAJE_VACIO, resumirEncaje, VEREDICTO_META, type Encaje } from "@/lib/encaje";
 import { crearReto } from "@/app/actions/organizaciones";
 import { CamposReto } from "@/components/v2/CamposReto";
-import { Avisos, Campo, DecideElEquipo } from "@/components/v2/ui";
+import { Avisos, Campo } from "@/components/v2/ui";
 import { SaveBar } from "@/components/SaveBar";
 
 export default async function RetoPage({
@@ -22,7 +21,6 @@ export default async function RetoPage({
   const { desafio: desafioId, hecho, error } = await searchParams;
   const user = await requireUser();
   const { org, role } = await requireOrg(user, slug);
-  const paso = PASOS_CONFIGURAR[3];
 
   const seleccionados = await prisma.desafioPropuesto.findMany({
     where: { organizacionId: org.id, estado: "SELECCIONADO" },
@@ -36,15 +34,10 @@ export default async function RetoPage({
   return (
     <div className="mt-8 max-w-[900px]">
       <Avisos hecho={hecho} error={error} />
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <p className="kicker">Paso 4 · {paso.nombre} · ejercicio 2.1.3</p>
-        <DecideElEquipo />
-      </div>
-      <p className="hint mb-6 max-w-[78ch]">{paso.porQue}</p>
 
       {seleccionados.some((x) => x.projectId) && (
         <section className="panel mb-6">
-          <h2 className="kicker mb-2">Retos ya creados</h2>
+          <h2 className="kicker mb-2">Retos creados</h2>
           <ul className="flex flex-col gap-1.5 text-[13px]">
             {seleccionados
               .filter((x) => x.project)
@@ -61,9 +54,9 @@ export default async function RetoPage({
 
       {!d || d.projectId ? (
         <p className="hint">
-          No hay un desafío seleccionado pendiente. Selecciónenlo en el{" "}
+          Primero elijan un desafío en la{" "}
           <Link href={`/organizaciones/${slug}/seleccion`} className="text-accent underline">
-            paso 3
+            votación
           </Link>
           .
         </p>
@@ -77,13 +70,14 @@ export default async function RetoPage({
                 <p className="kicker mb-1">Desafío seleccionado</p>
                 <h2 className="text-[17px] font-semibold text-[#e8e3d8]">{d.titulo}</h2>
                 <p className="mt-2 text-[12.5px] text-[#a9b5b3]">{d.problema}</p>
-                <p className="mt-2 font-mono text-[10.5px]" style={{ color: meta.color }}>
-                  {meta.label}
-                  {r.evaluado ? ` · ${r.puntaje}%` : ""}
-                </p>
+                {r.evaluado && (
+                  <p className="mt-2 font-mono text-[10.5px]" style={{ color: meta.color }}>
+                    {meta.label} · {r.puntaje}%
+                  </p>
+                )}
                 {r.rompeRestriccion && (
                   <p className="mt-2 text-[12px] text-[#e8a99c]">
-                    Ojo: el equipo marcó que rompe una restricción de la organización. Revisen si de verdad debe ser el reto.
+                    Rompe una de las restricciones de la organización.
                   </p>
                 )}
               </section>
@@ -92,7 +86,7 @@ export default async function RetoPage({
 
           <fieldset disabled={!canAdminProject(role)} className="flex flex-col gap-6">
             <section className="panel flex flex-col gap-4">
-              <Campo name="name" label="Nombre del reto (proyecto)" rows={1} defaultValue={d.titulo} />
+              <Campo name="name" label="Nombre del reto" rows={1} defaultValue={d.titulo} />
               <Campo name="program" label="Programa o convocatoria (opcional)" rows={1} placeholder="Ej. Caribe Innova 2026" />
             </section>
             <CamposReto
@@ -104,7 +98,7 @@ export default async function RetoPage({
               }}
             />
           </fieldset>
-          {canAdminProject(role) && <SaveBar label="Crear el reto y cerrar Configurar" />}
+          {canAdminProject(role) && <SaveBar label="Crear el reto" />}
         </form>
       )}
     </div>

@@ -689,7 +689,7 @@ export const PASOS_CONFIGURAR = [
     n: 1,
     nombre: "Intención de innovar",
     nivel: "Organización",
-    proposito: "Qué significa innovar aquí, por qué, cuánto y qué proyectos son apropiados.",
+    proposito: "Qué, por qué y cuánto innovar",
     porQue:
       "Antes de cualquier reto se fija la estrategia de innovación: es la que permite aceptar o " +
       "rechazar retos y conceptos. Sin ella, cualquier oportunidad parece buena.",
@@ -699,7 +699,7 @@ export const PASOS_CONFIGURAR = [
     n: 2,
     nombre: "Proponer desafíos",
     nivel: "Equipo",
-    proposito: "Cada persona describe un problema que le emociona resolver (ej. 2.1.1).",
+    proposito: "Cada persona trae un problema",
     porQue:
       "Los innovadores eligen desafíos que les apasionan. Cada propuesta se contrasta con la " +
       "intención de innovar para ver si encaja.",
@@ -707,9 +707,9 @@ export const PASOS_CONFIGURAR = [
   {
     key: "seleccion",
     n: 3,
-    nombre: "Seleccionar el desafío",
+    nombre: "Votar",
     nivel: "Equipo",
-    proposito: "Se presentan los desafíos y se vota el más emocionante e impactante (ej. 2.1.2).",
+    proposito: "El equipo elige uno",
     porQue: "El reto sale de una decisión del equipo, no de quien escribe primero.",
   },
   {
@@ -717,7 +717,7 @@ export const PASOS_CONFIGURAR = [
     n: 4,
     nombre: "Diseñar el reto",
     nivel: "Reto",
-    proposito: "Problema, motivación, a qué se refieren las soluciones y la meta (ej. 2.1.3).",
+    proposito: "Problema, alcance y meta",
     porQue: "Define el alcance con el que arranca el Mapa de Oportunidades.",
   },
 ] as const;
@@ -777,4 +777,16 @@ export const PREGUNTAS_SETUP = [
   "¿El desafío realmente le preocupa?",
   "¿Es lo suficientemente emocionante como para trabajar en ello?",
   "¿Tiene una estrella guía que lo conduce?",
+] as const;
+
+/**
+ * La «línea recta» de cada concepto priorizado (mentor, 15-oct-2026): pasado
+ * Convergir, cada concepto recorre los mismos pasos, uno tras otro.
+ */
+export const LINEA_CONCEPTO = [
+  { key: "brochure", nombre: "Brochure" },
+  { key: "artefacto", nombre: "Artefacto" },
+  { key: "ingenieria", nombre: "Ingeniería inversa" },
+  { key: "propuesta", nombre: "Propuesta de valor" },
+  { key: "caso", nombre: "Caso de negocio" },
 ] as const;

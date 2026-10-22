@@ -159,3 +159,20 @@
     transition: none !important;
   }
 }
+
+/* Embudo de la v2: en el celular cada etapa se angosta hacia abajo; en pantalla
+   ancha se vuelve una flecha que se acorta hacia la derecha. */
+.embudo-etapa {
+  width: var(--ancho);
+  border: 1px solid;
+  border-radius: 4px;
+}
+@media (min-width: 1024px) {
+  .embudo-etapa {
+    width: 100%;
+    height: var(--alto);
+    border-width: 2px 0;
+    border-radius: 0;
+    clip-path: polygon(0 0, calc(100% - 14px) 8%, 100% 50%, calc(100% - 14px) 92%, 0 100%);
+  }
+}

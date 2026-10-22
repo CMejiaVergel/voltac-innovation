@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 /** Aviso que llega en la URL (?hecho= / ?error=) tras una acción. */
@@ -55,35 +56,37 @@ export function Campo({
   );
 }
 
-/** Bloque numerado de un formulario, con su porqué metodológico a la vista. */
+/** Bloque de un formulario: un título y, si hace falta, una línea de ayuda. */
 export function Bloque({
-  n,
   titulo,
   porQue,
   children,
 }: {
-  n: string;
+  n?: string;
   titulo: string;
   porQue?: string;
   children: ReactNode;
 }) {
   return (
     <section className="panel flex flex-col gap-5">
-      <div className="flex items-baseline gap-3">
-        <span className="font-mono text-[12px] text-accent">{n}</span>
+      <div>
         <h2 className="text-[16px] font-semibold text-[#e8e3d8]">{titulo}</h2>
+        {porQue && <p className="hint mt-1 max-w-[75ch]">{porQue}</p>}
       </div>
-      {porQue && <p className="hint -mt-3 max-w-[75ch]">{porQue}</p>}
       {children}
     </section>
   );
 }
 
-/** Marca de «esto lo decide el equipo»: recuerda que la IA no interviene en este paso. */
-export function DecideElEquipo() {
+
+/** El siguiente paso del flujo, para que nadie se quede preguntando «¿y ahora qué?». */
+export function Siguiente({ href, label, nota }: { href: string; label: string; nota?: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(111,191,178,0.4)] px-2.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-accent">
-      Lo decide el equipo · sin IA
-    </span>
+    <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[rgba(232,227,216,0.1)] pt-5">
+      <Link href={href} className="btn btn-primary">
+        {label} →
+      </Link>
+      {nota && <span className="text-[12px] text-[#7f8f8c]">{nota}</span>}
+    </div>
   );
 }

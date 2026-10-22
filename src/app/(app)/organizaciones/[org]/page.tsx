@@ -2,8 +2,8 @@ import Link from "next/link";
 
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { requireOrg, leerJson } from "@/lib/organizaciones";
-import { TIPOS_INNOVACION, EJES_PERFIL, HORIZONTES, PREGUNTAS_SETUP } from "@/lib/gimi";
+import { requireOrg, leerJson, avanceConfigurar } from "@/lib/organizaciones";
+import { TIPOS_INNOVACION, EJES_PERFIL, HORIZONTES, PASOS_CONFIGURAR } from "@/lib/gimi";
 
 export default async function OrgResumenPage({ params }: { params: Promise<{ org: string }> }) {
   const { org: slug } = await params;
@@ -15,11 +15,29 @@ export default async function OrgResumenPage({ params }: { params: Promise<{ org
     select: { slug: true, name: true, brief: { select: { meta: true } } },
   });
 
+  const hechos = await avanceConfigurar(org);
+  const siguiente = PASOS_CONFIGURAR.find((x) => !hechos[x.key]);
   const tipos = leerJson<string[]>(p?.tiposInnovacion, []);
   const restricciones = leerJson<string[]>(p?.restricciones, []);
 
   return (
-    <div className="mt-8 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+    <div className="mt-6 flex flex-col gap-6">
+      {siguiente && (
+        <Link
+          href={`/organizaciones/${slug}/${siguiente.key}`}
+          className="panel flex items-center gap-4 border-accent transition hover:bg-[rgba(111,191,178,0.08)]"
+        >
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-accent font-semibold text-accent">
+            {siguiente.n}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[11px] text-[#7f8f8c]">Siguiente paso</span>
+            <span className="block text-[16px] font-semibold text-[#e8e3d8]">{siguiente.nombre}</span>
+          </span>
+          <span className="btn btn-primary">Continuar →</span>
+        </Link>
+      )}
+    <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
       <section className="panel">
         <div className="flex items-center gap-3">
           <h2 className="kicker">Intención de innovar</h2>
@@ -46,6 +64,7 @@ export default async function OrgResumenPage({ params }: { params: Promise<{ org
                 {p.brechaCuando ? ` · para ${p.brechaCuando}` : ""}
               </p>
             )}
+            {EJES_PERFIL.some((e) => p[e.campo] > 0) && (
             <div className="grid gap-2 sm:grid-cols-2">
               {EJES_PERFIL.map((e) => {
                 const v = p[e.campo];
@@ -68,6 +87,7 @@ export default async function OrgResumenPage({ params }: { params: Promise<{ org
                 );
               })}
             </div>
+            )}
             {p.horizonte && <p className="text-[12px]">Horizonte: {HORIZONTES.find((h) => h.key === p.horizonte)?.label}</p>}
             {restricciones.length > 0 && (
               <div>
@@ -82,7 +102,7 @@ export default async function OrgResumenPage({ params }: { params: Promise<{ org
           </div>
         ) : (
           <p className="hint mt-4">
-            Todavía no está definida. Es el primer paso: sin ella no hay contra qué contrastar los desafíos.
+            Aún no está definida.
           </p>
         )}
       </section>
@@ -91,7 +111,7 @@ export default async function OrgResumenPage({ params }: { params: Promise<{ org
         <section className="panel">
           <h2 className="kicker mb-3">Retos de esta organización</h2>
           {retos.length === 0 ? (
-            <p className="hint">Aún no hay retos. Nacen en el paso 4, desde el desafío seleccionado.</p>
+            <p className="hint">Aún no hay retos.</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {retos.map((r) => (
@@ -105,15 +125,8 @@ export default async function OrgResumenPage({ params }: { params: Promise<{ org
             </ul>
           )}
         </section>
-        <section className="panel">
-          <h2 className="kicker mb-3">Preguntas guía del Set Up</h2>
-          <ul className="flex flex-col gap-1.5 text-[12.5px] text-[#a9b5b3]">
-            {PREGUNTAS_SETUP.map((q) => (
-              <li key={q}>· {q}</li>
-            ))}
-          </ul>
-        </section>
       </div>
+    </div>
     </div>
   );
 }

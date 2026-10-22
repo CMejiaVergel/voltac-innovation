@@ -7,35 +7,48 @@ import { IDEX, HATS, THIN_CELL_THRESHOLD } from "@/lib/gimi";
 import { VERIFICATION_META, type Verification } from "@/lib/enums";
 import { V2 } from "@/lib/v2";
 import { Embudo } from "@/components/v2/Embudo";
+import { Avisos } from "@/components/v2/ui";
 
 export default async function ProjectOverview({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ hecho?: string }>;
 }) {
   const { slug } = await params;
   const user = await requireUser();
   const { project } = await requireProject(user, slug);
 
   if (V2) {
+    const { hecho } = await searchParams;
     const b = project.brief;
     const configurado = Boolean(b?.problema && b?.meta);
     return (
       <div className="mt-8 flex flex-col gap-6">
+        <Avisos hecho={hecho} />
         <Embudo
           etapas={[
-            { key: "configurar", estado: configurado ? "HECHA" : "ACTUAL", href: `/proyectos/${slug}/configurar`, cifra: configurado ? "Reto definido" : "Falta el problema o la meta" },
-            { key: "divergir", estado: "REDISENO" },
-            { key: "combinar", estado: "REDISENO" },
-            { key: "convergir", estado: "REDISENO" },
-            { key: "actuar", estado: "REDISENO" },
+            {
+              key: "configurar",
+              estado: configurado ? "HECHA" : "ACTUAL",
+              href: `/proyectos/${slug}/configurar`,
+              cifra: configurado ? "Reto definido" : "Falta el problema o la meta",
+            },
+            { key: "divergir", estado: configurado ? "ACTUAL" : "PENDIENTE", cifra: "Mapa de oportunidades" },
+            { key: "combinar", estado: "PENDIENTE" },
+            { key: "convergir", estado: "PENDIENTE" },
           ]}
+          conceptos={[]}
         />
         {b?.challengeText && (
           <section className="panel">
             <h2 className="kicker mb-2">El reto</h2>
             <p className="text-[15px] leading-relaxed text-[#e8e3d8]">{b.challengeText}</p>
             {b.meta && <p className="mt-3 text-[12.5px] text-[#a9b5b3]"><span className="label inline">Meta</span> {b.meta}</p>}
+            <Link href={`/proyectos/${slug}/configurar`} className="btn mt-4 inline-block">
+              Editar el reto
+            </Link>
           </section>
         )}
       </div>

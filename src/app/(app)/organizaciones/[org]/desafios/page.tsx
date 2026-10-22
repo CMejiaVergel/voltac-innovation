@@ -1,11 +1,13 @@
+import Link from "next/link";
+
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireOrg, leerJson } from "@/lib/organizaciones";
 import { canEdit } from "@/lib/enums";
-import { AUTOEVALUACION_DESAFIO, PASOS_CONFIGURAR, TIPOS_INNOVACION } from "@/lib/gimi";
+import { AUTOEVALUACION_DESAFIO, TIPOS_INNOVACION } from "@/lib/gimi";
 import { ENCAJE_VACIO, resumirEncaje, VEREDICTO_META, type Encaje } from "@/lib/encaje";
 import { proponerDesafio, evaluarEncaje, eliminarDesafio } from "@/app/actions/organizaciones";
-import { Avisos, Bloque, Campo, DecideElEquipo } from "@/components/v2/ui";
+import { Avisos, Bloque, Campo, Siguiente } from "@/components/v2/ui";
 
 function SiNo({ name, valor, label }: { name: string; valor: boolean | null | undefined; label: string }) {
   return (
@@ -38,7 +40,6 @@ export default async function DesafiosPage({
   const user = await requireUser();
   const { org, role } = await requireOrg(user, slug);
   const editable = canEdit(role);
-  const paso = PASOS_CONFIGURAR[1];
 
   const tiposOrg = leerJson<string[]>(org.perfil?.tiposInnovacion, []);
   const restriccionesOrg = leerJson<string[]>(org.perfil?.restricciones, []);
@@ -51,16 +52,14 @@ export default async function DesafiosPage({
   return (
     <div className="mt-8 max-w-[960px]">
       <Avisos hecho={hecho} error={error} />
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <p className="kicker">Paso 2 · {paso.nombre} · ejercicio 2.1.1</p>
-        <DecideElEquipo />
-      </div>
-      <p className="hint mb-6 max-w-[78ch]">{paso.porQue}</p>
 
       {!org.perfil?.definicion && (
         <p className="mb-6 rounded-[4px] border border-[rgba(201,162,39,0.5)] bg-[rgba(201,162,39,0.08)] p-3 text-[12.5px] text-[#d8c27a]">
-          La intención de innovar todavía no está definida. Se puede proponer, pero el encaje solo tiene sentido cuando
-          exista contra qué contrastar.
+          Falta definir la{" "}
+          <Link href={`/organizaciones/${slug}/perfil`} className="underline">
+            intención de innovar
+          </Link>
+          ; sin ella no se puede revisar el encaje de cada desafío.
         </p>
       )}
 
@@ -80,26 +79,31 @@ export default async function DesafiosPage({
                     {d.projectId ? " · ya es un reto" : d.estado === "DESCARTADO" ? " · descartado" : ""}
                   </p>
                 </div>
-                <span className="rounded-full px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em]" style={{ color: meta.color, border: `1px solid ${meta.color}` }}>
-                  {meta.label}
-                  {r.evaluado ? ` · ${r.puntaje}%` : ""}
-                </span>
+                {r.evaluado && (
+                  <span className="rounded-full px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em]" style={{ color: meta.color, border: `1px solid ${meta.color}` }}>
+                    {meta.label} · {r.puntaje}%
+                  </span>
+                )}
               </div>
               <div className="mt-3 grid gap-3 text-[12.5px] leading-relaxed text-[#c0ccca] md:grid-cols-3">
                 <p><span className="label">Problema</span>{d.problema}</p>
                 <p><span className="label">Por qué es relevante</span>{d.porQueRelevante || "—"}</p>
                 <p><span className="label">Impacto si se resuelve</span>{d.impacto || "—"}</p>
               </div>
-              <div className="mt-3 flex flex-wrap gap-3 font-mono text-[10.5px] text-[#7f8f8c]">
+              <div className="mt-3 flex flex-wrap gap-1.5">
                 {AUTOEVALUACION_DESAFIO.map((a) => {
                   const v = d[a.campo];
-                  return <span key={a.campo}>{a.pregunta.replace(/^¿|\?$/g, "")}: {v ? a.opciones[v - 1] : "—"}</span>;
+                  return v ? (
+                    <span key={a.campo} className="rounded-full bg-[rgba(232,227,216,0.06)] px-2.5 py-0.5 text-[11px] text-[#a9b5b3]">
+                      {a.opciones[v - 1]}
+                    </span>
+                  ) : null;
                 })}
               </div>
 
               {editable && !d.projectId && (
                 <details className="mt-4 rounded-[3px] border border-[rgba(232,227,216,0.1)] p-3">
-                  <summary className="cursor-pointer text-[12.5px] text-accent">Evaluar encaje con la intención de innovar</summary>
+                  <summary className="cursor-pointer text-[12.5px] text-accent">¿Encaja con la organización?</summary>
                   <form action={evaluarEncaje.bind(null, slug, d.id)} className="mt-4 flex flex-col gap-4">
                     <div>
                       <span className="label">¿Qué tipos de innovación de la organización toca?</span>
@@ -135,12 +139,20 @@ export default async function DesafiosPage({
             </article>
           );
         })}
-        {desafios.length === 0 && <p className="hint">Todavía no hay desafíos. Cada persona del equipo propone el suyo.</p>}
+        {desafios.length === 0 && <p className="hint">Aún no hay desafíos. Cada persona propone el suyo.</p>}
       </div>
+
+      {desafios.length > 0 && (
+        <Siguiente
+          href={`/organizaciones/${slug}/seleccion`}
+          label="Ir a votar"
+          nota={desafios.length === 1 ? "Mejor con varios desafíos sobre la mesa." : undefined}
+        />
+      )}
 
       {editable && (
         <form action={proponerDesafio.bind(null, slug)} className="mt-8">
-          <Bloque n="+" titulo="Proponer un desafío" porQue="Describa el problema que le gustaría resolver: cuál es, por qué es relevante para usted y cuál es el impacto si se resuelve.">
+          <Bloque titulo="Proponer un desafío" porQue="Un problema que le gustaría resolver.">
             <Campo name="titulo" label="Título corto" rows={1} required placeholder="Ej. Reducir el consumo de agua cruda de la planta" />
             <Campo name="problema" label="¿Cuál es el problema?" rows={3} required />
             <div className="grid gap-4 md:grid-cols-2">
@@ -164,7 +176,7 @@ export default async function DesafiosPage({
             </div>
             <label className="flex items-start gap-2 text-[12.5px] text-[#a9b5b3]">
               <input type="checkbox" name="origen" value="ORGANIZACION" className="mt-0.5 accent-[#6FBFB2]" />
-              La organización entregó este desafío tal cual (por ejemplo, el reto de un sponsor).
+              Lo entregó la organización tal cual
             </label>
             <div>
               <button type="submit" className="btn btn-primary">Proponer desafío</button>
@@ -172,6 +184,7 @@ export default async function DesafiosPage({
           </Bloque>
         </form>
       )}
+
     </div>
   );
 }

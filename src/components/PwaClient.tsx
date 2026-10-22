@@ -23,6 +23,12 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
 export function PwaRegister() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
+    // En desarrollo los chunks de /_next/static no llevan hash: el service
+    // worker serviria codigo viejo. Ahi se desregistra.
+    if (process.env.NODE_ENV !== "production") {
+      navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
+      return;
+    }
     navigator.serviceWorker.register("/sw.js").catch(() => {
       // Sin service worker la aplicacion sigue funcionando: solo se pierde la
       // instalacion en pantalla de inicio y las notificaciones.

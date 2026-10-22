@@ -4,10 +4,9 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireOrg, leerJson } from "@/lib/organizaciones";
 import { canEdit, canAdminProject } from "@/lib/enums";
-import { PASOS_CONFIGURAR } from "@/lib/gimi";
 import { ENCAJE_VACIO, resumirEncaje, VEREDICTO_META, type Encaje } from "@/lib/encaje";
 import { votarDesafio, cambiarEstadoDesafio } from "@/app/actions/organizaciones";
-import { Avisos, DecideElEquipo } from "@/components/v2/ui";
+import { Avisos } from "@/components/v2/ui";
 
 export default async function SeleccionPage({
   params,
@@ -20,7 +19,6 @@ export default async function SeleccionPage({
   const { hecho, error } = await searchParams;
   const user = await requireUser();
   const { org, role } = await requireOrg(user, slug);
-  const paso = PASOS_CONFIGURAR[2];
   const restriccionesOrg = leerJson<string[]>(org.perfil?.restricciones, []);
 
   const desafios = await prisma.desafioPropuesto.findMany({
@@ -44,15 +42,7 @@ export default async function SeleccionPage({
   return (
     <div className="mt-8 max-w-[960px]">
       <Avisos hecho={hecho} error={error} />
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <p className="kicker">Paso 3 · {paso.nombre} · ejercicio 2.1.2</p>
-        <DecideElEquipo />
-      </div>
-      <p className="hint mb-6 max-w-[78ch]">
-        Cada miembro presenta su desafío y el equipo vota el de mayor impacto: 3 puntos al que más lo emociona e impacta,
-        2 o 1 a los siguientes. El encaje con la intención de innovar acompaña el voto; un desafío que rompe una
-        restricción de la organización no debería ganar. El responsable confirma la selección.
-      </p>
+      <p className="hint mb-5">Den 3 puntos al desafío que más los emociona, 2 y 1 a los siguientes.</p>
 
       {filas.length === 0 ? (
         <p className="hint">
@@ -74,11 +64,13 @@ export default async function SeleccionPage({
                         <span className="block h-full bg-accent" style={{ width: `${(puntos / max) * 100}%` }} />
                       </span>
                       <span className="font-mono text-[10.5px] text-[#7f8f8c]">
-                        {puntos} pts · {votantes} votos
+                        {puntos} pts · {votantes} voto{votantes === 1 ? "" : "s"}
                       </span>
-                      <span className="font-mono text-[10px]" style={{ color: meta.color }}>
-                        {meta.label}
-                      </span>
+                      {encaje.evaluado && (
+                        <span className="font-mono text-[10px]" style={{ color: meta.color }}>
+                          {meta.label}
+                        </span>
+                      )}
                     </div>
                   </div>
 

@@ -1,10 +1,10 @@
 import { requireUser } from "@/lib/auth";
 import { requireOrg, leerJson } from "@/lib/organizaciones";
 import { canEdit } from "@/lib/enums";
-import { TIPOS_INNOVACION, RAZON_DE_CAMBIO, EJES_PERFIL, HORIZONTES, PASOS_CONFIGURAR } from "@/lib/gimi";
+import { TIPOS_INNOVACION, RAZON_DE_CAMBIO, EJES_PERFIL, HORIZONTES} from "@/lib/gimi";
 import { guardarPerfil } from "@/app/actions/organizaciones";
 import { SaveBar } from "@/components/SaveBar";
-import { Avisos, Bloque, Campo, DecideElEquipo } from "@/components/v2/ui";
+import { Avisos, Bloque, Campo } from "@/components/v2/ui";
 
 const lineas = (raw: string | undefined) => leerJson<string[]>(raw, []).join("\n");
 
@@ -22,22 +22,16 @@ export default async function PerfilPage({
   const p = org.perfil;
   const tipos = leerJson<string[]>(p?.tiposInnovacion, []);
   const razones = leerJson<string[]>(p?.razonesCambio, []);
-  const paso = PASOS_CONFIGURAR[0];
 
   return (
     <form action={guardarPerfil.bind(null, slug)} className="mt-8 max-w-[900px]">
       <Avisos hecho={hecho} error={error} />
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <p className="kicker">Paso 1 · {paso.nombre}</p>
-        <DecideElEquipo />
-      </div>
-      <p className="hint mb-7 max-w-[78ch]">{paso.porQue}</p>
 
       <fieldset disabled={!canEdit(role)} className="flex flex-col gap-6">
         <Bloque
-          n="1.1"
+         
           titulo="Definición de innovación"
-          porQue="Qué significa innovar para esta organización. Es una declaración que el equipo decide: define qué retos entran y cuáles no."
+          porQue="Qué significa innovar para esta organización."
         >
           <Campo
             name="definicion"
@@ -62,9 +56,9 @@ export default async function PerfilPage({
         </Bloque>
 
         <Bloque
-          n="1.2"
+         
           titulo="Razón de cambio"
-          porQue="Un argumento convincente para el cambio que le dé propósito a la innovación: ¿quién o qué empuja?"
+          porQue="¿Quién o qué empuja a cambiar?"
         >
           <div className="grid gap-2 sm:grid-cols-3">
             {RAZON_DE_CAMBIO.map((r) => (
@@ -78,22 +72,22 @@ export default async function PerfilPage({
         </Bloque>
 
         <Bloque
-          n="1.3"
+         
           titulo="Brecha de crecimiento"
-          porQue="Cuánto se quiere lograr con la innovación y para cuándo. Muestra definitivamente cuánto y cuándo innovar."
+          porQue="Cuánto se quiere lograr y para cuándo."
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo name="brechaCuanto" label="¿Cuánto?" rows={1} placeholder="Ej. 10% de nuevos ingresos" defaultValue={p?.brechaCuanto} />
             <Campo name="brechaCuando" label="¿Para cuándo?" rows={1} placeholder="Ej. 2028" defaultValue={p?.brechaCuando} />
           </div>
           <Campo name="objetivos" label="Objetivos de crecimiento" help="Uno por línea." defaultValue={lineas(p?.objetivos)} rows={3} />
-          <Campo name="metricas" label="Métricas" help="Uno por línea. Cómo se medirá que la brecha se cierra." defaultValue={lineas(p?.metricas)} rows={3} />
+          <Campo name="metricas" label="Métricas" help="Una por línea." defaultValue={lineas(p?.metricas)} rows={3} />
         </Bloque>
 
         <Bloque
-          n="1.4"
+         
           titulo="Perfil de inversión"
-          porQue="Qué tipo de proyectos son apropiados. Ubica la organización entre cada par de polos y escribe lo que no hará: es lo que permite decir que no a un reto."
+          porQue="Qué tipo de proyectos le convienen."
         >
           <div className="grid gap-5">
             {EJES_PERFIL.map((e) => (
@@ -129,18 +123,18 @@ export default async function PerfilPage({
           <Campo
             name="restricciones"
             label="Lo que la organización no hará"
-            help="Una por línea. Ej. «No invertimos en infraestructura física», «Solo proyectos internacionales». Cada desafío se contrasta con esta lista."
+            help="Una por línea. Ej. «No invertimos en infraestructura física»."
             defaultValue={lineas(p?.restricciones)}
             rows={4}
           />
         </Bloque>
 
-        <Bloque n="1.5" titulo="Prospección futura (opcional)" porQue="Cómo se ve el entorno de la organización a futuro: tendencias o escenarios que deben guiar la innovación.">
-          <Campo name="prospeccion" label="Escenarios o tendencias a tener en cuenta" defaultValue={p?.prospeccion} rows={3} />
+        <Bloque titulo="Mirada al futuro (opcional)">
+          <Campo name="prospeccion" label="Tendencias o escenarios a tener en cuenta" defaultValue={p?.prospeccion} rows={3} />
         </Bloque>
       </fieldset>
 
-      {canEdit(role) && <SaveBar label="Guardar intención de innovar" />}
+      {canEdit(role) && <SaveBar label="Guardar y continuar" />}
     </form>
   );
 }

@@ -58,3 +58,19 @@ export function leerJson<T>(raw: string | null | undefined, porDefecto: T): T {
     return porDefecto;
   }
 }
+
+/** Qué pasos de Configurar ya están hechos en una organización. */
+export async function avanceConfigurar(org: { id: string; perfil: { definicion: string; brechaCuanto: string } | null }) {
+  const [desafios, seleccionados, retos] = await Promise.all([
+    prisma.desafioPropuesto.count({ where: { organizacionId: org.id } }),
+    prisma.desafioPropuesto.count({ where: { organizacionId: org.id, estado: "SELECCIONADO" } }),
+    prisma.project.count({ where: { organizacionId: org.id } }),
+  ]);
+  const p = org.perfil;
+  return {
+    perfil: Boolean(p?.definicion && p.brechaCuanto),
+    desafios: desafios > 0,
+    seleccion: seleccionados > 0,
+    reto: retos > 0,
+  } as Record<string, boolean>;
+}

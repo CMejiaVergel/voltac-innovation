@@ -128,7 +128,7 @@ export async function guardarPerfil(slug: string, formData: FormData): Promise<v
   });
   await prisma.organizacion.update({ where: { id: org.id }, data: { updatedAt: new Date() } });
   revalidatePath(`/organizaciones/${slug}`, "layout");
-  volverCon(ruta, "hecho", "Intención de innovar guardada.");
+  volverCon(`/organizaciones/${slug}/desafios`, "hecho", "Intención de innovar guardada.");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -159,7 +159,7 @@ export async function proponerDesafio(slug: string, formData: FormData): Promise
     },
   });
   revalidatePath(ruta);
-  volverCon(ruta, "hecho", `Desafío «${titulo}» propuesto. Ahora evalúen su encaje con la intención de innovar.`);
+  volverCon(ruta, "hecho", `Desafío «${titulo}» propuesto.`);
 }
 
 export async function evaluarEncaje(slug: string, desafioId: string, formData: FormData): Promise<void> {
@@ -299,7 +299,7 @@ export async function crearReto(slug: string, desafioId: string, formData: FormD
 
   revalidatePath(`/organizaciones/${slug}`, "layout");
   revalidatePath("/proyectos");
-  redirect(`/proyectos/${projectSlug}/configurar?hecho=${encodeURIComponent("Reto creado. Configurar queda completo; el siguiente paso es el Mapa de Oportunidades.")}`);
+  redirect(`/proyectos/${projectSlug}?hecho=${encodeURIComponent("Reto creado.")}`);
 }
 
 export async function actualizarReto(projectSlug: string, formData: FormData): Promise<void> {
