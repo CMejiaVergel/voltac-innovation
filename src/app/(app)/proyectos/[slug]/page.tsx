@@ -28,6 +28,12 @@ export default async function ProjectOverview({
     const postits = mapa
       ? await prisma.fragment.count({ where: { mapId: mapa.map.id, reviewState: "ACCEPTED", hidden: false } })
       : 0;
+    const conceptos = await prisma.concept.findMany({
+      where: { projectId: project.id, reviewState: "ACCEPTED", hidden: false },
+      orderBy: { position: "asc" },
+      select: { title: true, _count: { select: { anclas: true } } },
+    });
+    const armados = conceptos.filter((c) => c._count.anclas > 0).length;
     return (
       <div className="mt-8 flex flex-col gap-6">
         <Avisos hecho={hecho} />
@@ -41,14 +47,19 @@ export default async function ProjectOverview({
             },
             {
               key: "divergir",
-              estado: configurado ? "ACTUAL" : "PENDIENTE",
+              estado: !configurado ? "PENDIENTE" : armados ? "HECHA" : "ACTUAL",
               href: `/proyectos/${slug}/divergir`,
               cifra: postits ? `${postits} post-its en el mapa` : "Mapa de oportunidades",
             },
-            { key: "combinar", estado: "PENDIENTE" },
+            {
+              key: "combinar",
+              estado: armados ? "ACTUAL" : "PENDIENTE",
+              href: postits ? `/proyectos/${slug}/combinar` : undefined,
+              cifra: conceptos.length ? `${conceptos.length} concepto${conceptos.length === 1 ? "" : "s"}` : undefined,
+            },
             { key: "convergir", estado: "PENDIENTE" },
           ]}
-          conceptos={[]}
+          conceptos={conceptos.map((c) => ({ nombre: c.title, hechos: 0, href: `/proyectos/${slug}/combinar` }))}
         />
         {b?.challengeText && (
           <section className="panel">

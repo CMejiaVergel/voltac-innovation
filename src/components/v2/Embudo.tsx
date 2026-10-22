@@ -74,7 +74,7 @@ export function Embudo({ etapas, conceptos }: { etapas: EtapaEmbudo[]; conceptos
             );
             return (
               <li key={s.key} className="flex w-full justify-center lg:w-auto lg:flex-1">
-                {e.href && e.estado !== "PENDIENTE" ? (
+                {e.href ? (
                   <Link href={e.href} className="contents hover:brightness-125">
                     {caja}
                   </Link>

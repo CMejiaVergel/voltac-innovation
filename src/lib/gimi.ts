@@ -790,3 +790,15 @@ export const LINEA_CONCEPTO = [
   { key: "propuesta", nombre: "Propuesta de valor" },
   { key: "caso", nombre: "Caso de negocio" },
 ] as const;
+
+/**
+ * La pregunta de cada casilla del lienzo de concepto (mentor, 15-oct-2026: «se
+ * toma un fragmento de cada dimensión»). Las llaves son las filas del mapa 5×5.
+ */
+export const PREGUNTA_LIENZO: Record<string, string> = {
+  mercado: "¿Quién es el cliente y qué necesita?",
+  entrega: "¿Cómo le llega?",
+  oferta: "¿Qué le ofrecemos?",
+  produccion: "¿Cómo lo producimos?",
+  modelos: "¿Cómo ganamos dinero?",
+};

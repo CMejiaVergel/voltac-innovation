@@ -7,6 +7,8 @@ import { canEdit, asEnum, VERIFICATIONS, DOT_ROLES, REVIEW_STATES } from "@/lib/
 import { estadoClaveAgente } from "@/lib/claveAgente";
 import { CombinarBoard } from "@/components/combinar/CombinarBoard";
 import type { InsightVista, Punto } from "@/components/combinar/types";
+import { V2 } from "@/lib/v2";
+import { LienzoConcepto, type ConceptoLienzo, type PostitLienzo } from "@/components/v2/LienzoConcepto";
 
 export default async function CombinarPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -18,6 +20,33 @@ export default async function CombinarPage({ params }: { params: Promise<{ slug:
     return (
       <div className="panel mt-8">
         <p className="hint">Este proyecto no tiene un mapa creado.</p>
+      </div>
+    );
+  }
+
+  if (V2) {
+    const [frags, conceptos] = await Promise.all([
+      prisma.fragment.findMany({
+        where: { mapId: primary.map.id, reviewState: "ACCEPTED", hidden: false },
+        orderBy: [{ rowId: "asc" }, { colId: "asc" }, { position: "asc" }],
+        select: { id: true, rowId: true, colId: true, titulo: true, text: true, verification: true },
+      }),
+      prisma.concept.findMany({
+        where: { projectId: project.id, reviewState: "ACCEPTED", hidden: false },
+        orderBy: { position: "asc" },
+        include: { anclas: { orderBy: { position: "asc" } } },
+      }),
+    ]);
+    const postits: PostitLienzo[] = frags.map((f) => ({ ...f, verification: asEnum(VERIFICATIONS, f.verification, "TO_CONFIRM") }));
+    const lienzos: ConceptoLienzo[] = conceptos.map((c) => ({
+      id: c.id,
+      title: c.title,
+      statement: c.statement,
+      anclas: c.anclas.map((a) => ({ fragmentId: a.fragmentId, rowId: a.rowId, texto: a.textSnapshot })),
+    }));
+    return (
+      <div className="mt-6 pb-16">
+        <LienzoConcepto slug={slug} shape={primary.shape} postits={postits} conceptos={lienzos} editable={canEdit(role)} />
       </div>
     );
   }

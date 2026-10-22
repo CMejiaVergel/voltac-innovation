@@ -10,13 +10,12 @@
 export const V2 = process.env.NEXT_PUBLIC_PLATAFORMA_V2 === "1";
 
 /** Pestañas del proyecto visibles en la v2, en orden. */
-export const TABS_V2 = ["", "/configurar", "/divergir", "/equipo", "/ajustes"] as const;
+export const TABS_V2 = ["", "/configurar", "/divergir", "/combinar", "/equipo", "/ajustes"] as const;
 
 /** Rutas de la v1 que la v2 oculta mientras se rediseñan. */
 export const RUTAS_V1_OCULTAS = [
   "brief",
   "bom",
-  "combinar",
   "convergir",
   "artefactos",
   "presentacion",

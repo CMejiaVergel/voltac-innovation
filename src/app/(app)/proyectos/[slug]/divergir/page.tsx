@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireProject, getPrimaryMap } from "@/lib/projects";
@@ -45,6 +47,11 @@ export default async function DivergirPage({ params }: { params: Promise<{ slug:
         </span>
         {canEdit(role) && <SugerirTitulos mapId={primary.map.id} sinTitulo={postits.filter((p) => !p.titulo).length} />}
         <span className="flex-1" />
+        {postits.length > 0 && (
+          <Link href={`/proyectos/${slug}/combinar`} className="btn btn-primary order-last md:order-none">
+            Armar conceptos →
+          </Link>
+        )}
         {VERIFICATIONS.map((v) => (
           <span key={v} className="hidden items-center gap-1.5 md:flex">
             <span className="h-2 w-2 rounded-full" style={{ background: VERIFICATION_META[v].color }} />
