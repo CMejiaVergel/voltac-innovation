@@ -23,7 +23,10 @@ import {
   type Verification,
 } from "@/lib/enums";
 
-export const metadata = { title: "Guia de uso — Voltac Innovacion" };
+import { V2 } from "@/lib/v2";
+import { GuiaV2 } from "@/components/v2/GuiaV2";
+
+export const metadata = { title: "Guía de uso — Voltac Innovación" };
 
 /**
  * La guia.
@@ -36,6 +39,7 @@ export const metadata = { title: "Guia de uso — Voltac Innovacion" };
  */
 export default async function GuiaPage() {
   await requireUser();
+  if (V2) return <GuiaV2 />;
 
   return (
     <article className="mx-auto max-w-[70ch] pt-7 pb-10">

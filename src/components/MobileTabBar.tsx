@@ -75,7 +75,7 @@ function projectTabs(slug: string): Tab[] {
 const GLOBAL_TABS: Tab[] = [
   ...(V2 ? [{ href: "/organizaciones", label: "Organizaciones", icon: <Icon d={ICONS.target} /> }] : []),
   { href: "/proyectos", label: "Proyectos", icon: <Icon d={ICONS.folder} /> },
-  { href: "/guia", label: "Guia", icon: <Icon d={ICONS.help} /> },
+  { href: "/guia", label: "Guía", icon: <Icon d={ICONS.help} /> },
   { href: "/cuenta", label: "Cuenta", icon: <Icon d={ICONS.user} /> },
 ];
 

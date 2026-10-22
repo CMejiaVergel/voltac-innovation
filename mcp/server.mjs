@@ -11,6 +11,11 @@
  * coordenadas contra la plantilla e historial obligatorio. Un fallo aqui no
  * puede saltarse una regla del metodo.
  *
+ * Desde la v2 tambien es el canal no-code: las herramientas marcadas «v2 ·»
+ * van a /api/agent/v2 y dejan que Claude haga en la plataforma lo que la persona
+ * le pide (organizaciones, post-its, conceptos, linea de Actuar). Las decisiones
+ * del equipo —votar, puntuar, decidir que sigue adelante— no estan expuestas.
+ *
  * Configuracion (variables de entorno):
  *   VOLTAC_API_URL    https://innovation.voltac.com.co   (o http://localhost:3000)
  *   VOLTAC_API_TOKEN  el token de `npm run token:crear`
@@ -54,6 +59,9 @@ async function api(path, { method = "GET", body } = {}) {
   if (!res.ok) throw new Error(data.error ?? `Error ${res.status} en ${path}`);
   return data;
 }
+
+/** Herramienta v2: todas van a /api/agent/v2 con su acción. */
+const v2 = (accion) => (args) => api("/api/agent/v2", { method: "POST", body: { accion, ...args } });
 
 const slugPath = (slug) => `/api/agent/proyectos/${encodeURIComponent(slug)}`;
 
@@ -820,12 +828,113 @@ const TOOLS = [
         body: { sufijo, incluirFragmentos },
       }),
   },
+  // ───────────────────────────────────────────────────────────────────────────
+  // Plataforma v2 — canal no-code. Claude hace en la plataforma lo que la
+  // persona le pide; las DECISIONES del equipo (votar, seleccionar el desafío,
+  // puntuar conceptos, decidir cuál sigue adelante) se toman en la interfaz.
+  // ───────────────────────────────────────────────────────────────────────────
+  {
+    name: "listar_organizaciones",
+    description: "v2 · Lista las organizaciones visibles con su slug, si ya tienen intención de innovar y cuántos desafíos y retos tienen.",
+    inputSchema: {"type":"object","properties":{}},
+    run: v2("listar_organizaciones"),
+  },
+  {
+    name: "ver_organizacion",
+    description: "v2 · Intención de innovar de una organización (definición, brecha, perfil, lo que no hará), sus desafíos con puntos y sus retos.",
+    inputSchema: {"type":"object","properties":{"org":{"type":"string","description":"Slug de la organización."}},"required":["org"]},
+    run: v2("ver_organizacion"),
+  },
+  {
+    name: "crear_organizacion",
+    description: "v2 · Crea una organización (punto de partida de Configurar). Quien tiene el token queda como responsable.",
+    inputSchema: {"type":"object","properties":{"nombre":{"type":"string"},"sector":{"type":"string"},"descripcion":{"type":"string"}},"required":["nombre"]},
+    run: v2("crear_organizacion"),
+  },
+  {
+    name: "escribir_intencion",
+    description: "v2 · Escribe campos de la intención de innovar de una organización; solo cambia los que envíes. Úsalo con lo que la persona dicte o entregue (documento de estrategia, notas de reunión); no inventes la estrategia de la empresa. tiposInnovacion usa claves PRODUCTOS, SERVICIOS, PROCESOS, CANALES, MODELOS, EXPERIENCIA, ALIANZAS, TECNOLOGIA, SOSTENIBILIDAD. Los ejes van de 1 a 5: ejeGeografico (local→global), ejeNovedad (incremental→de avance), ejeNucleo (núcleo→lejos), ejeInversion (pequeña→grande).",
+    inputSchema: {"type":"object","properties":{"org":{"type":"string"},"definicion":{"type":"string"},"tiposInnovacion":{"type":"array","items":{"type":"string"}},"dondeInnovar":{"type":"string"},"queNoEsInnovar":{"type":"string"},"argumentoCambio":{"type":"string"},"brechaCuanto":{"type":"string"},"brechaCuando":{"type":"string"},"objetivos":{"type":"array","items":{"type":"string"}},"metricas":{"type":"array","items":{"type":"string"}},"ejeGeografico":{"type":"number"},"ejeNovedad":{"type":"number"},"ejeNucleo":{"type":"number"},"ejeInversion":{"type":"number"},"presupuesto":{"type":"string"},"horizonte":{"type":"string"},"restricciones":{"type":"array","items":{"type":"string"}},"prospeccion":{"type":"string"}},"required":["org"]},
+    run: v2("escribir_intencion"),
+  },
+  {
+    name: "proponer_desafio",
+    description: "v2 · Propone un desafío en una organización a nombre de quien tiene el token. La votación y la selección las hace el equipo en la plataforma.",
+    inputSchema: {"type":"object","properties":{"org":{"type":"string"},"titulo":{"type":"string"},"problema":{"type":"string"},"porQueRelevante":{"type":"string"},"impacto":{"type":"string"},"entregadoPorLaOrganizacion":{"type":"boolean"}},"required":["org","titulo","problema"]},
+    run: v2("proponer_desafio"),
+  },
+  {
+    name: "ver_embudo",
+    description: "v2 · Dónde está un proyecto en el embudo: reto, meta, post-its del mapa, conceptos (si siguen adelante) y el avance de la línea recta de cada uno.",
+    inputSchema: {"type":"object","properties":{"slug":{"type":"string"}},"required":["slug"]},
+    run: v2("ver_embudo"),
+  },
+  {
+    name: "ver_mapa",
+    description: "v2 · Post-its del Mapa de Oportunidades con id, dimensión, lente, título y texto. Filtra por dimensión (mercado, entrega, oferta, produccion, modelos) o lente (compania, futuro, compet, adyac, cadena) para no traer todo; conTexto=false trae solo títulos.",
+    inputSchema: {"type":"object","properties":{"slug":{"type":"string"},"dimension":{"type":"string"},"lente":{"type":"string"},"conTexto":{"type":"boolean"}},"required":["slug"]},
+    run: v2("ver_mapa"),
+  },
+  {
+    name: "pegar_postits",
+    description: "v2 · Pega post-its en el mapa (hasta 60 por llamada), cada uno con dimensión, lente, un título de 2 a 5 palabras y el texto. Verificación honesta: VERIFIED solo con fuente, TO_CONFIRM por defecto, ASSUMPTION si es inferencia. Nunca inventes datos de una empresa.",
+    inputSchema: {"type":"object","properties":{"slug":{"type":"string"},"postits":{"type":"array","items":{"type":"object","properties":{"dimension":{"type":"string"},"lente":{"type":"string"},"titulo":{"type":"string"},"texto":{"type":"string"},"verificacion":{"type":"string","enum":["VERIFIED","TO_CONFIRM","ASSUMPTION"]},"fuente":{"type":"string"},"fuenteUrl":{"type":"string"}},"required":["dimension","lente","texto"]}}},"required":["slug","postits"]},
+    run: v2("pegar_postits"),
+  },
+  {
+    name: "editar_postit",
+    description: "v2 · Cambia título, texto, verificación o celda de un post-it, o lo oculta (oculto=true). Solo cambia lo que envíes.",
+    inputSchema: {"type":"object","properties":{"id":{"type":"string"},"titulo":{"type":"string"},"texto":{"type":"string"},"verificacion":{"type":"string","enum":["VERIFIED","TO_CONFIRM","ASSUMPTION"]},"dimension":{"type":"string"},"lente":{"type":"string"},"oculto":{"type":"boolean"}},"required":["id"]},
+    run: v2("editar_postit"),
+  },
+  {
+    name: "titular_postits",
+    description: "v2 · Pone títulos cortos (2 a 5 palabras, sustantivos concretos, sin inventar) a varios post-its. Lee antes ver_mapa y titula los que tengan titulo null.",
+    inputSchema: {"type":"object","properties":{"slug":{"type":"string"},"titulos":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"titulo":{"type":"string"}},"required":["id","titulo"]}}},"required":["slug","titulos"]},
+    run: v2("titular_postits"),
+  },
+  {
+    name: "armar_concepto",
+    description: "v2 · Arma un concepto en el lienzo con post-its del mapa (ids de ver_mapa), idealmente uno o más por dimensión. La frase sigue «Ofreceremos … a …, que necesita …, entregado a través de …, producido por …, y generamos dinero mediante …».",
+    inputSchema: {"type":"object","properties":{"slug":{"type":"string"},"nombre":{"type":"string"},"frase":{"type":"string"},"postits":{"type":"array","items":{"type":"string"}}},"required":["slug","nombre"]},
+    run: v2("armar_concepto"),
+  },
+  {
+    name: "ajustar_concepto",
+    description: "v2 · Cambia nombre o frase de un concepto, y agrega o quita post-its (ids).",
+    inputSchema: {"type":"object","properties":{"id":{"type":"string"},"nombre":{"type":"string"},"frase":{"type":"string"},"agregar":{"type":"array","items":{"type":"string"}},"quitar":{"type":"array","items":{"type":"string"}}},"required":["id"]},
+    run: v2("ajustar_concepto"),
+  },
+  {
+    name: "ver_concepto",
+    description: "v2 · Todo un concepto: post-its, brochure, artefactos, supuestos, propuesta de valor y caso de negocio.",
+    inputSchema: {"type":"object","properties":{"id":{"type":"string"}},"required":["id"]},
+    run: v2("ver_concepto"),
+  },
+  {
+    name: "escribir_linea",
+    description: "v2 · Escribe en la línea recta de un concepto: brochure {titular, problema, solucion, beneficios (uno por línea), llamado}, propuestaValor y caso {inversion, ingresos, costos, retorno, riesgos, siguiente}. Solo cambia lo que envíes. Cifras solo si la persona las dio o vienen de un post-it verificado.",
+    inputSchema: {"type":"object","properties":{"id":{"type":"string"},"brochure":{"type":"object"},"propuestaValor":{"type":"string"},"caso":{"type":"object"}},"required":["id"]},
+    run: v2("escribir_linea"),
+  },
+  {
+    name: "agregar_artefacto",
+    description: "v2 · Agrega un artefacto a un concepto (tipo PROTOCEPTO, MOCKUP, PROTOTIPO, ORDEN_COMPRA, NDA, DISCURSO_VENTA, ACUERDO_ENTREGA…). El estado y las iteraciones los mueve el equipo.",
+    inputSchema: {"type":"object","properties":{"id":{"type":"string","description":"Id del concepto."},"nombre":{"type":"string"},"tipo":{"type":"string"},"promesa":{"type":"string"}},"required":["id","nombre"]},
+    run: v2("agregar_artefacto"),
+  },
+  {
+    name: "agregar_supuestos",
+    description: "v2 · Ingeniería inversa: agrega lo que tendría que ser cierto para que el concepto funcione, con probabilidad 1-5 y, si aplica, una prueba rápida. Las 3 menos probables las marca el equipo.",
+    inputSchema: {"type":"object","properties":{"id":{"type":"string","description":"Id del concepto."},"supuestos":{"type":"array","items":{"type":"object","properties":{"texto":{"type":"string"},"probabilidad":{"type":"number"},"prueba":{"type":"string"}},"required":["texto"]}}},"required":["id","supuestos"]},
+    run: v2("agregar_supuestos"),
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 const server = new Server(
-  { name: "voltac-innovacion", version: "1.0.0" },
+  { name: "voltac-innovacion", version: "2.0.0" },
   { capabilities: { tools: {} } },
 );
 

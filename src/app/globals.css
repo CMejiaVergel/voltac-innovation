@@ -176,3 +176,19 @@
     clip-path: polygon(0 0, calc(100% - 14px) 8%, 100% 50%, calc(100% - 14px) 92%, 0 100%);
   }
 }
+
+/* Listas de la guía v2. */
+.guia-cuerpo .lista {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-left: 1.1rem;
+  list-style: disc;
+}
+.guia-cuerpo ol.lista {
+  list-style: decimal;
+}
+.guia-cuerpo .lista b {
+  color: #e8e3d8;
+}

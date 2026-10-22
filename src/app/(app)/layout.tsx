@@ -31,11 +31,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               Proyectos
             </Link>
             <Link href="/guia" className="transition hover:text-white">
-              Guia
+              Guía
             </Link>
             {user.role === "ADMIN" && (
               <Link href="/admin/usuarios" className="transition hover:text-white">
-                Administracion
+                Administración
               </Link>
             )}
           </nav>
