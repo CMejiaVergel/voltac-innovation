@@ -108,9 +108,14 @@ export function LineaConcepto({ slug, conceptos, editable }: { slug: string; con
         </div>
       )}
 
-      <div>
-        <h2 className="text-[22px] font-bold leading-tight text-[#e8e3d8]">{activo.title}</h2>
-        {activo.statement && <p className="mt-1 max-w-[90ch] text-[13px] leading-relaxed text-[#a9b5b3]">{activo.statement}</p>}
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[22px] font-bold leading-tight text-[#e8e3d8]">{activo.title}</h2>
+          {activo.statement && <p className="mt-1 max-w-[90ch] text-[13px] leading-relaxed text-[#a9b5b3]">{activo.statement}</p>}
+        </div>
+        <a href={`/api/proyectos/${slug}/pptx?concepto=${activo.id}`} className="btn shrink-0">
+          Descargar PPTX
+        </a>
       </div>
 
       {/* La línea recta */}

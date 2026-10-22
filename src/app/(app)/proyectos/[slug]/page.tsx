@@ -54,6 +54,11 @@ export default async function ProjectOverview({
     return (
       <div className="mt-8 flex flex-col gap-6">
         <Avisos hecho={hecho} />
+        <div className="-mb-2 flex justify-end">
+          <a href={`/api/proyectos/${slug}/pptx`} className="btn">
+            Descargar presentación (PPTX)
+          </a>
+        </div>
         <Embudo
           etapas={[
             {
