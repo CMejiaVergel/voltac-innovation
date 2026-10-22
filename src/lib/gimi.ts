@@ -670,3 +670,111 @@ export const LECCIONES = {
 
 export type TipoLeccion = keyof typeof LECCIONES.tipos;
 export const TIPOS_LECCION = ["APRENDIZAJE", "DISFRUTE", "PROXIMO_PASO"] as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// v2 · Configurar (Set Up) a nivel de organizacion
+//
+// Fuentes: lamina «Marco de Trabajo · Intencion de Innovar» (razon de cambio,
+// brecha de crecimiento, perfil de inversion), lamina de las 4 competencias
+// (estrategia: que, donde, cuando, por que, cuanto, que inversiones), CG.pdf
+// ej. 2.1.1–2.1.3, y la reunion con el mentor del 15-oct-2026: «lo primero es
+// la estrategia de innovacion de la organizacion; el reto viene despues y debe
+// estar enmarcado en ella».
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Los cuatro pasos de Configurar, en el orden en que se hacen. */
+export const PASOS_CONFIGURAR = [
+  {
+    key: "perfil",
+    n: 1,
+    nombre: "Intención de innovar",
+    nivel: "Organización",
+    proposito: "Qué significa innovar aquí, por qué, cuánto y qué proyectos son apropiados.",
+    porQue:
+      "Antes de cualquier reto se fija la estrategia de innovación: es la que permite aceptar o " +
+      "rechazar retos y conceptos. Sin ella, cualquier oportunidad parece buena.",
+  },
+  {
+    key: "desafios",
+    n: 2,
+    nombre: "Proponer desafíos",
+    nivel: "Equipo",
+    proposito: "Cada persona describe un problema que le emociona resolver (ej. 2.1.1).",
+    porQue:
+      "Los innovadores eligen desafíos que les apasionan. Cada propuesta se contrasta con la " +
+      "intención de innovar para ver si encaja.",
+  },
+  {
+    key: "seleccion",
+    n: 3,
+    nombre: "Seleccionar el desafío",
+    nivel: "Equipo",
+    proposito: "Se presentan los desafíos y se vota el más emocionante e impactante (ej. 2.1.2).",
+    porQue: "El reto sale de una decisión del equipo, no de quien escribe primero.",
+  },
+  {
+    key: "reto",
+    n: 4,
+    nombre: "Diseñar el reto",
+    nivel: "Reto",
+    proposito: "Problema, motivación, a qué se refieren las soluciones y la meta (ej. 2.1.3).",
+    porQue: "Define el alcance con el que arranca el Mapa de Oportunidades.",
+  },
+] as const;
+
+export type PasoConfigurar = (typeof PASOS_CONFIGURAR)[number]["key"];
+
+/** Definición de innovación: en qué quiere innovar la organización. */
+export const TIPOS_INNOVACION = [
+  { key: "PRODUCTOS", label: "Nuevos productos" },
+  { key: "SERVICIOS", label: "Nuevos servicios" },
+  { key: "PROCESOS", label: "Mejora de procesos" },
+  { key: "CANALES", label: "Nuevos canales" },
+  { key: "MODELOS", label: "Modelos de negocio" },
+  { key: "EXPERIENCIA", label: "Experiencia del cliente" },
+  { key: "ALIANZAS", label: "Alianzas y ecosistema" },
+  { key: "TECNOLOGIA", label: "Nuevas tecnologías" },
+  { key: "SOSTENIBILIDAD", label: "Sostenibilidad y circularidad" },
+] as const;
+
+/** Perfil de inversión: cada eje se ubica entre dos polos (1 … 5). */
+export const EJES_PERFIL = [
+  { campo: "ejeGeografico", nombre: "Alcance", izquierda: "Local", derecha: "Global" },
+  { campo: "ejeNovedad", nombre: "Novedad", izquierda: "Incremental", derecha: "De avance" },
+  { campo: "ejeNucleo", nombre: "Cercanía al negocio", izquierda: "Núcleo", derecha: "Lejos del núcleo" },
+  { campo: "ejeInversion", nombre: "Inversión", izquierda: "Pequeña", derecha: "Grande" },
+] as const;
+
+export type EjePerfil = (typeof EJES_PERFIL)[number]["campo"];
+
+export const HORIZONTES = [
+  { key: "CORTO", label: "Corto plazo (menos de 1 año)" },
+  { key: "MEDIANO", label: "Mediano plazo (1 a 3 años)" },
+  { key: "LARGO", label: "Largo plazo (más de 3 años)" },
+] as const;
+
+/** Autoevaluación del desafío, ejercicio 2.1.1 (CG.pdf). Escala 1..3. */
+export const AUTOEVALUACION_DESAFIO = [
+  {
+    campo: "trabajandoEn",
+    pregunta: "¿Está trabajando en el problema descrito?",
+    opciones: ["No, no estoy trabajando en él", "Conozco a alguien que trabaja en él", "Sí, yo trabajo en este problema"],
+  },
+  {
+    campo: "emocionante",
+    pregunta: "¿Es este problema emocionante para usted?",
+    opciones: ["No, es un problema pequeño", "Es emocionante, lo he vivido", "Sí, toca el dolor de muchos"],
+  },
+  {
+    campo: "nivelImpacto",
+    pregunta: "¿Creará un impacto significativo si se resuelve?",
+    opciones: ["No estoy seguro del impacto", "Podría crear algún impacto", "Sí, cambiaría el juego"],
+  },
+] as const;
+
+/** Preguntas guía del Set Up (CG.pdf, lámina 25). */
+export const PREGUNTAS_SETUP = [
+  "¿El desafío realmente le preocupa?",
+  "¿Es lo suficientemente emocionante como para trabajar en ello?",
+  "¿Tiene una estrella guía que lo conduce?",
+] as const;

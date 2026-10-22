@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { V2, TABS_V2 } from "@/lib/v2";
+
 const TABS = [
   { href: "", label: "Vista general" },
+  { href: "/configurar", label: "Configurar" },
   { href: "/brief", label: "Configurar" },
   { href: "/bom", label: "Mapa de Oportunidades" },
   { href: "/combinar", label: "Combinar" },
@@ -25,7 +28,7 @@ export function ProjectTabs({ slug }: { slug: string }) {
     // En movil estas pestañas se sustituyen por la barra inferior: repetirlas
     // arriba solo gasta altura de pantalla.
     <nav className="no-print mt-5 hidden flex-wrap gap-x-5 gap-y-2 border-b border-[rgba(232,227,216,0.12)] pb-0 md:flex">
-      {TABS.map((t) => {
+      {TABS.filter((t) => (V2 ? (TABS_V2 as readonly string[]).includes(t.href) : t.href !== "/configurar")).map((t) => {
         const href = `${base}${t.href}`;
         const active = t.href === "" ? pathname === base : pathname.startsWith(href);
         return (

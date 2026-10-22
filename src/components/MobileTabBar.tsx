@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { V2 } from "@/lib/v2";
+
 /**
  * Barra de pestañas inferior, solo en movil.
  *
@@ -47,6 +49,13 @@ const ICONS = {
 
 function projectTabs(slug: string): Tab[] {
   const base = `/proyectos/${slug}`;
+  if (V2) {
+    return [
+      { href: base, label: "Embudo", icon: <Icon d={ICONS.matriz} /> },
+      { href: `${base}/configurar`, label: "Configurar", icon: <Icon d={ICONS.target} /> },
+      { href: `${base}/equipo`, label: "Equipo", icon: <Icon d={ICONS.users} /> },
+    ];
+  }
   return [
     { href: `${base}/bom`, label: "Mapa", icon: <Icon d={ICONS.grid} /> },
     { href: `${base}/combinar`, label: "Combinar", icon: <Icon d={ICONS.link} /> },
@@ -61,6 +70,7 @@ function projectTabs(slug: string): Tab[] {
 }
 
 const GLOBAL_TABS: Tab[] = [
+  ...(V2 ? [{ href: "/organizaciones", label: "Organizaciones", icon: <Icon d={ICONS.target} /> }] : []),
   { href: "/proyectos", label: "Proyectos", icon: <Icon d={ICONS.folder} /> },
   { href: "/guia", label: "Guia", icon: <Icon d={ICONS.help} /> },
   { href: "/cuenta", label: "Cuenta", icon: <Icon d={ICONS.user} /> },

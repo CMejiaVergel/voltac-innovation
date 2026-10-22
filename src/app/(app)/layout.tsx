@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { logoutAction } from "@/app/actions/auth";
 import { Brand } from "@/components/Brand";
 import { MobileTabBar } from "@/components/MobileTabBar";
+import { V2 } from "@/lib/v2";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -21,6 +22,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
           {/* En movil la navegacion vive en la barra inferior. */}
           <nav className="hidden items-center gap-4 text-[12px] text-[#8b9a97] md:flex">
+            {V2 && (
+              <Link href="/organizaciones" className="transition hover:text-white">
+                Organizaciones
+              </Link>
+            )}
             <Link href="/proyectos" className="transition hover:text-white">
               Proyectos
             </Link>
