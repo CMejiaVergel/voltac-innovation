@@ -53,6 +53,7 @@ function projectTabs(slug: string): Tab[] {
     return [
       { href: base, label: "Embudo", icon: <Icon d={ICONS.matriz} /> },
       { href: `${base}/configurar`, label: "Configurar", icon: <Icon d={ICONS.target} /> },
+      { href: `${base}/divergir`, label: "Mapa", icon: <Icon d={ICONS.grid} /> },
       { href: `${base}/equipo`, label: "Equipo", icon: <Icon d={ICONS.users} /> },
     ];
   }
@@ -91,7 +92,9 @@ export function MobileTabBar() {
     >
       <ul className="flex">
         {tabs.map((t) => {
-          const active = pathname === t.href || pathname.startsWith(`${t.href}/`);
+          // La pestaña raiz del proyecto (el embudo) solo se marca en su propia ruta.
+          const raiz = slug !== null && t.href === `/proyectos/${slug}`;
+          const active = pathname === t.href || (!raiz && pathname.startsWith(`${t.href}/`));
           return (
             <li key={t.href} className="flex-1">
               <Link

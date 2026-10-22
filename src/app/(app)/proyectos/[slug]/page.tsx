@@ -24,6 +24,10 @@ export default async function ProjectOverview({
     const { hecho } = await searchParams;
     const b = project.brief;
     const configurado = Boolean(b?.problema && b?.meta);
+    const mapa = await getPrimaryMap(project.id);
+    const postits = mapa
+      ? await prisma.fragment.count({ where: { mapId: mapa.map.id, reviewState: "ACCEPTED", hidden: false } })
+      : 0;
     return (
       <div className="mt-8 flex flex-col gap-6">
         <Avisos hecho={hecho} />
@@ -35,7 +39,12 @@ export default async function ProjectOverview({
               href: `/proyectos/${slug}/configurar`,
               cifra: configurado ? "Reto definido" : "Falta el problema o la meta",
             },
-            { key: "divergir", estado: configurado ? "ACTUAL" : "PENDIENTE", cifra: "Mapa de oportunidades" },
+            {
+              key: "divergir",
+              estado: configurado ? "ACTUAL" : "PENDIENTE",
+              href: `/proyectos/${slug}/divergir`,
+              cifra: postits ? `${postits} post-its en el mapa` : "Mapa de oportunidades",
+            },
             { key: "combinar", estado: "PENDIENTE" },
             { key: "convergir", estado: "PENDIENTE" },
           ]}

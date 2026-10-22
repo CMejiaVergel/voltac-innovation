@@ -59,6 +59,7 @@ async function guardFragment(fragmentId: string) {
 
 function touch(slug: string) {
   revalidatePath(`/proyectos/${slug}/bom`);
+  revalidatePath(`/proyectos/${slug}/divergir`);
   revalidatePath(`/proyectos/${slug}/agente`);
   revalidatePath(`/proyectos/${slug}`);
 }
@@ -70,6 +71,7 @@ export async function createFragment(input: {
   rowId: string;
   colId: string;
   text: string;
+  titulo?: string;
 }): Promise<{ id: string }> {
   const { userId, mapId, projectSlug } = await guardMap(input.mapId);
 
@@ -97,6 +99,7 @@ export async function createFragment(input: {
       rowId: input.rowId,
       colId: input.colId,
       text,
+      titulo: input.titulo?.trim().slice(0, 80) ?? "",
       position: (last?.position ?? -1) + 1,
       verification: "TO_CONFIRM",
       reviewState: "ACCEPTED",
@@ -132,6 +135,22 @@ export async function updateFragmentText(fragmentId: string, text: string): Prom
   await prisma.fragment.update({ where: { id: fragmentId }, data: { text: next } });
   await prisma.fragmentRevision.create({
     data: { mapId: fragment.mapId, fragmentId, action: "EDIT", text: next, editedById: user.id },
+  });
+
+  touch(projectSlug);
+}
+
+/** Titulo y texto de un post-it en una sola escritura (mapa v2). */
+export async function updatePostit(fragmentId: string, input: { titulo: string; text: string }): Promise<void> {
+  const { user, fragment, projectSlug } = await guardFragment(fragmentId);
+  const text = input.text.trim();
+  const titulo = input.titulo.trim().slice(0, 80);
+  if (!text) throw new Error("El post-it no puede quedar sin texto.");
+  if (text === fragment.text && titulo === fragment.titulo) return;
+
+  await prisma.fragment.update({ where: { id: fragmentId }, data: { text, titulo } });
+  await prisma.fragmentRevision.create({
+    data: { mapId: fragment.mapId, fragmentId, action: "EDIT", text, editedById: user.id },
   });
 
   touch(projectSlug);

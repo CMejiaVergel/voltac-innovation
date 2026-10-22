@@ -283,6 +283,9 @@ model Fragment {
   colId String
 
   text     String
+  /// Titulo corto del post-it (v2): lo que se lee en el mapa compacto. Vacio =
+  /// se deriva del texto. El texto completo se ve al abrir el post-it.
+  titulo   String @default("")
   /// Orden dentro de la celda. Lo fija el equipo arrastrando: dentro de una
   /// celda el orden es una decision de lectura, no un detalle.
   position Int    @default(0)
