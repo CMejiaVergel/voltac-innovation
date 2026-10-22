@@ -31,6 +31,21 @@ const C = {
 };
 const FUENTE = "Arial";
 const sin = (hex: string) => hex.replace("#", "");
+/**
+ * El tamaño de letra más grande (de 13 a 8 pt) con el que un texto cabe en una
+ * caja. PowerPoint solo reajusta el texto cuando alguien lo edita, así que el
+ * archivo tiene que salir ya ajustado. Estimación: un carácter ocupa ~0,5 em y
+ * cada renglón 1,25 veces el tamaño de la letra.
+ */
+function tamanoQueCabe(texto: string, anchoIn: number, altoIn: number): number {
+  for (const pt of [13, 12, 11, 10, 9, 8]) {
+    const porRenglon = Math.max(1, Math.floor((anchoIn * 72) / (pt * 0.5)));
+    const renglones = texto.split("\n").reduce((n, l) => n + Math.max(1, Math.ceil(l.length / porRenglon)), 0);
+    if (renglones * pt * 1.25 <= altoIn * 72) return pt;
+  }
+  return 8;
+}
+
 const corto = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
 
 function logo(): string | null {
@@ -121,7 +136,7 @@ export async function generarPresentacion(slug: string, soloConcepto?: string): 
     s.addText(
       [
         { text: etiqueta.toUpperCase(), options: { fontSize: 9, bold: true, color: C.acento, charSpacing: 2, breakLine: true } },
-        { text: cuerpo || "—", options: { fontSize: 13, color: cuerpo ? C.texto : C.tenue } },
+        { text: cuerpo || "—", options: { fontSize: tamanoQueCabe(cuerpo, w - 0.3, h - 0.55), color: cuerpo ? C.texto : C.tenue } },
       ],
       { x: x + 0.15, y: y + 0.1, w: w - 0.3, h: h - 0.2, fontFace: FUENTE, valign: "top", paraSpaceAfter: 4, fit: "shrink" },
     );
@@ -285,23 +300,30 @@ function lineaDeConcepto(pptx: PptxGenJS, lamina: Lamina, bloque: Bloque, caja: 
 
   // El concepto y de dónde sale
   const s1 = lamina("3 · Combinar · concepto priorizado", c.title);
-  s1.addText(c.statement || "—", { x: 0.5, y: 1.5, w: 12.3, h: 1.1, fontFace: FUENTE, fontSize: 15, color: C.suave, valign: "top", fit: "shrink" });
+  // La frase «Conecte los puntos» puede pasar de 900 caracteres. PowerPoint solo
+  // reajusta el texto al editarlo, así que el tamaño se fija aquí según el largo.
+  const frase = c.statement || "—";
+  const tam = frase.length < 220 ? 15 : frase.length < 480 ? 12.5 : frase.length < 760 ? 11 : 9.5;
+  s1.addText(frase, { x: 0.5, y: 1.45, w: 12.3, h: 1.75, fontFace: FUENTE, fontSize: tam, color: C.suave, valign: "top" });
   const filas = d.shape?.rows ?? [];
   filas.forEach((r, i) => {
     const anclas = c.anclas.filter((a) => a.rowId === r.id);
     const x = 0.5 + i * 2.48;
-    s1.addShape(pptx.ShapeType.rect, { x, y: 2.85, w: 2.38, h: 0.08, fill: { color: sin(r.color) }, line: { color: sin(r.color), width: 0 } });
+    s1.addShape(pptx.ShapeType.rect, { x, y: 3.3, w: 2.38, h: 0.08, fill: { color: sin(r.color) }, line: { color: sin(r.color), width: 0 } });
     s1.addText(
       [
         { text: r.name, options: { bold: true, fontSize: 12, color: C.texto, breakLine: true } },
         { text: PREGUNTA_LIENZO[r.id] ?? r.facets, options: { fontSize: 9, color: C.tenue } },
       ],
-      { x, y: 2.95, w: 2.38, h: 0.75, fontFace: FUENTE, valign: "top" },
+      { x, y: 3.4, w: 2.38, h: 0.6, fontFace: FUENTE, valign: "top" },
     );
+    if (anclas.length > 4) {
+      s1.addText(`+${anclas.length - 4} más`, { x, y: 6.6, w: 2.38, h: 0.3, fontFace: FUENTE, fontSize: 9, color: C.tenue });
+    }
     anclas.slice(0, 4).forEach((a, k) => {
       const texto = a.fragment ? tituloPostit(a.fragment, 7) : tituloPostit({ titulo: "", text: a.textSnapshot }, 7);
       s1.addText(corto(texto, 60), {
-        x, y: 3.8 + k * 0.72, w: 2.38, h: 0.62, fontFace: FUENTE, fontSize: 10, color: C.tinta,
+        x, y: 4.1 + k * 0.62, w: 2.38, h: 0.54, fontFace: FUENTE, fontSize: 10, color: C.tinta,
         fill: { color: C.papel }, margin: 6, valign: "middle", fit: "shrink",
       });
     });
