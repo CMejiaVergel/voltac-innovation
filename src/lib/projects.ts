@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/db";
 import { asEnum, PROJECT_ROLES, type ProjectRole } from "@/lib/enums";
-import { parseShape, type TemplateShape } from "@/lib/templates";
+import { shapeDePlantilla, type TemplateShape } from "@/lib/templates";
 import type { SessionUser } from "@/lib/auth";
 
 /**
@@ -101,7 +101,7 @@ export async function getPrimaryMap(projectId: string) {
   });
   if (!map) return null;
 
-  const shape: TemplateShape = parseShape(map.template.rows, map.template.cols);
+  const shape: TemplateShape = shapeDePlantilla(map.template);
   return { map, shape };
 }
 

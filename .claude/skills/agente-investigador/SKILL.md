@@ -208,15 +208,17 @@ Errores típicos que debes evitar:
 
 ## La columna Adyacencias
 
-La que más se hace mal. Se registra el **mecanismo trasladable**, no el nombre
-de la empresa, y la empresa debe venir de una **industria ajena al reto**.
+La que más se hace mal. El GIMI la plantea como «Nuevos aliados… nuevos movimientos»
+(Masterclass 2, lám. 86-87): se **nombra un aliado posible de otra industria** y se escribe
+**a qué le daría acceso** a la empresa (sus mercados, oferta, entrega, producción o modelo de
+negocio). El nombre solo no basta: lo que se registra es el movimiento.
 
 - **Mal:** "Coca-Cola"
 - **Mal:** "Coca-Cola es líder en sostenibilidad hídrica"
-- **Bien:** "Devuelve a la cuenca el agua que consume comprando reposición a proyectos de terceros"
+- **Bien:** "Aliado: Coca-Cola. Acceso a su programa de reposición de agua a la cuenca, que compra a proyectos de terceros"
 
-La prueba: si al leer el fragmento no sabes *qué se podría copiar*, está mal
-escrito.
+La prueba: si al leer el fragmento no sabes *con quién* ni *a qué se accedería*,
+está mal escrito.
 
 ## Clasificar en ítems: se hace al escribir, no después
 

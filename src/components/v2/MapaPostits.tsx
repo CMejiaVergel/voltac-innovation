@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import type { TemplateShape } from "@/lib/templates";
 import { VERIFICATIONS, VERIFICATION_META, type Verification } from "@/lib/enums";
-import { tituloPostit } from "@/lib/v2";
+import { colorDePersona, tituloPostit } from "@/lib/v2";
 import {
   createFragment,
   deleteFragment,
@@ -14,6 +14,7 @@ import {
   setVerification,
   updatePostit,
 } from "@/app/actions/fragments";
+import { guardarInsightMapa, ocultarInsightMapa, type CamposInsightMapa } from "@/app/actions/insightsMapa";
 
 export type Postit = {
   id: string;
@@ -24,37 +25,98 @@ export type Postit = {
   verification: Verification;
   sourceUrl: string | null;
   sourceCitation: string | null;
+  authorId: string | null;
+  authorName: string | null;
+};
+
+/** Un insight dibujado sobre el mapa: lo que el equipo descubrió al conectar post-its. */
+export type InsightMapa = CamposInsightMapa & {
+  id: string;
+  n: number;
+  color: string;
+  fragmentIds: string[];
+  authorId: string | null;
   authorName: string | null;
 };
 
 type Panel = { modo: "ver"; id: string } | { modo: "nuevo"; rowId: string; colId: string } | null;
 
+/** El insight que se está armando: primero se tocan los post-its, después se escribe. */
+type Borrador = { id?: string; seleccion: string[]; campos: CamposInsightMapa; paso: "elegir" | "escribir" };
+
+const CAMPOS_VACIOS: CamposInsightMapa = { statement: "", fact: "", pattern: "", implication: "", business: "", limitNote: "" };
+
 /**
  * El Mapa de Oportunidades como un pliego con post-its (mentor, 15-oct-2026):
  * todo el 5×5 en una pantalla, cada fragmento reducido a un título corto y el
  * texto completo a un toque. Se arrastran de una celda a otra como en papel.
+ *
+ * Los insights se sacan aquí mismo, no en otra etapa: el propósito del mapa
+ * es encontrarlos (IMBOK p. 37) y el mentor los quiere en el mapa. Cada uno
+ * conecta los post-its que lo sostienen y se ve encima de ellos.
  */
 export function MapaPostits({
+  slug,
   mapId,
   shape,
   postits: iniciales,
+  insights,
   editable,
 }: {
+  slug: string;
   mapId: string;
   shape: TemplateShape;
   postits: Postit[];
+  insights: InsightMapa[];
   editable: boolean;
 }) {
   const router = useRouter();
   const [postits, setPostits] = useState(iniciales);
   const [panel, setPanel] = useState<Panel>(null);
   const [lente, setLente] = useState(0);
+  const [guia, setGuia] = useState<string | null>(null);
+  const [foco, setFoco] = useState<string | null>(null);
+  const [borrador, setBorrador] = useState<Borrador | null>(null);
   const [arrastrando, setArrastrando] = useState<string | null>(null);
   const [sobre, setSobre] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
 
   useEffect(() => setPostits(iniciales), [iniciales]);
+
+  /** De qué insights forma parte cada post-it, para pintar sus marcas. */
+  const insightsDe = useMemo(() => {
+    const m = new Map<string, InsightMapa[]>();
+    for (const i of insights) for (const id of i.fragmentIds) m.set(id, [...(m.get(id) ?? []), i]);
+    return m;
+  }, [insights]);
+  const enfocado = insights.find((i) => i.id === foco) ?? null;
+  const eligiendo = borrador?.paso === "elegir";
+
+  function guardarInsight(b: Borrador) {
+    setError(null);
+    startTransition(async () => {
+      const r = await guardarInsightMapa(slug, { id: b.id, fragmentIds: b.seleccion, campos: b.campos });
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      setBorrador(null);
+      setFoco(r.id);
+      router.refresh();
+    });
+  }
+
+  function ocultarInsight(id: string) {
+    if (!confirm("¿Quitar este insight del mapa? No se borra: queda guardado en el proyecto.")) return;
+    startTransition(async () => {
+      const r = await ocultarInsightMapa(slug, id);
+      if (!r.ok) return setError(r.error);
+      setBorrador(null);
+      setFoco(null);
+      router.refresh();
+    });
+  }
 
   const porCelda = useMemo(() => {
     const m = new Map<string, Postit[]>();
@@ -89,11 +151,15 @@ export function MapaPostits({
 
   function nota(p: Postit) {
     const color = fila(p.rowId)?.color ?? "#6FBFB2";
+    const suyos = insightsDe.get(p.id) ?? [];
+    const elegido = eligiendo && borrador!.seleccion.includes(p.id);
+    const apagado = eligiendo ? !elegido : enfocado ? !enfocado.fragmentIds.includes(p.id) : false;
+    const anillo = elegido ? "#e8e3d8" : enfocado && !apagado ? enfocado.color : null;
     return (
       <button
         key={p.id}
         type="button"
-        draggable={editable}
+        draggable={editable && !eligiendo}
         onDragStart={(e) => {
           e.dataTransfer.setData("text/plain", p.id);
           setArrastrando(p.id);
@@ -102,12 +168,20 @@ export function MapaPostits({
           setArrastrando(null);
           setSobre(null);
         }}
-        onClick={() => setPanel({ modo: "ver", id: p.id })}
-        title={p.text}
-        className={`relative w-full rounded-[3px] px-2 py-1.5 text-left text-[11.5px] leading-snug text-[#1d2224] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition hover:-translate-y-px hover:shadow-[0_3px_8px_rgba(0,0,0,0.4)] ${
-          arrastrando === p.id ? "opacity-40" : ""
-        } ${editable ? "cursor-grab active:cursor-grabbing" : ""}`}
-        style={{ background: `color-mix(in srgb, ${color} 28%, #f4ecd6)` }}
+        onClick={() => {
+          if (!eligiendo) return setPanel({ modo: "ver", id: p.id });
+          const b = borrador!;
+          setBorrador({ ...b, seleccion: elegido ? b.seleccion.filter((x) => x !== p.id) : [...b.seleccion, p.id] });
+        }}
+        title={p.authorName ? `${p.text}\n\n— ${p.authorName}` : p.text}
+        className={`relative w-full rounded-[3px] py-1.5 pl-2.5 pr-2 text-left text-[11.5px] leading-snug text-[#1d2224] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition hover:-translate-y-px hover:shadow-[0_3px_8px_rgba(0,0,0,0.4)] ${
+          arrastrando === p.id || apagado ? "opacity-35" : ""
+        } ${editable && !eligiendo ? "cursor-grab active:cursor-grabbing" : ""}`}
+        style={{
+          background: `color-mix(in srgb, ${color} 28%, #f4ecd6)`,
+          // El color de quien lo puso, como en la edición colaborativa de Office.
+          boxShadow: `inset 3px 0 0 ${p.authorId ? colorDePersona(p.authorId) : "transparent"}${anillo ? `, 0 0 0 2px ${anillo}` : ""}`,
+        }}
       >
         {tituloPostit(p)}
         <span
@@ -115,7 +189,144 @@ export function MapaPostits({
           style={{ background: VERIFICATION_META[p.verification].color }}
           aria-label={VERIFICATION_META[p.verification].label}
         />
+        {suyos.length > 0 && (
+          <span className="mt-1 flex gap-0.5" aria-label={`En ${suyos.length} insight${suyos.length > 1 ? "s" : ""}`}>
+            {suyos.map((i) => (
+              <span key={i.id} className="grid h-3.5 min-w-3.5 place-items-center rounded-full px-0.5 text-[8.5px] font-bold text-[#12181b]" style={{ background: i.color }}>
+                {i.n}
+              </span>
+            ))}
+          </span>
+        )}
       </button>
+    );
+  }
+
+  function barraInsights() {
+    if (borrador?.paso === "elegir") {
+      return (
+        <div className="sticky top-2 z-20 mb-3 flex flex-wrap items-center gap-2 rounded-[6px] border border-accent bg-[#12262a] p-3 text-[12.5px] text-[#e8e3d8] shadow-lg">
+          <span>
+            Toque los post-its que se conectan. <b>{borrador.seleccion.length}</b> elegidos.
+          </span>
+          <span className="flex-1" />
+          <button type="button" className="btn" onClick={() => setBorrador(borrador.id ? { ...borrador, paso: "escribir" } : null)}>
+            {borrador.id ? "Volver" : "Cancelar"}
+          </button>
+          <button type="button" className="btn btn-primary" disabled={borrador.seleccion.length < 2} onClick={() => setBorrador({ ...borrador, paso: "escribir" })}>
+            Escribir el insight →
+          </button>
+        </div>
+      );
+    }
+    if (!insights.length && !editable) return null;
+    return (
+      <div className="mb-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-[12px] font-semibold text-[#e8e3d8]">Insights</span>
+          {insights.map((i) => (
+            <button
+              key={i.id}
+              type="button"
+              onClick={() => setFoco(foco === i.id ? null : i.id)}
+              className="flex max-w-[260px] items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px]"
+              style={
+                foco === i.id
+                  ? { borderColor: i.color, background: `${i.color}2e`, color: "#e8e3d8" }
+                  : { borderColor: "rgba(232,227,216,0.16)", color: "#a9b5b3" }
+              }
+            >
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: i.color }} />
+              <span className="truncate">
+                {i.n} · {i.statement}
+              </span>
+            </button>
+          ))}
+          {editable && (
+            <button
+              type="button"
+              onClick={() => {
+                setFoco(null);
+                setBorrador({ seleccion: [], campos: CAMPOS_VACIOS, paso: "elegir" });
+              }}
+              className="rounded-full border border-dashed border-[rgba(111,191,178,0.5)] px-3 py-1 text-[12px] text-accent hover:bg-[rgba(111,191,178,0.1)]"
+            >
+              + Conectar post-its
+            </button>
+          )}
+        </div>
+        {enfocado && (
+          <div className="mt-2 rounded-[6px] border p-3 text-[12.5px] leading-relaxed text-[#c9d1cf]" style={{ borderColor: `${enfocado.color}88` }}>
+            <p className="text-[14px] font-semibold text-[#e8e3d8]">{enfocado.statement}</p>
+            {enfocado.implication && (
+              <p className="mt-1">
+                <span className="text-[#8b9a97]">¿Y qué? </span>
+                {enfocado.implication}
+              </p>
+            )}
+            {enfocado.business && (
+              <p className="mt-1">
+                <span className="text-[#8b9a97]">Oportunidad: </span>
+                {enfocado.business}
+              </p>
+            )}
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11.5px] text-[#7f8f8c]">
+              <span>
+                {enfocado.fragmentIds.length} post-its{enfocado.authorName ? ` · lo propuso ${enfocado.authorName}` : ""}
+              </span>
+              <span className="flex-1" />
+              {editable && (
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() =>
+                    setBorrador({
+                      id: enfocado.id,
+                      seleccion: enfocado.fragmentIds,
+                      campos: {
+                        statement: enfocado.statement,
+                        fact: enfocado.fact,
+                        pattern: enfocado.pattern,
+                        implication: enfocado.implication,
+                        business: enfocado.business,
+                        limitNote: enfocado.limitNote,
+                      },
+                      paso: "escribir",
+                    })
+                  }
+                >
+                  Abrir
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /** El ejercicio de una lente, como lo plantea el GIMI. */
+  function guiaLente(colId: string) {
+    const c = shape.cols.find((x) => x.id === colId);
+    if (!c?.ejercicio?.length) return null;
+    return (
+      <div className="mb-3 rounded-[6px] border border-[rgba(232,227,216,0.12)] bg-[rgba(232,227,216,0.03)] p-3 text-[12.5px] leading-relaxed text-[#c9d1cf]">
+        <div className="mb-1 flex items-center gap-2">
+          <b className="text-[#e8e3d8]">
+            {c.name}: {c.question}
+          </b>
+          <span className="flex-1" />
+          <button type="button" onClick={() => setGuia(null)} className="px-1 text-[16px] leading-none text-[#7f8f8c] hover:text-white max-md:hidden" aria-label="Cerrar guía">
+            ×
+          </button>
+        </div>
+        <ol className="list-decimal space-y-0.5 pl-5">
+          {c.ejercicio.map((paso) => (
+            <li key={paso}>{paso}</li>
+          ))}
+        </ol>
+        {c.fuente && <p className="mt-1.5 text-[10.5px] text-[#5e7370]">{c.fuente}</p>}
+      </div>
     );
   }
 
@@ -126,7 +337,7 @@ export function MapaPostits({
       <div
         key={k}
         onDragOver={(e) => {
-          if (!editable) return;
+          if (!editable || eligiendo) return;
           e.preventDefault();
           setSobre(k);
         }}
@@ -147,7 +358,7 @@ export function MapaPostits({
         } ${compacta ? "max-h-[260px] overflow-y-auto" : ""}`}
       >
         {notas.map((p) => nota(p))}
-        {editable && (
+        {editable && !eligiendo && (
           <button
             type="button"
             onClick={() => setPanel({ modo: "nuevo", rowId, colId })}
@@ -173,7 +384,10 @@ export function MapaPostits({
         </p>
       )}
 
+      {barraInsights()}
+
       {/* Pantalla ancha: el pliego completo */}
+      <div className="hidden md:block">{guia && guiaLente(guia)}</div>
       <div className="hidden overflow-x-auto md:block">
         <div
           className="grid min-w-[980px] gap-1.5"
@@ -181,10 +395,16 @@ export function MapaPostits({
         >
           <span />
           {shape.cols.map((c) => (
-            <div key={c.id} className="px-1 pb-1" title={c.question}>
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setGuia(guia === c.id ? null : c.id)}
+              className={`rounded-[4px] px-1 pb-1 text-left transition hover:bg-[rgba(232,227,216,0.05)] ${guia === c.id ? "bg-[rgba(111,191,178,0.1)]" : ""}`}
+              title="Ver el ejercicio de esta lente"
+            >
               <span className="block text-[12.5px] font-semibold text-[#e8e3d8]">{c.name}</span>
               <span className="block text-[10.5px] leading-tight text-[#7f8f8c]">{c.question}</span>
-            </div>
+            </button>
           ))}
           {shape.rows.map((r) => filaAncha(r))}
         </div>
@@ -206,7 +426,10 @@ export function MapaPostits({
             </button>
           ))}
         </div>
-        <p className="mb-3 text-[12px] text-[#7f8f8c]">{shape.cols[lente]?.question}</p>
+        <details className="mb-3">
+          <summary className="cursor-pointer text-[12px] text-[#7f8f8c]">{shape.cols[lente]?.question}</summary>
+          <div className="mt-2">{shape.cols[lente] && guiaLente(shape.cols[lente].id)}</div>
+        </details>
         <div className="flex flex-col gap-3">
           {shape.rows.map((r) => (
             <section key={r.id}>
@@ -219,6 +442,20 @@ export function MapaPostits({
           ))}
         </div>
       </div>
+
+      {borrador?.paso === "escribir" && (
+        <PanelInsight
+          borrador={borrador}
+          postits={postits}
+          shape={shape}
+          pendiente={pendiente}
+          error={error}
+          onCambiar={setBorrador}
+          onCerrar={() => setBorrador(null)}
+          onGuardar={() => guardarInsight(borrador)}
+          onOcultar={borrador.id ? () => ocultarInsight(borrador.id!) : undefined}
+        />
+      )}
 
       {panel && (
         <PanelPostit
@@ -438,6 +675,163 @@ function PanelPostit({
             )}
           </div>
         )}
+      </form>
+    </div>
+  );
+}
+
+/**
+ * Escribir un insight a partir de los post-its conectados. Sigue la escalera
+ * del GIMI: datos → información → «¿y qué?» → insight (Masterclass 2, lám.
+ * 100), y cierra con su chequeo de cuatro preguntas (lám. 104).
+ */
+const ESCALERA: { campo: keyof CamposInsightMapa; nombre: string; ayuda: string; filas: number }[] = [
+  { campo: "fact", nombre: "Los datos", ayuda: "Lo que dicen los post-its conectados: hechos, cifras, señales.", filas: 2 },
+  { campo: "pattern", nombre: "Lo que tienen en común", ayuda: "El patrón que aparece al juntarlos.", filas: 2 },
+  { campo: "implication", nombre: "¿Y qué?", ayuda: "Pregúntelo una y otra vez hasta llegar al fondo.", filas: 2 },
+  { campo: "statement", nombre: "El insight", ayuda: "La comprensión profunda, en una frase que se entienda sola.", filas: 2 },
+  { campo: "business", nombre: "La oportunidad que abre", ayuda: "Lo que la empresa podría hacer y antes no veía.", filas: 2 },
+];
+
+const CHEQUEO = [
+  "¿Realmente buscó en todas partes?",
+  "¿Preguntó «¿y qué?» al menos 5 veces?",
+  "¿Lo compartió y la gente dijo «lo entendí»?",
+  "¿Es capaz de actuar con él?",
+];
+
+function PanelInsight({
+  borrador,
+  postits,
+  shape,
+  pendiente,
+  error,
+  onCambiar,
+  onCerrar,
+  onGuardar,
+  onOcultar,
+}: {
+  borrador: Borrador;
+  postits: Postit[];
+  shape: TemplateShape;
+  pendiente: boolean;
+  error: string | null;
+  onCambiar: (b: Borrador) => void;
+  onCerrar: () => void;
+  onGuardar: () => void;
+  onOcultar?: () => void;
+}) {
+  const [revisado, setRevisado] = useState<number[]>([]);
+  const elegidos = borrador.seleccion.map((id) => postits.find((p) => p.id === id)).filter((p): p is Postit => !!p);
+  const c = borrador.campos;
+
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onCerrar();
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [onCerrar]);
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 md:items-center" onClick={onCerrar}>
+      <form
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (c.statement.trim()) onGuardar();
+        }}
+        className="max-h-[92vh] w-full overflow-y-auto rounded-t-[10px] border border-[rgba(232,227,216,0.14)] bg-[#151c1f] p-5 md:max-w-[620px] md:rounded-[8px]"
+      >
+        <div className="mb-3 flex items-center gap-2">
+          <b className="text-[15px] text-[#e8e3d8]">{borrador.id ? "Insight" : "Nuevo insight"}</b>
+          <span className="flex-1" />
+          <button type="button" onClick={onCerrar} className="px-2 text-[18px] leading-none text-[#7f8f8c] hover:text-white" aria-label="Cerrar">
+            ×
+          </button>
+        </div>
+
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {elegidos.map((p) => {
+            const f = shape.rows.find((r) => r.id === p.rowId);
+            return (
+              <span
+                key={p.id}
+                title={p.text}
+                className="flex items-center gap-1 rounded-[3px] py-0.5 pl-2 pr-1 text-[11.5px] text-[#1d2224]"
+                style={{ background: `color-mix(in srgb, ${f?.color ?? "#6FBFB2"} 28%, #f4ecd6)` }}
+              >
+                {tituloPostit(p)}
+                <button
+                  type="button"
+                  onClick={() => onCambiar({ ...borrador, seleccion: borrador.seleccion.filter((x) => x !== p.id) })}
+                  className="px-1 text-[13px] leading-none text-[#5b5348] hover:text-black"
+                  aria-label="Soltar este post-it"
+                >
+                  ×
+                </button>
+              </span>
+            );
+          })}
+          <button type="button" onClick={() => onCambiar({ ...borrador, paso: "elegir" })} className="rounded-[3px] border border-dashed border-[rgba(111,191,178,0.5)] px-2 py-0.5 text-[11.5px] text-accent">
+            + post-its
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {ESCALERA.map((e) => (
+            <label key={e.campo} className="block">
+              <span className="label">
+                {e.nombre}
+                {e.campo === "statement" && " *"}
+              </span>
+              <textarea
+                value={c[e.campo]}
+                onChange={(ev) => onCambiar({ ...borrador, campos: { ...c, [e.campo]: ev.target.value } })}
+                rows={e.filas}
+                placeholder={e.ayuda}
+                required={e.campo === "statement"}
+                className={`field resize-y leading-relaxed ${e.campo === "statement" ? "text-[14.5px] font-semibold" : ""}`}
+              />
+            </label>
+          ))}
+          <details open={!!c.limitNote}>
+            <summary className="cursor-pointer text-[12px] text-[#8b9a97]">Hasta dónde llega la evidencia</summary>
+            <textarea
+              value={c.limitNote}
+              onChange={(ev) => onCambiar({ ...borrador, campos: { ...c, limitNote: ev.target.value } })}
+              rows={2}
+              placeholder="Lo que todavía no se puede afirmar con estos post-its."
+              className="field mt-2 resize-y leading-relaxed"
+            />
+          </details>
+        </div>
+
+        <div className="mt-4 rounded-[6px] bg-[rgba(232,227,216,0.04)] p-3">
+          <p className="mb-1.5 text-[12px] font-semibold text-[#e8e3d8]">Cuando crea tener un insight</p>
+          {CHEQUEO.map((q, i) => (
+            <label key={q} className="flex items-center gap-2 py-0.5 text-[12.5px] text-[#c9d1cf]">
+              <input
+                type="checkbox"
+                checked={revisado.includes(i)}
+                onChange={() => setRevisado(revisado.includes(i) ? revisado.filter((x) => x !== i) : [...revisado, i])}
+              />
+              {q}
+            </label>
+          ))}
+        </div>
+
+        {error && <p className="mt-3 text-[12.5px] text-[#e8a99c]">{error}</p>}
+
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <button type="submit" className="btn btn-primary" disabled={pendiente || !c.statement.trim() || borrador.seleccion.length < 2}>
+            {borrador.id ? "Guardar" : "Poner en el mapa"}
+          </button>
+          <span className="flex-1" />
+          {onOcultar && (
+            <button type="button" onClick={onOcultar} className="btn">
+              Quitar del mapa
+            </button>
+          )}
+        </div>
       </form>
     </div>
   );

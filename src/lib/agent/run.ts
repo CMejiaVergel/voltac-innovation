@@ -9,7 +9,7 @@ import {
   OpenRouterNotConfigured,
 } from "@/lib/agent/openrouter";
 import { claveDelAgente } from "@/lib/claveAgente";
-import { parseShape, isValidCoord, itemsDeFila } from "@/lib/templates";
+import { shapeDePlantilla, isValidCoord, itemsDeFila } from "@/lib/templates";
 import { buildSystemPrompt, buildUserPrompt, type AgentScope } from "@/lib/agent/prompt";
 import { parseAgentOutput, type AgentFragment } from "@/lib/agent/schema";
 
@@ -96,7 +96,7 @@ async function executeRun(runId: string): Promise<void> {
     },
   });
 
-  const shape = parseShape(run.map.template.rows, run.map.template.cols);
+  const shape = shapeDePlantilla(run.map.template);
   const scope = JSON.parse(run.scope) as AgentScope;
 
   const existing = await prisma.fragment.findMany({

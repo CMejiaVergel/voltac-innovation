@@ -4,8 +4,7 @@ import { prisma } from "@/lib/db";
 import { canEdit, asEnum, VERIFICATIONS, REVIEW_STATES } from "@/lib/enums";
 import { getProjectRole, slugify } from "@/lib/projects";
 import {
-  parseShape,
-  isValidCoord,
+  shapeDePlantilla, isValidCoord,
   itemsDeFila,
   parseItems,
   type TemplateShape,
@@ -55,7 +54,7 @@ async function loadMap(projectId: string) {
     include: { template: true },
   });
   if (!map) throw new AgentApiError("El proyecto no tiene mapa.", 409);
-  return { map, shape: parseShape(map.template.rows, map.template.cols) as TemplateShape };
+  return { map, shape: shapeDePlantilla(map.template) as TemplateShape };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -750,7 +749,7 @@ export async function updateFragment(
   if (!fragment) throw new AgentApiError("El fragmento no existe.", 404);
 
   await loadProject(user, fragment.map.project.slug, true);
-  const shape = parseShape(fragment.map.template.rows, fragment.map.template.cols);
+  const shape = shapeDePlantilla(fragment.map.template);
 
   const rowId = patch.fila ?? fragment.rowId;
   const colId = patch.columna ?? fragment.colId;

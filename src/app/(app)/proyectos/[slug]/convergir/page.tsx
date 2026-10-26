@@ -12,7 +12,7 @@ import {
   REVIEW_STATES,
 } from "@/lib/enums";
 import { TARGET_SOLUTION_CONCEPTS, CONCEPTO_COMPLETO, tipoDeConcepto } from "@/lib/gimi";
-import { parseShape } from "@/lib/templates";
+import { shapeDePlantilla } from "@/lib/templates";
 import { ConvergirBoard } from "@/components/convergir/ConvergirBoard";
 import type { ConceptoVista, DimensionVista, IdeaDisponible } from "@/components/convergir/types";
 import { V2 } from "@/lib/v2";
@@ -183,10 +183,10 @@ export default async function ConvergirPage({
   const mapa = await prisma.bomMap.findFirst({
     where: { projectId: project.id },
     orderBy: { createdAt: "asc" },
-    select: { template: { select: { rows: true, cols: true } } },
+    select: { template: { select: { key: true, isSystem: true, rows: true, cols: true } } },
   });
   const dimensiones: DimensionVista[] = mapa
-    ? parseShape(mapa.template.rows, mapa.template.cols).rows.map((r) => ({
+    ? shapeDePlantilla(mapa.template).rows.map((r) => ({
         id: r.id,
         name: r.name,
         color: r.color,

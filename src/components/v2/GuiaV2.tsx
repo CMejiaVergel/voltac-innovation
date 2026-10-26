@@ -68,13 +68,20 @@ export function GuiaV2() {
       <Etapa id="divergir" n={2} nombre="Divergir" donde="pestaña Divergir (Mapa en el celular)">
         <p>
           El Mapa de Oportunidades es un pliego de post-its: cinco dimensiones del negocio (filas) por cinco lentes
-          para mirarlas (columnas). La meta es llenarlo con hechos, tendencias y movimientos concretos, no opiniones.
+          para mirarlas (columnas). Su propósito no es generar ideas sino encontrar insights: anote todo lo que vea,
+          incluso lo que parezca descabellado, y conecte lo que descubra.
         </p>
         <ul className="lista">
           <li>Toque <b>+</b> en una celda para pegar un post-it. El título va corto (2 a 5 palabras); el detalle completo, debajo.</li>
           <li>Toque un post-it para leerlo entero, corregirlo, cambiarlo de celda, ocultarlo o borrarlo.</li>
           <li>En computador, arrástrelo a otra celda. En el celular, elija la lente arriba y muévalo desde su detalle.</li>
           <li>Las celdas punteadas están vacías: ahí falta mirar.</li>
+          <li>Toque el nombre de una lente (arriba) para ver su ejercicio: competidores usuales e inusuales, nuevos aliados, los zapatos de otros…</li>
+          <li>La franja de color a la izquierda de cada post-it es la de quien lo puso.</li>
+          <li>
+            <b>+ Conectar post-its</b>: toque los post-its que se conectan y escriba lo que descubrió, del dato al «¿y qué?»
+            y al insight. El insight queda dibujado sobre sus post-its con su número; toque su nombre para resaltarlos.
+          </li>
         </ul>
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
           {VERIFICATIONS.map((v) => (

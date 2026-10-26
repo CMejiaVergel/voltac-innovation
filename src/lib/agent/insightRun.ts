@@ -11,7 +11,7 @@ import {
   type InsightScope,
   type PuntoDisponible,
 } from "@/lib/agent/insightPrompt";
-import { parseShape } from "@/lib/templates";
+import { shapeDePlantilla } from "@/lib/templates";
 import { claveDelAgente } from "@/lib/claveAgente";
 
 /**
@@ -37,7 +37,7 @@ export async function generateInsights(params: {
   const map = project.maps[0];
   if (!map) throw new Error("El proyecto no tiene un mapa.");
 
-  const shape = parseShape(map.template.rows, map.template.cols);
+  const shape = shapeDePlantilla(map.template);
 
   const fragmentos = await prisma.fragment.findMany({
     where: { mapId: map.id, reviewState: "ACCEPTED", hidden: false },

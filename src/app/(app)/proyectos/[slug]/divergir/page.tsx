@@ -3,8 +3,8 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireProject, getPrimaryMap } from "@/lib/projects";
-import { canEdit, asEnum, VERIFICATIONS, VERIFICATION_META } from "@/lib/enums";
-import { MapaPostits, type Postit } from "@/components/v2/MapaPostits";
+import { canEdit, asEnum, colorDeTrazo, VERIFICATIONS, VERIFICATION_META } from "@/lib/enums";
+import { MapaPostits, type InsightMapa, type Postit } from "@/components/v2/MapaPostits";
 import { SugerirTitulos } from "@/components/v2/SugerirTitulos";
 
 export default async function DivergirPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -30,7 +30,31 @@ export default async function DivergirPage({ params }: { params: Promise<{ slug:
     verification: asEnum(VERIFICATIONS, f.verification, "TO_CONFIRM"),
     sourceUrl: f.sourceUrl,
     sourceCitation: f.sourceCitation,
+    authorId: f.authorId,
     authorName: f.author?.name ?? null,
+  }));
+
+  // Los insights se dibujan sobre los post-its que los sostienen. Solo cuentan
+  // los puntos cuyo post-it sigue visible en el mapa.
+  const visibles = new Set(postits.map((p) => p.id));
+  const filasInsight = await prisma.insight.findMany({
+    where: { projectId: project.id, reviewState: "ACCEPTED", hidden: false },
+    include: { dots: { orderBy: { position: "asc" } }, author: { select: { name: true } } },
+    orderBy: { position: "asc" },
+  });
+  const insights: InsightMapa[] = filasInsight.map((i, n) => ({
+    id: i.id,
+    n: n + 1,
+    color: colorDeTrazo(i.color, n),
+    statement: i.statement,
+    fact: i.fact,
+    pattern: i.pattern,
+    implication: i.implication,
+    business: i.business,
+    limitNote: i.limitNote,
+    fragmentIds: i.dots.map((d) => d.fragmentId).filter((id): id is string => !!id && visibles.has(id)),
+    authorId: i.authorId,
+    authorName: i.author?.name ?? null,
   }));
 
   const celdas = primary.shape.rows.length * primary.shape.cols.length;
@@ -44,6 +68,9 @@ export default async function DivergirPage({ params }: { params: Promise<{ slug:
         </span>
         <span>
           <b className="text-[15px] text-[#e8e3d8]">{llenas}</b> de {celdas} celdas con material
+        </span>
+        <span>
+          <b className="text-[15px] text-[#e8e3d8]">{insights.length}</b> insights
         </span>
         {canEdit(role) && <SugerirTitulos mapId={primary.map.id} sinTitulo={postits.filter((p) => !p.titulo).length} />}
         <span className="flex-1" />
@@ -59,7 +86,7 @@ export default async function DivergirPage({ params }: { params: Promise<{ slug:
           </span>
         ))}
       </div>
-      <MapaPostits mapId={primary.map.id} shape={primary.shape} postits={postits} editable={canEdit(role)} />
+      <MapaPostits slug={slug} mapId={primary.map.id} shape={primary.shape} postits={postits} insights={insights} editable={canEdit(role)} />
     </div>
   );
 }

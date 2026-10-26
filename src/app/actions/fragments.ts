@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { canEdit, VERIFICATIONS, asEnum } from "@/lib/enums";
 import { getProjectRole } from "@/lib/projects";
-import { parseShape, isValidCoord, itemsDeFila } from "@/lib/templates";
+import { shapeDePlantilla, isValidCoord, itemsDeFila } from "@/lib/templates";
 
 /**
  * Mutaciones sobre fragmentos.
@@ -79,7 +79,7 @@ export async function createFragment(input: {
     where: { id: mapId },
     include: { template: true },
   });
-  const shape = parseShape(map.template.rows, map.template.cols);
+  const shape = shapeDePlantilla(map.template);
   if (!isValidCoord(shape, input.rowId, input.colId)) {
     throw new Error("Esa celda no existe en la plantilla del mapa.");
   }
@@ -221,7 +221,7 @@ export async function setCellOrder(
     where: { id: mapId },
     include: { template: true },
   });
-  const shape = parseShape(map.template.rows, map.template.cols);
+  const shape = shapeDePlantilla(map.template);
   if (!isValidCoord(shape, rowId, colId)) throw new Error("Celda destino invalida.");
 
   // Solo se tocan fragmentos de ESTE mapa: la lista viene del navegador.
@@ -288,7 +288,7 @@ export async function moveFragment(
   const { user, fragment, projectSlug } = await guardFragment(fragmentId);
   if (fragment.rowId === rowId && fragment.colId === colId) return;
 
-  const shape = parseShape(fragment.map.template.rows, fragment.map.template.cols);
+  const shape = shapeDePlantilla(fragment.map.template);
   if (!isValidCoord(shape, rowId, colId)) throw new Error("Celda destino invalida.");
 
   const last = await prisma.fragment.findFirst({
@@ -367,7 +367,7 @@ export async function reviewFragment(
     return;
   }
 
-  const shape = parseShape(fragment.map.template.rows, fragment.map.template.cols);
+  const shape = shapeDePlantilla(fragment.map.template);
   const rowId = edits?.rowId ?? fragment.rowId;
   const colId = edits?.colId ?? fragment.colId;
   if (!isValidCoord(shape, rowId, colId)) throw new Error("Celda destino invalida.");
@@ -482,6 +482,6 @@ async function guardFragmentConPlantilla(fragmentId: string) {
     userId: user.id,
     fragment,
     projectSlug: fragment.map.project.slug,
-    shape: parseShape(fragment.map.template.rows, fragment.map.template.cols),
+    shape: shapeDePlantilla(fragment.map.template),
   };
 }

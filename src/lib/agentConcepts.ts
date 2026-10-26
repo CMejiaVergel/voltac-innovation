@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { canEdit } from "@/lib/enums";
 import { PLANTILLA_CONCEPTO, CONECTE_LOS_PUNTOS, INGENIERIA_INVERSA, fraseConectada } from "@/lib/gimi";
 import { DETONANTE_KEYS } from "@/lib/enums";
-import { parseShape } from "@/lib/templates";
+import { shapeDePlantilla } from "@/lib/templates";
 import { getProjectRole } from "@/lib/projects";
 import { AgentApiError } from "@/lib/agentApi";
 import type { SessionUser } from "@/lib/auth";
@@ -171,10 +171,10 @@ async function dimensionesDe(projectId: string) {
   const map = await prisma.bomMap.findFirst({
     where: { projectId },
     orderBy: { createdAt: "asc" },
-    select: { id: true, template: { select: { rows: true, cols: true } } },
+    select: { id: true, template: { select: { key: true, isSystem: true, rows: true, cols: true } } },
   });
   if (!map) throw new AgentApiError("El proyecto no tiene mapa.", 409);
-  const shape = parseShape(map.template.rows, map.template.cols);
+  const shape = shapeDePlantilla(map.template);
   return { mapId: map.id, dimensiones: shape.rows.map((r) => ({ id: r.id, nombre: r.name })) };
 }
 

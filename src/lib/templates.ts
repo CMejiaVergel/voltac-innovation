@@ -32,73 +32,110 @@ export type TemplateCol = {
   question: string;
   /** Ayuda larga: aparece como placeholder y se le entrega al agente. */
   hint: string;
+  /** Pasos del ejercicio de la lente, tal como los plantea el GIMI. */
+  ejercicio?: string[];
+  /** De dónde sale el ejercicio, con lámina o página. */
+  fuente?: string;
 };
 
 export type TemplateShape = { rows: TemplateRow[]; cols: TemplateCol[] };
 
 export const TEMPLATE_5X5: TemplateShape = {
+  // Facetas completas del mapa ya organizado (Masterclass 2, láminas 67 y 91).
+  // «Otros» va al final de cada fila para no mover los índices de las facetas
+  // que los fragmentos ya tienen marcadas.
   rows: [
     {
       id: "mercado",
       name: "Mercado",
-      facets: "Clientes · Necesidades · Experiencias",
+      facets: "Clientes · Necesidades · Experiencias · Otros",
       color: "#8B9B3C",
     },
     {
       id: "entrega",
       name: "Entrega",
-      facets: "Ocasiones · Localidades · Canales",
+      facets: "Ocasiones · Localidades · Canales · Fuerza de ventas · Otros",
       color: "#D98B3F",
     },
     {
       id: "oferta",
       name: "Oferta",
-      facets: "Productos · Servicios · Marcas",
+      facets: "Productos · Servicios · Marcas · Atributos · Otros",
       color: "#9E6F72",
     },
     {
       id: "produccion",
-      name: "Produccion",
-      facets: "Competencias · Activos · Tecnologias",
+      name: "Producción",
+      facets: "Competencias · Activos · Tecnologías · Capacidades · Otros",
       color: "#6B7C8C",
     },
     {
       id: "modelos",
       name: "Modelos de Negocio",
-      facets: "Redes y Aliados · Modelos de Precio",
+      facets: "Redes y Aliados · Modelos de Precio · Otros",
       color: "#4E8C85",
     },
   ],
+  // Cada lente con el título y el ejercicio que le da el GIMI (Masterclass 2,
+  // lámina 92 para los títulos; IMBOK pp. 37-48).
   cols: [
     {
       id: "compania",
-      name: "Su Compañia",
-      question: "Que es la empresa hoy en esta dimension",
-      hint: "Hechos del presente verificables: lo que la empresa ya hace, tiene o vende. Sin proyecciones.",
+      name: "Su Compañía",
+      question: "El perfil de su compañía hoy",
+      hint: "Lo que la empresa es y hace hoy en esta dimensión: un análisis interno de su cadena de valor. Anote todo, incluso lo que parezca obvio.",
+      ejercicio: [
+        "Recorra la dimensión faceta por faceta: ¿qué tiene, qué hace y qué vende la empresa hoy?",
+        "Un punto por post-it. Anote todo, incluso lo que parezca obvio o descabellado.",
+      ],
+      fuente: "Masterclass 2, lám. 71 y 92 · IMBOK p. 38",
     },
     {
       id: "futuro",
       name: "Futuro",
-      question: "Hacia donde va en 5 a 10 años",
-      hint: "Tendencias, regulacion en camino y cambios de demanda que afectaran esta dimension. Fecha explicita cuando exista.",
+      question: "Avance rápido… ¿cuál es ese futuro?",
+      hint: "Tendencias de la industria ampliada, más allá del «arenero» de la empresa, y lo que cambiarían en esta dimensión.",
+      ejercicio: [
+        "Liste tendencias en cuatro frentes: megafuerzas globales (económico, tecnológico, social, político, medioambiental), canal y cliente, proveedores, y competidores y sustitutos.",
+        "Ubíquelas por impacto e incertidumbre. Las de alto impacto son las que le dan ventaja o para las que tiene que estar preparado.",
+        "Imagine el futuro que traen las de alto impacto y anote en el mapa lo que cambiaría en cada dimensión.",
+      ],
+      fuente: "Masterclass 2, lám. 74-78 · IMBOK pp. 40-45",
     },
     {
       id: "compet",
       name: "Competidores",
-      question: "Que hacen bien los rivales",
-      hint: "Movimiento concreto y atribuible de un competidor nombrado. Que hizo, no que tan bueno es.",
+      question: "Competidores usuales e inusuales",
+      hint: "Lo que hace, o haría, un competidor usual o inusual en esta dimensión. Actúe como si fuera él.",
+      ejercicio: [
+        "Usuales: los competidores actuales.",
+        "Inusuales: empresas que están redefiniendo la industria, empresas en otras ubicaciones y empresas pequeñas emergentes.",
+        "Actúe como si fuera cada uno de ellos: ¿qué haría en esta dimensión?",
+      ],
+      fuente: "Masterclass 2, lám. 80-84 · IMBOK p. 45",
     },
     {
       id: "adyac",
       name: "Adyacencias",
-      question: "Que mecanismo resolvio otra industria",
-      hint: "MECANISMO TRASLADABLE, no nombre de empresa. Mal: 'Coca-Cola'. Bien: 'devuelve a la cuenca el agua que consume mediante programas de reposicion'.",
+      question: "Nuevos aliados… nuevos movimientos",
+      hint: "Un aliado posible de otra industria, con nombre, y lo que la alianza le daría a la empresa en esta dimensión.",
+      ejercicio: [
+        "Piense qué pasaría si aplicara a su industria los factores clave de éxito de otras industrias.",
+        "Escriba el nombre de un aliado posible.",
+        "Si nos aliamos con él, ¿a qué podríamos acceder? A sus mercados, su oferta, su entrega, su producción o su modelo de negocio.",
+      ],
+      fuente: "Masterclass 2, lám. 86-88 · IMBOK pp. 46-47",
     },
     {
       id: "cadena",
       name: "Cadena de Valor",
-      question: "Quien esta aguas arriba y aguas abajo",
-      hint: "Actores concretos antes y despues de la empresa, y que control ejercen sobre el reto.",
+      question: "Caminando en los zapatos de otros",
+      hint: "Cómo un actor de la cadena de valor (proveedor, cliente, distribuidor, regulador u otro aliado) ha solucionado un reto similar.",
+      ejercicio: [
+        "Póngase en los zapatos de proveedores, clientes, distribuidores, gobierno y reguladores, y otros aliados.",
+        "¿Cómo han solucionado retos similares a lo largo de la cadena de valor?",
+      ],
+      fuente: "Masterclass 2, lám. 89-90 · IMBOK p. 48",
     },
   ],
 };
@@ -231,4 +268,16 @@ export function parseItems(raw: string): number[] {
   } catch {
     return [];
   }
+}
+
+/**
+ * La forma vigente de la plantilla de un mapa.
+ *
+ * Las plantillas del sistema no se editan desde la interfaz, así que su forma
+ * vigente es la del código: una corrección de las guías llega a todos los
+ * mapas sin esperar a que alguien vuelva a correr el seed.
+ */
+export function shapeDePlantilla(t: { key: string; isSystem: boolean; rows: string; cols: string }): TemplateShape {
+  const sistema = t.isSystem ? SYSTEM_TEMPLATES.find((s) => s.key === t.key) : undefined;
+  return sistema ? sistema.shape : parseShape(t.rows, t.cols);
 }

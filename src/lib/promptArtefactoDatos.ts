@@ -2,7 +2,7 @@ import "server-only";
 
 import { prisma } from "@/lib/db";
 import { fraseConectada, tipoDeConcepto, TIPOS_CONCEPTO } from "@/lib/gimi";
-import { parseShape } from "@/lib/templates";
+import { shapeDePlantilla } from "@/lib/templates";
 import type { DatosPromptArtefacto } from "@/lib/promptArtefacto";
 
 function json<T>(s: string, fallback: T): T {
@@ -58,9 +58,9 @@ export async function datosPromptArtefacto(conceptId: string): Promise<DatosProm
   const mapa = await prisma.bomMap.findFirst({
     where: { projectId: c.project.id },
     orderBy: { createdAt: "asc" },
-    select: { template: { select: { rows: true, cols: true } } },
+    select: { template: { select: { key: true, isSystem: true, rows: true, cols: true } } },
   });
-  const filas = mapa ? parseShape(mapa.template.rows, mapa.template.cols).rows : [];
+  const filas = mapa ? shapeDePlantilla(mapa.template).rows : [];
   const nombreFila = (id: string) => filas.find((f) => f.id === id)?.name ?? id;
 
   const vivas = c.anclas.filter((a) => a.fragment && a.fragment.reviewState === "ACCEPTED" && !a.fragment.hidden);
