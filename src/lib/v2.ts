@@ -42,3 +42,20 @@ export function leerJsonSeguro<T>(raw: string | null | undefined, porDefecto: T)
     return porDefecto;
   }
 }
+
+/**
+ * Color fijo de cada persona, como en la edición colaborativa de Office: el
+ * mismo usuario se ve siempre del mismo color en votos, post-its y conceptos,
+ * para saber quién intervino en qué. Sale del id, así que no hay que guardarlo.
+ */
+const COLORES_PERSONA = ["#E07A5F", "#3D9BE9", "#E9B949", "#8E7CC3", "#4CAF8F", "#E86FA5", "#5CC8D7", "#C08552", "#9BC53D", "#F28C38"];
+
+export function colorDePersona(id: string): string {
+  let h = 0;
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return COLORES_PERSONA[h % COLORES_PERSONA.length];
+}
+
+export function iniciales(nombre: string): string {
+  return nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("");
+}

@@ -1091,6 +1091,16 @@ model PerfilInnovacion {
   ejeNovedad    Int    @default(0) // 1 incremental … 5 avance
   ejeNucleo     Int    @default(0) // 1 nucleo … 5 lejos del nucleo
   ejeInversion  Int    @default(0) // 1 pequeña … 5 gran inversion
+  /// Ejes que completan los 7 del perfil de inversion (Masterclass Caribe Innova,
+  /// lamina 53: de tactico a estrategico).
+  ejePlazo       Int    @default(0) // 1 corto plazo … 5 largo plazo
+  ejeOportunidad Int    @default(0) // 1 existentes … 5 nuevas oportunidades
+  ejePosicion    Int    @default(0) // 1 imitador/copiador rapido … 5 pionero
+  perfilOtro     String @default("")
+  /// Matriz de posicionamiento estrategico (IMBOK pp. 33-34): donde esta hoy y
+  /// donde quiere estar. IMITADOR | TRANSFORMADOR | PIONERO.
+  posicionActual  String @default("")
+  posicionDeseada String @default("")
   presupuesto   String @default("")
   horizonte     String @default("") // CORTO | MEDIANO | LARGO
   restricciones String @default("[]") // JSON string[]: lo que la organizacion no hara

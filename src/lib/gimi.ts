@@ -115,7 +115,7 @@ export const RAZON_DE_CAMBIO = [
   { key: "CEO", label: "Director ejecutivo" },
   { key: "ENTORNO", label: "Entorno cambiante" },
   { key: "COMPETENCIA", label: "Competencia" },
-  { key: "CLIENTES", label: "Clientes exigentes" },
+  { key: "CLIENTES", label: "Clientes y accionistas exigentes" },
   { key: "OTRO", label: "Otro" },
 ] as const;
 
@@ -724,34 +724,96 @@ export const PASOS_CONFIGURAR = [
 
 export type PasoConfigurar = (typeof PASOS_CONFIGURAR)[number]["key"];
 
-/** Definición de innovación: en qué quiere innovar la organización. */
+/**
+ * Dónde de la cadena de valor quiere innovar la organización (Taller 3,
+ * lámina 12; IMBOK pp. 12-15: la innovación se reparte a lo largo de toda la
+ * cadena de valor, no solo en productos). Cada opción cae en una fila del mapa.
+ */
 export const TIPOS_INNOVACION = [
-  { key: "PRODUCTOS", label: "Nuevos productos" },
-  { key: "SERVICIOS", label: "Nuevos servicios" },
-  { key: "PROCESOS", label: "Mejora de procesos" },
-  { key: "CANALES", label: "Nuevos canales" },
-  { key: "MODELOS", label: "Modelos de negocio" },
-  { key: "EXPERIENCIA", label: "Experiencia del cliente" },
-  { key: "ALIANZAS", label: "Alianzas y ecosistema" },
-  { key: "TECNOLOGIA", label: "Nuevas tecnologías" },
-  { key: "SOSTENIBILIDAD", label: "Sostenibilidad y circularidad" },
+  { key: "OFERTAS", label: "Nuevas ofertas", fila: "oferta" },
+  { key: "DISTRIBUCION", label: "Nuevas formas de distribución", fila: "entrega" },
+  { key: "PRODUCCION", label: "Nuevas maneras de producir", fila: "produccion" },
+  { key: "CLIENTES", label: "Nuevos clientes y experiencias", fila: "mercado" },
+  { key: "MODELOS", label: "Nuevos modelos de negocio", fila: "modelos" },
+  { key: "REDES", label: "Nuevas redes y aliados", fila: "modelos" },
+  { key: "PRECIO", label: "Nuevas estrategias de precio", fila: "modelos" },
 ] as const;
 
-/** Perfil de inversión: cada eje se ubica entre dos polos (1 … 5). */
+/** Claves de la primera versión, para leer lo que ya se guardó con ellas. */
+const TIPOS_ANTERIORES: Record<string, string> = {
+  PRODUCTOS: "OFERTAS",
+  SERVICIOS: "OFERTAS",
+  CANALES: "DISTRIBUCION",
+  PROCESOS: "PRODUCCION",
+  TECNOLOGIA: "PRODUCCION",
+  EXPERIENCIA: "CLIENTES",
+  ALIANZAS: "REDES",
+};
+
+export function tiposVigentes(claves: string[]): string[] {
+  return [...new Set(claves.map((k) => TIPOS_ANTERIORES[k] ?? k).filter((k) => TIPOS_INNOVACION.some((t) => t.key === k)))];
+}
+
+/**
+ * Perfil de inversión: siete ejes de táctico (1) a estratégico (5). Los cuatro
+ * primeros de la lámina «Intención de Innovar» (006); los siete juntos, con su
+ * frase, de la Masterclass de Caribe Innova (lámina 53). `corto` es la palabra
+ * con que entra cada polo a la frase «Estamos dispuestos a invertir en
+ * proyectos que son…».
+ */
 export const EJES_PERFIL = [
-  { campo: "ejeGeografico", nombre: "Alcance", izquierda: "Local", derecha: "Global" },
-  { campo: "ejeNovedad", nombre: "Novedad", izquierda: "Incremental", derecha: "De avance" },
-  { campo: "ejeNucleo", nombre: "Cercanía al negocio", izquierda: "Núcleo", derecha: "Lejos del núcleo" },
-  { campo: "ejeInversion", nombre: "Inversión", izquierda: "Pequeña", derecha: "Grande" },
+  { campo: "ejeGeografico", nombre: "Alcance", izquierda: "Local", derecha: "Global", cortoIzq: "locales", cortoDer: "globales" },
+  { campo: "ejePlazo", nombre: "Plazo", izquierda: "Corto plazo", derecha: "Largo plazo", cortoIzq: "de corto plazo", cortoDer: "de largo plazo" },
+  { campo: "ejeNovedad", nombre: "Novedad", izquierda: "Incremental", derecha: "Disruptivo", cortoIzq: "incrementales", cortoDer: "disruptivos" },
+  { campo: "ejeInversion", nombre: "Tamaño de la inversión", izquierda: "Pequeña", derecha: "Grande", cortoIzq: "de inversión pequeña", cortoDer: "de gran inversión" },
+  { campo: "ejeOportunidad", nombre: "Oportunidad", izquierda: "Existentes", derecha: "Nuevas", cortoIzq: "sobre oportunidades existentes", cortoDer: "sobre nuevas oportunidades" },
+  { campo: "ejeNucleo", nombre: "Cercanía al negocio", izquierda: "Cerca del núcleo", derecha: "Lejos del núcleo", cortoIzq: "cerca del núcleo", cortoDer: "lejos del núcleo" },
+  { campo: "ejePosicion", nombre: "Ambición", izquierda: "Imitador / copiador rápido", derecha: "Pionero", cortoIzq: "de copiador rápido", cortoDer: "que nos permitan ser pioneros" },
 ] as const;
 
 export type EjePerfil = (typeof EJES_PERFIL)[number]["campo"];
 
-export const HORIZONTES = [
-  { key: "CORTO", label: "Corto plazo (menos de 1 año)" },
-  { key: "MEDIANO", label: "Mediano plazo (1 a 3 años)" },
-  { key: "LARGO", label: "Largo plazo (más de 3 años)" },
+/**
+ * Matriz de posicionamiento estratégico (IMBOK pp. 33-34; Masterclass lámina
+ * 26): todas las empresas son, explícita o implícitamente, una de estas tres.
+ */
+export const POSICIONAMIENTO = [
+  { key: "IMITADOR", label: "Imitador", ayuda: "Copias de bajo costo e ingeniería inversa de otras marcas. Tecnología y aplicación conocidas." },
+  { key: "TRANSFORMADOR", label: "Transformador", ayuda: "Toma lo mejor que ya existe y lo mejora de forma creativa." },
+  { key: "PIONERO", label: "Pionero", ayuda: "Inventa productos, mercados, canales, tecnologías o modelos de negocio nuevos. Tecnología y aplicación emergentes." },
 ] as const;
+
+type PerfilFrases = {
+  argumentoCambio: string;
+  brechaCuanto: string;
+  brechaCuando: string;
+  presupuesto: string;
+  perfilOtro: string;
+} & Partial<Record<EjePerfil, number>>;
+
+/**
+ * Las tres frases con que el IMBOK cierra el Paso 1 (pp. 29, 31, 32): son el
+ * resumen de la intención y la vara del criterio Fit al priorizar conceptos.
+ */
+export function frasesIntencion(p: PerfilFrases): { razon: string; brecha: string; perfil: string } {
+  const polos = EJES_PERFIL.map((e) => {
+    const v = p[e.campo] ?? 0;
+    return v === 0 || v === 3 ? null : v < 3 ? e.cortoIzq : e.cortoDer;
+  }).filter(Boolean) as string[];
+  if (p.perfilOtro.trim()) polos.push(p.perfilOtro.trim());
+  const lista = polos.length > 1 ? `${polos.slice(0, -1).join(", ")} y ${polos[polos.length - 1]}` : polos[0] ?? "";
+  const cierre = (s: string) => (/[.!?]$/.test(s) ? s : `${s}.`);
+  return {
+    razon: p.argumentoCambio.trim() ? cierre(`Necesitamos innovar porque ${p.argumentoCambio.trim().replace(/^porque\s+/i, "")}`) : "",
+    brecha:
+      p.brechaCuanto.trim() || p.brechaCuando.trim()
+        ? cierre(`Nos enfrentamos a una brecha de ${p.brechaCuanto.trim() || "___"} ${p.brechaCuando.trim() ? `en ${p.brechaCuando.trim()}` : ""}`.trim())
+        : "",
+    // Plantilla de la Masterclass (lámina 53): «Estamos dispuestos a realizar
+    // inversiones medianas en proyectos que son globales, de largo plazo…».
+    perfil: lista ? cierre(`Estamos dispuestos a realizar ${p.presupuesto.trim() || "inversiones"} en proyectos que son ${lista}`) : "",
+  };
+}
 
 /** Autoevaluación del desafío, ejercicio 2.1.1 (CG.pdf). Escala 1..3. */
 export const AUTOEVALUACION_DESAFIO = [

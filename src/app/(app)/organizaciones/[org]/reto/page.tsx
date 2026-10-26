@@ -72,7 +72,7 @@ export default async function RetoPage({
                 <p className="mt-2 text-[12.5px] text-[#a9b5b3]">{d.problema}</p>
                 {r.evaluado && (
                   <p className="mt-2 font-mono text-[10.5px]" style={{ color: meta.color }}>
-                    {meta.label} · {r.puntaje}%
+                    {meta.label}
                   </p>
                 )}
                 {r.rompeRestriccion && (

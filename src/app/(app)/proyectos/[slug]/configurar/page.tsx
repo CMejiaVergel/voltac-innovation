@@ -71,7 +71,6 @@ export default async function ConfigurarRetoPage({
                     Desafío «{desafio.titulo}» ·{" "}
                     <span style={{ color: VEREDICTO_META[encaje.veredicto].color }}>
                       {VEREDICTO_META[encaje.veredicto].label}
-                      {encaje.evaluado ? ` (${encaje.puntaje}%)` : ""}
                     </span>
                   </p>
                 )}

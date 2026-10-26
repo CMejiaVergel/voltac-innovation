@@ -8,7 +8,7 @@ import { AgentApiError } from "@/lib/agentApi";
 import { canEdit, asEnum, VERIFICATIONS, ARTIFACT_KINDS } from "@/lib/enums";
 import { getProjectRole, getPrimaryMap } from "@/lib/projects";
 import { getOrgRole, listOrgsFor, uniqueOrgSlug, leerJson } from "@/lib/organizaciones";
-import { EJES_PERFIL, IDEX, LINEA_CONCEPTO, PREGUNTA_LIENZO } from "@/lib/gimi";
+import { EJES_PERFIL, IDEX, LINEA_CONCEPTO, PREGUNTA_LIENZO, TIPOS_INNOVACION, frasesIntencion, tiposVigentes } from "@/lib/gimi";
 import { CAMPOS_BROCHURE, CAMPOS_CASO, avanceLinea, leerActuar } from "@/lib/actuar";
 import { tituloPostit } from "@/lib/v2";
 
@@ -98,24 +98,27 @@ const ACCIONES: Record<string, (u: SessionUser, p: P) => Promise<unknown>> = {
       descripcion: org.descripcion,
       intencion: pf && {
         definicion: pf.definicion,
-        tiposInnovacion: leerJson<string[]>(pf.tiposInnovacion, []),
+        resumen: frasesIntencion(pf),
+        tiposInnovacion: tiposVigentes(leerJson<string[]>(pf.tiposInnovacion, [])),
         dondeInnovar: pf.dondeInnovar,
-        queNoEsInnovar: pf.queNoEsInnovar,
+        razonesCambio: leerJson<string[]>(pf.razonesCambio, []),
         argumentoCambio: pf.argumentoCambio,
         brechaCuanto: pf.brechaCuanto,
         brechaCuando: pf.brechaCuando,
         objetivos: leerJson<string[]>(pf.objetivos, []),
         metricas: leerJson<string[]>(pf.metricas, []),
+        posicionActual: pf.posicionActual,
+        posicionDeseada: pf.posicionDeseada,
+        ejes: Object.fromEntries(EJES_PERFIL.map((e) => [e.campo, pf[e.campo]])),
+        perfilOtro: pf.perfilOtro,
         presupuesto: pf.presupuesto,
-        horizonte: pf.horizonte,
         restricciones: leerJson<string[]>(pf.restricciones, []),
-        prospeccion: pf.prospeccion,
       },
       desafios: desafios.map((d) => ({
         titulo: d.titulo,
         problema: d.problema,
         estado: d.estado,
-        puntos: d.votos.reduce((a, v) => a + v.puntos, 0),
+        votos: d.votos.length,
         esReto: Boolean(d.projectId),
       })),
       retos,
@@ -145,11 +148,21 @@ const ACCIONES: Record<string, (u: SessionUser, p: P) => Promise<unknown>> = {
   async escribir_intencion(u, p) {
     const org = await organizacion(u, p.org, true);
     const data: Record<string, unknown> = {};
-    for (const k of ["definicion", "dondeInnovar", "queNoEsInnovar", "argumentoCambio", "brechaCuanto", "brechaCuando", "presupuesto", "horizonte", "prospeccion"]) {
+    for (const k of ["definicion", "dondeInnovar", "argumentoCambio", "brechaCuanto", "brechaCuando", "presupuesto", "perfilOtro"]) {
       const v = opt(p[k]);
       if (v !== undefined) data[k] = v;
     }
-    for (const k of ["tiposInnovacion", "objetivos", "metricas", "restricciones"]) {
+    for (const k of ["posicionActual", "posicionDeseada"]) {
+      const v = opt(p[k], 20);
+      if (v !== undefined) data[k] = ["IMITADOR", "TRANSFORMADOR", "PIONERO"].includes(v) ? v : "";
+    }
+    if (Array.isArray(p.tiposInnovacion)) {
+      data.tiposInnovacion = JSON.stringify((p.tiposInnovacion as unknown[]).map((x) => txt(x, 30)).filter((k) => TIPOS_INNOVACION.some((t) => t.key === k)));
+    }
+    if (Array.isArray(p.razonesCambio)) {
+      data.razonesCambio = JSON.stringify((p.razonesCambio as unknown[]).map((x) => txt(x, 30)).filter((k) => ["CEO", "ENTORNO", "COMPETENCIA", "CLIENTES", "OTRO"].includes(k)));
+    }
+    for (const k of ["objetivos", "metricas", "restricciones"]) {
       if (Array.isArray(p[k])) data[k] = JSON.stringify((p[k] as unknown[]).map((x) => txt(x, 400)).filter(Boolean));
     }
     for (const { campo: k } of EJES_PERFIL) {

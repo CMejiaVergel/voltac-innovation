@@ -3,7 +3,8 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireOrg, leerJson, avanceConfigurar } from "@/lib/organizaciones";
-import { TIPOS_INNOVACION, EJES_PERFIL, HORIZONTES, PASOS_CONFIGURAR } from "@/lib/gimi";
+import { TIPOS_INNOVACION, EJES_PERFIL, POSICIONAMIENTO, PASOS_CONFIGURAR, frasesIntencion, tiposVigentes } from "@/lib/gimi";
+import { ResumenIntencion } from "@/components/v2/ResumenIntencion";
 
 export default async function OrgResumenPage({ params }: { params: Promise<{ org: string }> }) {
   const { org: slug } = await params;
@@ -17,7 +18,7 @@ export default async function OrgResumenPage({ params }: { params: Promise<{ org
 
   const hechos = await avanceConfigurar(org);
   const siguiente = PASOS_CONFIGURAR.find((x) => !hechos[x.key]);
-  const tipos = leerJson<string[]>(p?.tiposInnovacion, []);
+  const tipos = tiposVigentes(leerJson<string[]>(p?.tiposInnovacion, []));
   const restricciones = leerJson<string[]>(p?.restricciones, []);
 
   return (
@@ -49,6 +50,13 @@ export default async function OrgResumenPage({ params }: { params: Promise<{ org
         {p?.definicion ? (
           <div className="mt-4 flex flex-col gap-4 text-[13px] leading-relaxed text-[#c0ccca]">
             <p className="text-[15px] text-[#e8e3d8]">«{p.definicion}»</p>
+            <ResumenIntencion frases={frasesIntencion(p)} />
+            {(p.posicionActual || p.posicionDeseada) && (
+              <p className="text-[12.5px]">
+                <span className="label inline">Posicionamiento</span>{" "}
+                {POSICIONAMIENTO.find((x) => x.key === p.posicionActual)?.label ?? "—"} → {POSICIONAMIENTO.find((x) => x.key === p.posicionDeseada)?.label ?? "—"}
+              </p>
+            )}
             {tipos.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {tipos.map((t) => (
@@ -57,12 +65,6 @@ export default async function OrgResumenPage({ params }: { params: Promise<{ org
                   </span>
                 ))}
               </div>
-            )}
-            {(p.brechaCuanto || p.brechaCuando) && (
-              <p>
-                <span className="label inline">Brecha</span> {p.brechaCuanto}
-                {p.brechaCuando ? ` · para ${p.brechaCuando}` : ""}
-              </p>
             )}
             {EJES_PERFIL.some((e) => p[e.campo] > 0) && (
             <div className="grid gap-2 sm:grid-cols-2">
@@ -88,10 +90,9 @@ export default async function OrgResumenPage({ params }: { params: Promise<{ org
               })}
             </div>
             )}
-            {p.horizonte && <p className="text-[12px]">Horizonte: {HORIZONTES.find((h) => h.key === p.horizonte)?.label}</p>}
             {restricciones.length > 0 && (
               <div>
-                <span className="label">Lo que no haremos</span>
+                <span className="label">Límites: lo que no haremos</span>
                 <ul className="list-disc pl-5 text-[12.5px]">
                   {restricciones.map((r) => (
                     <li key={r}>{r}</li>

@@ -4,9 +4,9 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireOrg, leerJson } from "@/lib/organizaciones";
 import { canEdit } from "@/lib/enums";
-import { AUTOEVALUACION_DESAFIO, TIPOS_INNOVACION } from "@/lib/gimi";
+import { AUTOEVALUACION_DESAFIO, TIPOS_INNOVACION, PREGUNTAS_SETUP, tiposVigentes } from "@/lib/gimi";
 import { ENCAJE_VACIO, resumirEncaje, VEREDICTO_META, type Encaje } from "@/lib/encaje";
-import { proponerDesafio, evaluarEncaje, eliminarDesafio } from "@/app/actions/organizaciones";
+import { proponerDesafio, evaluarEncaje, eliminarDesafio, retoDelSponsor } from "@/app/actions/organizaciones";
 import { Avisos, Bloque, Campo, Siguiente } from "@/components/v2/ui";
 
 function SiNo({ name, valor, label }: { name: string; valor: boolean | null | undefined; label: string }) {
@@ -41,7 +41,7 @@ export default async function DesafiosPage({
   const { org, role } = await requireOrg(user, slug);
   const editable = canEdit(role);
 
-  const tiposOrg = leerJson<string[]>(org.perfil?.tiposInnovacion, []);
+  const tiposOrg = tiposVigentes(leerJson<string[]>(org.perfil?.tiposInnovacion, []));
   const restriccionesOrg = leerJson<string[]>(org.perfil?.restricciones, []);
   const desafios = await prisma.desafioPropuesto.findMany({
     where: { organizacionId: org.id },
@@ -63,6 +63,20 @@ export default async function DesafiosPage({
         </p>
       )}
 
+      {editable && !desafios.some((d) => d.estado === "SELECCIONADO" || d.projectId) && (
+        <details className="panel mb-6">
+          <summary className="cursor-pointer text-[14px] font-semibold text-[#e8e3d8]">¿El reto ya lo entregó la organización o el sponsor?</summary>
+          <p className="hint mt-2">Si el reto viene dado, no hace falta proponer ni votar: péguenlo tal cual y pasen a diseñarlo.</p>
+          <form action={retoDelSponsor.bind(null, slug)} className="mt-4 flex flex-col gap-3">
+            <Campo name="titulo" label="Título corto" rows={1} required placeholder="Ej. Reducir 10% el consumo de agua de la planta" />
+            <Campo name="problema" label="El reto, tal como lo entregaron" rows={3} required />
+            <div>
+              <button type="submit" className="btn btn-primary">Pasar a diseñar el reto →</button>
+            </div>
+          </form>
+        </details>
+      )}
+
       <div className="flex flex-col gap-4">
         {desafios.map((d, i) => {
           const encaje = leerJson<Encaje>(d.encaje, ENCAJE_VACIO);
@@ -81,7 +95,7 @@ export default async function DesafiosPage({
                 </div>
                 {r.evaluado && (
                   <span className="rounded-full px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em]" style={{ color: meta.color, border: `1px solid ${meta.color}` }}>
-                    {meta.label} · {r.puntaje}%
+                    {meta.label}
                   </span>
                 )}
               </div>
@@ -106,7 +120,7 @@ export default async function DesafiosPage({
                   <summary className="cursor-pointer text-[12.5px] text-accent">¿Encaja con la organización?</summary>
                   <form action={evaluarEncaje.bind(null, slug, d.id)} className="mt-4 flex flex-col gap-4">
                     <div>
-                      <span className="label">¿Qué tipos de innovación de la organización toca?</span>
+                      <span className="label">¿Qué parte de la cadena de valor de la intención toca?</span>
                       <div className="grid gap-2 sm:grid-cols-3">
                         {(tiposOrg.length ? tiposOrg : TIPOS_INNOVACION.map((t) => t.key)).map((k) => (
                           <label key={k} className="flex items-start gap-2 text-[12.5px] text-[#a9b5b3]">
@@ -117,16 +131,27 @@ export default async function DesafiosPage({
                       </div>
                     </div>
                     <SiNo name="brecha" valor={encaje.brecha} label="¿Aporta a la brecha de crecimiento declarada?" />
-                    <SiNo name="perfil" valor={encaje.perfil} label="¿Cabe en el perfil de inversión y el horizonte?" />
+                    <SiNo name="perfil" valor={encaje.perfil} label="¿Cabe en el perfil de inversión?" />
                     {restriccionesOrg.length > 0 && (
                       <div className="flex flex-col gap-2">
-                        <span className="label">¿Respeta lo que la organización no hará?</span>
+                        <span className="label">¿Respeta los límites de la organización?</span>
                         {restriccionesOrg.map((rr, k) => (
                           <SiNo key={rr} name={`restriccion_${k}`} valor={encaje.restricciones?.[rr]} label={rr} />
                         ))}
                       </div>
                     )}
-                    <Campo name="nota" label="Nota del equipo" defaultValue={encaje.nota} rows={2} />
+                    <fieldset>
+                      <legend className="label">Veredicto del equipo</legend>
+                      <div className="flex flex-wrap gap-4">
+                        {(["ENCAJA", "PARCIAL", "NO_ENCAJA"] as const).map((v) => (
+                          <label key={v} className="flex items-center gap-1.5 text-[12.5px]" style={{ color: VEREDICTO_META[v].color }}>
+                            <input type="radio" name="veredicto" value={v} defaultChecked={encaje.veredicto === v} className="accent-[#6FBFB2]" />
+                            {VEREDICTO_META[v].label}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                    <Campo name="nota" label="¿Por qué?" defaultValue={encaje.nota} rows={2} />
                     <div className="flex gap-3">
                       <button type="submit" className="btn btn-primary">Guardar encaje</button>
                     </div>
@@ -153,6 +178,11 @@ export default async function DesafiosPage({
       {editable && (
         <form action={proponerDesafio.bind(null, slug)} className="mt-8">
           <Bloque titulo="Proponer un desafío" porQue="Un problema que le gustaría resolver.">
+            <ul className="-mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-[#8b9a97]">
+              {PREGUNTAS_SETUP.map((q) => (
+                <li key={q}>{q}</li>
+              ))}
+            </ul>
             <Campo name="titulo" label="Título corto" rows={1} required placeholder="Ej. Reducir el consumo de agua cruda de la planta" />
             <Campo name="problema" label="¿Cuál es el problema?" rows={3} required />
             <div className="grid gap-4 md:grid-cols-2">

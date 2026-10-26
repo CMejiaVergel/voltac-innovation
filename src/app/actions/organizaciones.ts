@@ -98,6 +98,11 @@ export async function quitarMiembroOrg(slug: string, userId: string): Promise<vo
 // Paso 1 · Intención de innovar
 // ─────────────────────────────────────────────────────────────────────────────
 
+const posicion = (formData: FormData, campo: string) => {
+  const v = texto(formData, campo);
+  return ["IMITADOR", "TRANSFORMADOR", "PIONERO"].includes(v) ? v : "";
+};
+
 export async function guardarPerfil(slug: string, formData: FormData): Promise<void> {
   const { org, puedeEditar } = await orgEditable(slug);
   const ruta = `/organizaciones/${slug}/perfil`;
@@ -108,7 +113,9 @@ export async function guardarPerfil(slug: string, formData: FormData): Promise<v
     definicion: texto(formData, "definicion"),
     tiposInnovacion: JSON.stringify(formData.getAll("tiposInnovacion").map(String)),
     dondeInnovar: texto(formData, "dondeInnovar"),
-    queNoEsInnovar: texto(formData, "queNoEsInnovar"),
+    // Los límites quedan en un solo campo (restricciones); lo viejo se vacía aquí
+    // porque la página ya lo ofreció unido a los límites.
+    queNoEsInnovar: "",
     razonesCambio: JSON.stringify(formData.getAll("razonesCambio").map(String)),
     argumentoCambio: texto(formData, "argumentoCambio"),
     brechaCuanto: texto(formData, "brechaCuanto"),
@@ -117,9 +124,10 @@ export async function guardarPerfil(slug: string, formData: FormData): Promise<v
     metricas: lineas(formData, "metricas"),
     ...ejes,
     presupuesto: texto(formData, "presupuesto"),
-    horizonte: texto(formData, "horizonte"),
+    perfilOtro: texto(formData, "perfilOtro"),
+    posicionActual: posicion(formData, "posicionActual"),
+    posicionDeseada: posicion(formData, "posicionDeseada"),
     restricciones: lineas(formData, "restricciones"),
-    prospeccion: texto(formData, "prospeccion"),
   };
   await prisma.perfilInnovacion.upsert({
     where: { organizacionId: org.id },
@@ -162,6 +170,25 @@ export async function proponerDesafio(slug: string, formData: FormData): Promise
   volverCon(ruta, "hecho", `Desafío «${titulo}» propuesto.`);
 }
 
+/**
+ * Atajo para cuando el reto lo entrega la organización o el sponsor, como en
+ * Caribe Innova (la ficha del reto llega como parte del Paso 1). No hay nada que
+ * proponer ni votar: el desafío queda seleccionado y se pasa a diseñarlo.
+ */
+export async function retoDelSponsor(slug: string, formData: FormData): Promise<void> {
+  const { user, org, puedeEditar } = await orgEditable(slug);
+  const ruta = `/organizaciones/${slug}/desafios`;
+  if (!puedeEditar) volverCon(ruta, "error", "No tienes permiso para registrar el reto.");
+  const titulo = texto(formData, "titulo");
+  const problema = texto(formData, "problema");
+  if (!titulo || !problema) volverCon(ruta, "error", "El reto necesita un título y su enunciado.");
+  const d = await prisma.desafioPropuesto.create({
+    data: { organizacionId: org.id, autorId: user.id, titulo, problema, origen: "ORGANIZACION", estado: "SELECCIONADO" },
+  });
+  revalidatePath(`/organizaciones/${slug}`, "layout");
+  redirect(`/organizaciones/${slug}/reto?desafio=${d.id}`);
+}
+
 export async function evaluarEncaje(slug: string, desafioId: string, formData: FormData): Promise<void> {
   const { org, puedeEditar } = await orgEditable(slug);
   const ruta = `/organizaciones/${slug}/desafios`;
@@ -179,6 +206,7 @@ export async function evaluarEncaje(slug: string, desafioId: string, formData: F
     ),
     brecha: sino("brecha"),
     perfil: sino("perfil"),
+    veredicto: (["ENCAJA", "PARCIAL", "NO_ENCAJA"] as const).find((v) => v === texto(formData, "veredicto")) ?? "",
     nota: texto(formData, "nota"),
   };
   await prisma.desafioPropuesto.update({
@@ -205,24 +233,22 @@ export async function eliminarDesafio(slug: string, desafioId: string): Promise<
 // Paso 3 · Seleccionar (2.1.2)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function votarDesafio(slug: string, desafioId: string, formData: FormData): Promise<void> {
+/**
+ * Ejercicio 2.1.2 (CG.pdf): «los miembros del equipo votan y seleccionan el
+ * desafío de mayor impacto». Un voto por persona: votar por uno retira el voto
+ * que la persona tuviera en otro, y votar otra vez por el mismo lo retira.
+ */
+export async function votarDesafio(slug: string, desafioId: string): Promise<void> {
   const { user, org, puedeEditar } = await orgEditable(slug);
   const ruta = `/organizaciones/${slug}/seleccion`;
   if (!puedeEditar) volverCon(ruta, "error", "Los lectores no votan.");
 
-  const puntos = entero(formData, "puntos", 0, 3);
   const d = await prisma.desafioPropuesto.findFirst({ where: { id: desafioId, organizacionId: org.id } });
   if (!d) volverCon(ruta, "error", "Ese desafío ya no existe.");
 
-  if (puntos === 0) {
-    await prisma.votoDesafio.deleteMany({ where: { desafioId, userId: user.id } });
-  } else {
-    await prisma.votoDesafio.upsert({
-      where: { desafioId_userId: { desafioId, userId: user.id } },
-      update: { puntos },
-      create: { desafioId, userId: user.id, puntos },
-    });
-  }
+  const yaEra = await prisma.votoDesafio.findUnique({ where: { desafioId_userId: { desafioId, userId: user.id } } });
+  await prisma.votoDesafio.deleteMany({ where: { userId: user.id, desafio: { organizacionId: org.id } } });
+  if (!yaEra) await prisma.votoDesafio.create({ data: { desafioId, userId: user.id, puntos: 1 } });
   revalidatePath(ruta);
 }
 

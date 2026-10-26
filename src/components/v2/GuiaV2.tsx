@@ -51,14 +51,14 @@ export function GuiaV2() {
 
       <Etapa id="configurar" n={1} nombre="Configurar" donde={<Link href="/organizaciones">Organizaciones</Link>}>
         <p>
-          Todo empieza en la organización donde se quiere innovar, no en el reto. Primero se fija su estrategia de
-          innovación; con ella se puede aceptar o descartar cualquier reto o concepto después.
+          Todo empieza en la organización donde se quiere innovar, no en el reto. Es el Paso 1 del proceso del GIMI
+          (IMBOK): definir las razones y los límites de la innovación. Con eso se aceptan o descartan retos y conceptos.
         </p>
         <Pasos
           items={[
-            ["Intención de innovar", "Qué significa innovar para la organización, por qué cambiar, cuánto y para cuándo (la brecha), qué tipo de proyectos le convienen y lo que no hará."],
+            ["Intención de innovar", "Qué significa innovar para la organización; la razón de cambio («Necesitamos innovar porque…»); la brecha de crecimiento (cuánto y para cuándo); y el perfil de inversión: posicionamiento (imitador, transformador o pionero), siete ejes de táctico a estratégico y los límites. Se resume sola en tres frases."],
             ["Proponer desafíos", "Cada persona trae un problema que le emociona resolver y responde tres preguntas sobre él. En «¿Encaja con la organización?» se contrasta con la intención."],
-            ["Votar", "3 puntos al desafío que más los emociona, 2 y 1 a los siguientes. El responsable selecciona el ganador."],
+            ["Votar", "Cada persona vota por un desafío, y cada voto se ve con el color de quien votó. El responsable selecciona el ganador. Si el reto lo entregó la organización o el sponsor, se pega tal cual y se salta la votación."],
             ["Diseñar el reto", `El problema, por qué motiva, a qué se refieren las soluciones (${SOLUTION_FOCI.length} opciones) y la meta con cifra y fecha. Al crearlo nace el proyecto.`],
           ]}
         />

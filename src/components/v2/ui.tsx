@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { colorDePersona, iniciales } from "@/lib/v2";
+
 /** Aviso que llega en la URL (?hecho= / ?error=) tras una acción. */
 export function Avisos({ hecho, error }: { hecho?: string; error?: string }) {
   return (
@@ -88,5 +90,18 @@ export function Siguiente({ href, label, nota }: { href: string; label: string; 
       </Link>
       {nota && <span className="text-[12px] text-[#7f8f8c]">{nota}</span>}
     </div>
+  );
+}
+
+/** La marca de una persona: sus iniciales sobre su color fijo (colorDePersona). */
+export function Persona({ id, nombre, tam = 22 }: { id: string; nombre: string; tam?: number }) {
+  return (
+    <span
+      title={nombre}
+      className="inline-grid shrink-0 place-items-center rounded-full font-semibold text-[#12181b] ring-2 ring-[#12181b]"
+      style={{ width: tam, height: tam, fontSize: tam * 0.42, background: colorDePersona(id) }}
+    >
+      {iniciales(nombre)}
+    </span>
   );
 }
