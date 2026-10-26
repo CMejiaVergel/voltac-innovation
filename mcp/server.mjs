@@ -19,6 +19,15 @@
  * Configuracion (variables de entorno):
  *   VOLTAC_API_URL    https://innovation.voltac.com.co   (o http://localhost:3000)
  *   VOLTAC_API_TOKEN  el token de `npm run token:crear`
+ *   VOLTAC_PROYECTO   (opcional) slug del UNICO proyecto que este servidor puede tocar
+ *   VOLTAC_ORGANIZACION (opcional, con VOLTAC_PROYECTO) slug de la unica organizacion visible
+ *
+ * El candado (VOLTAC_PROYECTO) existe porque el token hereda TODOS los
+ * proyectos de su dueño: un slug equivocado bastaria para escribir en el reto
+ * de otro cliente. Con el candado puesto se ocultan las herramientas que ven o
+ * crean otros proyectos, cualquier slug distinto se rechaza y las herramientas
+ * que reciben un id solo aceptan ids que aparezcan en el proyecto permitido.
+ * Sin la variable, el servidor se comporta como siempre.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -64,6 +73,109 @@ async function api(path, { method = "GET", body } = {}) {
 const v2 = (accion) => (args) => api("/api/agent/v2", { method: "POST", body: { accion, ...args } });
 
 const slugPath = (slug) => `/api/agent/proyectos/${encodeURIComponent(slug)}`;
+
+// ─── Candado de proyecto ─────────────────────────────────────────────────────
+
+const PROYECTO = (process.env.VOLTAC_PROYECTO ?? "").trim();
+const ORGANIZACION = PROYECTO ? (process.env.VOLTAC_ORGANIZACION ?? "").trim() : "";
+
+/** Con candado no existen: ven, crean o copian otros proyectos u organizaciones. */
+const OCULTAS_CON_CANDADO = new Set([
+  "listar_proyectos",
+  "crear_proyecto",
+  "clonar_proyecto",
+  "listar_organizaciones",
+  "crear_organizacion",
+]);
+
+/** Herramientas que identifican lo que tocan por id, y el argumento que lo lleva. */
+const ARG_ID = {
+  editar_fragmento: "id",
+  eliminar_fragmento: "id",
+  editar_insight: "id",
+  eliminar_insight: "id",
+  editar_concepto: "id",
+  prompt_artefacto: "concepto",
+  cargar_documento_artefacto: "id",
+  editar_artefacto: "id",
+  editar_postit: "id",
+  ajustar_concepto: "id",
+  ver_concepto: "id",
+  escribir_linea: "id",
+  agregar_artefacto: "id",
+  agregar_supuestos: "id",
+};
+
+/** Como se ve una herramienta con el candado puesto, o null si queda oculta. */
+function bajoCandado(tool) {
+  if (OCULTAS_CON_CANDADO.has(tool.name)) return null;
+  const props = tool.inputSchema?.properties ?? {};
+  if ("slug" in props) {
+    return {
+      ...tool,
+      description: `[Solo el proyecto «${PROYECTO}»; slug opcional] ${tool.description}`,
+      inputSchema: { ...tool.inputSchema, required: (tool.inputSchema.required ?? []).filter((r) => r !== "slug") },
+    };
+  }
+  if ("org" in props) {
+    if (!ORGANIZACION) return null;
+    return {
+      ...tool,
+      description: `[Solo la organizacion «${ORGANIZACION}»; org opcional] ${tool.description}`,
+      inputSchema: { ...tool.inputSchema, required: (tool.inputSchema.required ?? []).filter((r) => r !== "org") },
+    };
+  }
+  if (tool.name in ARG_ID) return tool;
+  // Lo que no se sabe a que proyecto apunta no se expone.
+  return null;
+}
+
+/** Todos los ids que aparecen en el proyecto permitido (fragmentos, insights, conceptos, artefactos…). */
+async function idsDelProyecto() {
+  const ids = new Set();
+  const recoger = (v) => {
+    if (Array.isArray(v)) v.forEach(recoger);
+    else if (v && typeof v === "object") {
+      for (const [k, x] of Object.entries(v)) {
+        if (k === "id" && typeof x === "string") ids.add(x);
+        else recoger(x);
+      }
+    }
+  };
+  const lecturas = await Promise.allSettled([
+    api(`${slugPath(PROYECTO)}?incluir=fragmentos,insights,conceptos,artefactos&detalle=completo`),
+    v2("ver_embudo")({ slug: PROYECTO }),
+    v2("ver_mapa")({ slug: PROYECTO, conTexto: false }),
+  ]);
+  for (const l of lecturas) if (l.status === "fulfilled") recoger(l.value);
+  return ids;
+}
+
+/** Ajusta y valida los argumentos de una llamada; lanza si apunta fuera del proyecto. */
+async function aplicarCandado(tool, args) {
+  const a = { ...args };
+  const props = tool.inputSchema?.properties ?? {};
+  if ("slug" in props) {
+    if (a.slug && a.slug !== PROYECTO) {
+      throw new Error(`Candado: este servidor solo trabaja en el proyecto «${PROYECTO}»; se rechazo «${a.slug}».`);
+    }
+    a.slug = PROYECTO;
+  }
+  if ("org" in props) {
+    if (a.org && a.org !== ORGANIZACION) {
+      throw new Error(`Candado: este servidor solo trabaja en la organizacion «${ORGANIZACION}»; se rechazo «${a.org}».`);
+    }
+    a.org = ORGANIZACION;
+  }
+  const clave = ARG_ID[tool.name];
+  if (clave) {
+    const id = a[clave];
+    if (typeof id !== "string" || !(await idsDelProyecto()).has(id)) {
+      throw new Error(`Candado: el id «${id}» no pertenece al proyecto «${PROYECTO}».`);
+    }
+  }
+  return a;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -938,8 +1050,10 @@ const server = new Server(
   { capabilities: { tools: {} } },
 );
 
+const VISIBLES = PROYECTO ? TOOLS.map(bajoCandado).filter(Boolean) : TOOLS;
+
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: TOOLS.map(({ name, description, inputSchema }) => ({
+  tools: VISIBLES.map(({ name, description, inputSchema }) => ({
     name,
     description,
     inputSchema,
@@ -947,7 +1061,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const tool = TOOLS.find((t) => t.name === request.params.name);
+  const tool = VISIBLES.find((t) => t.name === request.params.name);
   if (!tool) {
     return {
       isError: true,
@@ -956,7 +1070,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   try {
-    const result = await tool.run(request.params.arguments ?? {});
+    let args = request.params.arguments ?? {};
+    if (PROYECTO) args = await aplicarCandado(tool, args);
+    const result = await tool.run(args);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   } catch (e) {
     return { isError: true, content: [{ type: "text", text: e.message }] };

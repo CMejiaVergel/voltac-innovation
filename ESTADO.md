@@ -81,6 +81,11 @@ powershell -File scripts\exportar-artefacto.ps1 -Html "<ruta del .html>"
 ```
 
 ## Bitácora
+### 2026-10-26 — Candado de proyecto en el MCP
+- `mcp/server.mjs` acepta `VOLTAC_PROYECTO` (y opcional `VOLTAC_ORGANIZACION`). Con la variable puesta oculta `listar_proyectos`, `crear_proyecto`, `clonar_proyecto`, `listar_organizaciones` y `crear_organizacion`, rechaza cualquier otro slug u organización y solo acepta ids que aparezcan en el proyecto permitido. Sin la variable, todo sigue igual.
+- Uso: un proyecto de cliente registra el MCP desde su propia carpeta (`.mcp.json` con ruta relativa a este `server.mjs`) y fija su slug, para que el agente no pueda tocar otros retos con el mismo token.
+- Probado contra producción, solo en lectura: los slugs y los ids ajenos se rechazan. Solo cambia el servidor local, así que no hubo que desplegar nada.
+
 ### 2026-10-02 — Show & Tell del Taller 3
 - Deck de 14 láminas, pitch de 6 minutos y mockups generados con IA en `VOLTAC_DOCS\CARIBE INNOVA 2026\Show & Tell Taller 3\`; brochures y protoceptos v2 actualizados con los mockups nuevos.
 - Retroalimentación de Cabot registrada en Decisiones. Plan del software del Custodio escrito en `confluencia-hidrica` (docs/12–17 y prompts por fase).
