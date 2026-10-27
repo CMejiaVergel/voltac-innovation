@@ -5,7 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { DETONANTES, LINEA_CONCEPTO } from "@/lib/gimi";
-import { CAMPOS_BROCHURE, CAMPOS_CASO, type DatosActuar, type PasoLinea } from "@/lib/actuar";
+import { BLOQUES_CASO, CAMPOS_BROCHURE, CAMPOS_CASO, PLAZOS, type BloqueCaso, type DatosActuar, type FilaPlan, type PasoLinea } from "@/lib/actuar";
 import {
   ARTIFACT_KINDS,
   ARTIFACT_KIND_LABEL,
@@ -26,6 +26,7 @@ import {
   borrarSupuesto,
   crearArtefacto,
   guardarPaso,
+  guardarPlan,
   guardarPropuesta,
 } from "@/app/actions/actuar";
 
@@ -39,6 +40,8 @@ export type ConceptoLinea = {
   artefactos: { id: string; title: string; kind: ArtifactKind; promise: string; status: ArtifactStatus; iteration: number; presentedTo: string }[];
   supuestos: { id: string; text: string; likelihood: number; critical: boolean; failFastTest: string; expectedResult: string; trigger: string; status: AssumptionStatus }[];
   avance: Record<PasoLinea, boolean>;
+  /** Insights que comparten post-its con el concepto: candidatos al «¡ajá!» del caso. */
+  insights: { id: string; n: number; color: string; statement: string }[];
 };
 
 type Accion = () => Promise<{ ok: boolean; error?: string }>;
@@ -472,7 +475,7 @@ function PasoPropuesta({ c, editable, pendiente, correr }: PasoProps) {
         }}
         disabled={!editable}
         rows={5}
-        placeholder="Para [cliente] que [necesidad], [nombre del concepto] es [qué es] que [beneficio principal]. A diferencia de [la alternativa de hoy], [lo que nos hace distintos]."
+        placeholder="¿Cuáles son los beneficios de este concepto y quién los obtiene: clientes, canales, proveedores y aliados? ¿Qué lo hace tan interesante?"
         className="field resize-y text-[14px] leading-relaxed"
       />
       {editable && <BotonGuardar pendiente={pendiente} guardado={g.guardado} onClick={() => correr(() => guardarPropuesta(c.id, texto), g.marcar)} />}
@@ -484,27 +487,150 @@ function PasoPropuesta({ c, editable, pendiente, correr }: PasoProps) {
 
 function PasoCaso({ c, editable, pendiente, correr }: PasoProps) {
   const [d, setD] = useState<Record<string, string>>({ ...c.datos.caso });
+  const [plan, setPlan] = useState<FilaPlan[]>(c.datos.plan.length ? c.datos.plan : [{ que: "", como: "", quien: "", cuando: "", plazo: "CORTO" }]);
+  const [bloque, setBloque] = useState<BloqueCaso>("resumen");
   const g = useGuardado();
+  const meta = BLOQUES_CASO.find((x) => x.key === bloque)!;
+  const lleno = (k: BloqueCaso) =>
+    k === "plan" ? plan.some((f) => f.que.trim()) : CAMPOS_CASO.some((f) => f.bloque === k && (d[f.campo] ?? "").trim());
+  const criticas = c.supuestos.filter((x) => x.critical);
+  const cambiarFila = (i: number, cambio: Partial<FilaPlan>) => {
+    setPlan(plan.map((x, j) => (j === i ? { ...x, ...cambio } : x)));
+    g.limpiar();
+  };
+
   return (
     <div className="panel flex flex-col gap-4">
-      <fieldset disabled={!editable} className="grid gap-4 md:grid-cols-2">
-        {CAMPOS_CASO.map((f) => (
-          <label key={f.campo} className="block">
-            <span className="label">{f.label}</span>
-            <textarea
-              value={d[f.campo] ?? ""}
-              onChange={(e) => {
-                setD({ ...d, [f.campo]: e.target.value });
-                g.limpiar();
-              }}
-              rows={3}
-              placeholder={f.placeholder}
-              className="field resize-y leading-relaxed"
-            />
-          </label>
+      <ol className="flex flex-wrap gap-1.5">
+        {BLOQUES_CASO.map((x) => (
+          <li key={x.key}>
+            <button
+              type="button"
+              onClick={() => setBloque(x.key)}
+              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] ${
+                bloque === x.key ? "border-accent bg-[rgba(111,191,178,0.14)] text-[#e8e3d8]" : "border-[rgba(232,227,216,0.16)] text-[#a9b5b3]"
+              }`}
+            >
+              <span className={`grid h-4 w-4 place-items-center rounded-full text-[9.5px] font-semibold ${lleno(x.key) ? "bg-accent text-accentDeep" : "border border-[#4d5a58]"}`}>
+                {lleno(x.key) ? "✓" : x.n}
+              </span>
+              {x.titulo}
+            </button>
+          </li>
         ))}
-      </fieldset>
-      {editable && <BotonGuardar pendiente={pendiente} guardado={g.guardado} onClick={() => correr(() => guardarPaso(c.id, "caso", d), g.marcar)} />}
+      </ol>
+
+      <div>
+        <h3 className="text-[16px] font-semibold text-[#e8e3d8]">{meta.titulo}</h3>
+        <p className="text-[10.5px] text-[#5e7370]">{meta.fuente}</p>
+      </div>
+
+      {bloque === "concepto" && (c.insights.length > 0 || c.propuestaValor) && (
+        <div className="flex flex-col gap-2 rounded-[6px] bg-[rgba(232,227,216,0.04)] p-3 text-[12.5px] text-[#c9d1cf]">
+          {c.insights.length > 0 && (
+            <div>
+              <span className="text-[11.5px] text-[#8b9a97]">Insights que respaldan el concepto:</span>
+              <ul className="mt-1 flex flex-col gap-1">
+                {c.insights.map((i) => (
+                  <li key={i.id} className="flex items-start gap-1.5">
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: i.color }} />
+                    {i.statement}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {c.propuestaValor && (
+            <p>
+              <span className="text-[11.5px] text-[#8b9a97]">Propuesta de valor: </span>
+              {c.propuestaValor}
+            </p>
+          )}
+        </div>
+      )}
+
+      {bloque === "riesgos" && criticas.length > 0 && (
+        <div className="rounded-[6px] bg-[rgba(232,227,216,0.04)] p-3 text-[12.5px] text-[#c9d1cf]">
+          <span className="text-[11.5px] text-[#8b9a97]">De la ingeniería inversa, las condiciones menos probables:</span>
+          <ul className="mt-1 list-disc pl-5">
+            {criticas.map((x) => (
+              <li key={x.id}>{x.text}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {bloque === "plan" ? (
+        <fieldset disabled={!editable} className="flex flex-col gap-2">
+          <p className="text-[12px] text-[#8b9a97]">
+            ¿Cuál es la forma más realista de ponerlo en marcha? ¿Qué necesita hacer el cliente mañana, el próximo mes o el próximo año?
+          </p>
+          {plan.map((f, i) => (
+            <div key={i} className="grid gap-1.5 rounded-[6px] border border-[rgba(232,227,216,0.1)] p-2 md:grid-cols-[1.4fr_1.6fr_1fr_0.8fr_0.9fr_auto]">
+              <input value={f.que} onChange={(e) => cambiarFila(i, { que: e.target.value })} placeholder="Qué" className="field !py-1 text-[12.5px]" />
+              <input value={f.como} onChange={(e) => cambiarFila(i, { como: e.target.value })} placeholder="Cómo" className="field !py-1 text-[12.5px]" />
+              <input value={f.quien} onChange={(e) => cambiarFila(i, { quien: e.target.value })} placeholder="Quién" className="field !py-1 text-[12.5px]" />
+              <input value={f.cuando} onChange={(e) => cambiarFila(i, { cuando: e.target.value })} placeholder="Cuándo" className="field !py-1 text-[12.5px]" />
+              <select value={f.plazo} onChange={(e) => cambiarFila(i, { plazo: e.target.value })} className="field !py-1 text-[12.5px]">
+                {PLAZOS.map((x) => (
+                  <option key={x.key} value={x.key}>
+                    {x.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  setPlan(plan.filter((_, j) => j !== i));
+                  g.limpiar();
+                }}
+                className="px-1 text-[16px] text-[#5e7370] hover:text-[#e8a99c]"
+                aria-label="Quitar paso"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setPlan([...plan, { que: "", como: "", quien: "", cuando: "", plazo: "CORTO" }])}
+            className="self-start text-[12.5px] text-accent hover:underline"
+          >
+            + Paso
+          </button>
+        </fieldset>
+      ) : (
+        <fieldset disabled={!editable} className="flex flex-col gap-3">
+          {CAMPOS_CASO.filter((f) => f.bloque === bloque).map((f) => (
+            <label key={f.campo} className="block">
+              <span className="label">{f.label}</span>
+              <textarea
+                value={d[f.campo] ?? ""}
+                onChange={(e) => {
+                  setD({ ...d, [f.campo]: e.target.value });
+                  g.limpiar();
+                }}
+                rows={f.campo === "resumen" ? 5 : 3}
+                placeholder={f.placeholder}
+                className="field resize-y leading-relaxed"
+              />
+            </label>
+          ))}
+        </fieldset>
+      )}
+
+      {editable && (
+        <BotonGuardar
+          pendiente={pendiente}
+          guardado={g.guardado}
+          onClick={() =>
+            correr(async () => {
+              const r = await guardarPaso(c.id, "caso", d);
+              return r.ok ? guardarPlan(c.id, plan) : r;
+            }, g.marcar)
+          }
+        />
+      )}
     </div>
   );
 }

@@ -158,8 +158,8 @@ export function GuiaV2() {
           <li><b>Brochure:</b> titular, problema, solución, beneficios y llamado a la acción, con vista previa. Listo con titular y solución.</li>
           <li><b>Artefacto:</b> lo que se le muestra a la empresa (protocepto, mockup, prototipo, orden de compra…). Cada vuelta con el mercado suma una iteración. Listo cuando uno está «Listo para presentar» o «Presentado».</li>
           <li><b>Ingeniería inversa:</b> lo que tendría que ser cierto. Se marcan con ★ las tres menos probables y cada una lleva su prueba rápida. Listo cuando una crítica tiene prueba.</li>
-          <li><b>Propuesta de valor:</b> «Para … que …, … es … que …. A diferencia de …». Listo al escribirla.</li>
-          <li><b>Caso de negocio:</b> inversión, ingresos o ahorros, costos, retorno, riesgos y siguiente paso. Listo con tres o más.</li>
+          <li><b>Propuesta de valor:</b> los beneficios del concepto y quién los obtiene: clientes, canales, proveedores y aliados. Listo al escribirla.</li>
+          <li><b>Caso de negocio:</b> la estructura del Taller 4, un bloque por pantalla: resumen ejecutivo, el concepto real (con su «¡ajá!»), stakeholders y el gana-gana-gana, modelo de negocio y tamaño de la oportunidad (con los indicadores en pesos), riesgos y opciones, plan de acción (qué, cómo, quién, cuándo) y el discurso. Listo con el resumen, tres bloques y un paso en el plan.</li>
         </ul>
       </Etapa>
 

@@ -8,7 +8,7 @@ import { prisma } from "@/lib/db";
 import { getPrimaryMap } from "@/lib/projects";
 import { colorDeTrazo, promedioEje, ARTIFACT_KIND_LABEL, ARTIFACT_STATUS_META, asEnum, ARTIFACT_KINDS, ARTIFACT_STATUSES } from "@/lib/enums";
 import { ETAPAS_EMBUDO, LINEA_CONCEPTO, PREGUNTA_LIENZO } from "@/lib/gimi";
-import { CAMPOS_CASO, avanceLinea, leerActuar } from "@/lib/actuar";
+import { BLOQUES_CASO, CAMPOS_CASO, PLAZOS, avanceLinea, leerActuar } from "@/lib/actuar";
 import { tituloPostit } from "@/lib/v2";
 
 /**
@@ -371,14 +371,39 @@ function lineaDeConcepto(pptx: PptxGenJS, lamina: Lamina, bloque: Bloque, caja: 
     });
   }
 
-  // Propuesta de valor y caso de negocio
+  // Propuesta de valor
+  if (c.propuestaValor) {
+    const s = lamina("6 · Actuar · Propuesta de valor", c.title);
+    bloque(s, "Propuesta de valor", c.propuestaValor, 0.5, 1.6, 12.3, 2.4, C.acento);
+  }
+
+  // Caso de negocio: un bloque por lámina, en el orden del Taller 4 (lám. 32)
   const caso = actuar.caso;
-  if (c.propuestaValor || CAMPOS_CASO.some((f) => caso[f.campo])) {
-    const s = lamina("6 · Actuar · Propuesta de valor y caso de negocio", c.title);
-    bloque(s, "Propuesta de valor", c.propuestaValor, 0.5, 1.6, 12.3, 1.35, C.acento);
-    CAMPOS_CASO.forEach((f, i) => {
-      const col = i % 3, fila = Math.floor(i / 3);
-      bloque(s, f.label, caso[f.campo] ?? "", 0.5 + col * 4.15, 3.15 + fila * 1.8, 4.0, 1.65, f.campo === "siguiente" ? C.oro : undefined);
+  for (const bl of BLOQUES_CASO) {
+    if (bl.key === "plan") {
+      const filas = actuar.plan.filter((f) => f.que);
+      if (!filas.length) continue;
+      const s = lamina(`Caso de negocio · ${bl.n}. ${bl.titulo}`, c.title);
+      const plazo = (k: string) => PLAZOS.find((x) => x.key === k)?.label ?? "";
+      s.addTable(
+        [
+          ["Qué", "Cómo", "Quién", "Cuándo", "Plazo"].map((t) => ({ text: t, options: { bold: true, color: C.acento, fontSize: 11 } })),
+          ...filas.slice(0, 10).map((f) => [f.que, f.como, f.quien, f.cuando, plazo(f.plazo)].map((t) => ({ text: corto(t, 160), options: { color: C.texto, fontSize: 10 } }))),
+        ],
+        { x: 0.5, y: 1.6, w: 12.3, colW: [3.2, 4.1, 2.0, 1.5, 1.5], fontFace: FUENTE, border: { type: "solid", color: "33413F", pt: 0.75 }, fill: { color: C.panel } },
+      );
+      continue;
+    }
+    const campos = CAMPOS_CASO.filter((f) => f.bloque === bl.key && caso[f.campo]);
+    if (!campos.length) continue;
+    const s = lamina(`Caso de negocio · ${bl.n}. ${bl.titulo}`, c.title);
+    const cols = campos.length === 1 ? 1 : campos.length <= 4 ? 2 : 3;
+    const filas = Math.ceil(campos.length / cols);
+    const w = (12.3 - (cols - 1) * 0.2) / cols;
+    const h = (5.1 - (filas - 1) * 0.2) / filas;
+    campos.forEach((f, i) => {
+      const col = i % cols, fila = Math.floor(i / cols);
+      bloque(s, f.label, caso[f.campo] ?? "", 0.5 + col * (w + 0.2), 1.6 + fila * (h + 0.2), w, h, f.campo === "indicadores" ? C.oro : undefined);
     });
   }
 }

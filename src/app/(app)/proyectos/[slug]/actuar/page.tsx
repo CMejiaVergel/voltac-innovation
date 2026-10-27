@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireProject } from "@/lib/projects";
-import { canEdit, asEnum, ARTIFACT_KINDS, ARTIFACT_STATUSES, ASSUMPTION_STATUSES } from "@/lib/enums";
+import { canEdit, asEnum, colorDeTrazo, ARTIFACT_KINDS, ARTIFACT_STATUSES, ASSUMPTION_STATUSES } from "@/lib/enums";
 import { avanceLinea, leerActuar } from "@/lib/actuar";
 import { LineaConcepto, type ConceptoLinea } from "@/components/v2/LineaConcepto";
 
@@ -16,8 +16,15 @@ export default async function ActuarPage({ params }: { params: Promise<{ slug: s
     include: {
       artefactos: { orderBy: { createdAt: "asc" } },
       supuestos: { orderBy: { position: "asc" } },
+      anclas: { select: { fragmentId: true } },
     },
   });
+  const insightsDb = await prisma.insight.findMany({
+    where: { projectId: project.id, reviewState: "ACCEPTED", hidden: false },
+    orderBy: { position: "asc" },
+    select: { id: true, color: true, statement: true, dots: { select: { fragmentId: true } } },
+  });
+  const insights = insightsDb.map((i, n) => ({ id: i.id, n: n + 1, color: colorDeTrazo(i.color, n), statement: i.statement, fragmentIds: i.dots.map((d) => d.fragmentId) }));
 
   const conceptos: ConceptoLinea[] = filas.map((c) => ({
     id: c.id,
@@ -26,6 +33,9 @@ export default async function ActuarPage({ params }: { params: Promise<{ slug: s
     color: c.color,
     propuestaValor: c.propuestaValor,
     datos: leerActuar(c.actuar),
+    insights: insights
+      .filter((i) => i.fragmentIds.some((f) => f && c.anclas.some((a) => a.fragmentId === f)))
+      .map(({ id, n, color, statement }) => ({ id, n, color, statement })),
     artefactos: c.artefactos.map((a) => ({
       id: a.id,
       title: a.title,

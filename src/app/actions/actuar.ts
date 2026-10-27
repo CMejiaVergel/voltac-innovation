@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { canEdit, asEnum, ARTIFACT_KINDS, ARTIFACT_STATUSES, ASSUMPTION_STATUSES, DETONANTE_KEYS } from "@/lib/enums";
 import { getProjectRole } from "@/lib/projects";
-import { CAMPOS_BROCHURE, CAMPOS_CASO, leerActuar } from "@/lib/actuar";
+import { CAMPOS_BROCHURE, CAMPOS_CASO, PLAZOS, leerActuar, type FilaPlan } from "@/lib/actuar";
 
 /**
  * Actuar v2: lo que el equipo construye en la línea recta de un concepto.
@@ -41,6 +41,27 @@ export async function guardarPaso(conceptId: string, paso: "brochure" | "caso", 
   const limpio = Object.fromEntries(campos.map((k) => [k, (datos[k] ?? "").trim().slice(0, 4000)]));
   const actual = leerActuar(g.c.actuar);
   await prisma.concept.update({ where: { id: conceptId }, data: { actuar: JSON.stringify({ ...actual, [paso]: limpio }) } });
+  refrescar(g.c.project.slug);
+  return { ok: true };
+}
+
+/** Plan de acción: qué, cómo, quién, cuándo y su plazo (Taller 4, lám. 33). */
+export async function guardarPlan(conceptId: string, filas: FilaPlan[]): Promise<Resultado> {
+  const g = await guardConcepto(conceptId);
+  if (!g) return SIN_PERMISO;
+  const corta = (x: unknown, n: number) => (typeof x === "string" ? x.trim().slice(0, n) : "");
+  const plan = filas
+    .slice(0, 30)
+    .map((f) => ({
+      que: corta(f.que, 400),
+      como: corta(f.como, 600),
+      quien: corta(f.quien, 200),
+      cuando: corta(f.cuando, 100),
+      plazo: PLAZOS.some((x) => x.key === f.plazo) ? f.plazo : "CORTO",
+    }))
+    .filter((f) => f.que);
+  const actual = leerActuar(g.c.actuar);
+  await prisma.concept.update({ where: { id: conceptId }, data: { actuar: JSON.stringify({ ...actual, plan }) } });
   refrescar(g.c.project.slug);
   return { ok: true };
 }

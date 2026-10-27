@@ -1025,7 +1025,7 @@ const TOOLS = [
   },
   {
     name: "escribir_linea",
-    description: "v2 · Escribe en la línea recta de un concepto: brochure {titular, problema, solucion, beneficios (uno por línea), llamado}, propuestaValor y caso {inversion, ingresos, costos, retorno, riesgos, siguiente}. Solo cambia lo que envíes. Cifras solo si la persona las dio o vienen de un post-it verificado.",
+    description: "v2 · Escribe en la línea recta de un concepto: brochure {titular, problema, solucion, beneficios (uno por línea), llamado}, propuestaValor y caso {resumen, aja, beneficios, descripcion, sponsor, operador, gatekeepers, externos, ganagana, intercambio, tamano, indicadores, riesgos, opciones, apoyo, barreras, victorias, eslogan, alternativas, copiar} (estructura del Taller 4). Solo cambia lo que envíes. Cifras solo si la persona las dio o vienen de un post-it verificado.",
     inputSchema: {"type":"object","properties":{"id":{"type":"string"},"brochure":{"type":"object"},"propuestaValor":{"type":"string"},"caso":{"type":"object"}},"required":["id"]},
     run: v2("escribir_linea"),
   },
