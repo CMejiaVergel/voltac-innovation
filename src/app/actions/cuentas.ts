@@ -149,7 +149,6 @@ export async function aceptarInvitacion(token: string, _prev: EstadoCuenta, fd: 
 
   const enlace = await crearTokenCuenta(user.id, "ACTIVACION");
   const enviado = await correoActivacion(user.email, nombre, enlace);
-  revalidatePath("/admin/usuarios");
   if (enviado) return { ok: true, mensaje: `Listo. Te enviamos un enlace de activación a ${user.email}: ábrelo para entrar.` };
   // Sin correo configurado, en desarrollo se muestra el enlace; en producción lo entrega el administrador.
   return process.env.NODE_ENV === "production"
