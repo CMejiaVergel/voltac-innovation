@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth";
 import { logoutAction } from "@/app/actions/auth";
@@ -8,6 +9,8 @@ import { V2 } from "@/lib/v2";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  // Nadie trabaja sin su perfil del equipo: foto y rol (para la presentación).
+  if (!user.perfilCompleto) redirect("/bienvenida");
 
   return (
     <div className="min-h-screen">
@@ -44,9 +47,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
           <Link
             href="/cuenta"
-            title="Tu cuenta y tu clave de OpenRouter"
-            className="hidden font-mono text-[11px] text-[#5e7370] transition hover:text-white sm:inline"
+            title="Tu perfil, tu contraseña y tu clave de OpenRouter"
+            className="hidden items-center gap-2 font-mono text-[11px] text-[#5e7370] transition hover:text-white sm:flex"
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/api/foto/${user.id}`} alt="" className="h-6 w-6 rounded-full object-cover" />
             {user.name}
           </Link>
           <form action={logoutAction}>

@@ -1,4 +1,6 @@
 import { requireUser } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { FormCambiarClave, FormPerfil } from "@/components/cuentas/Formularios";
 import { estadoClaveAgente, claveDelAgente } from "@/lib/claveAgente";
 import { consumoDe } from "@/lib/consumoAgente";
 import { ClaveOpenRouter } from "@/components/ClaveOpenRouter";
@@ -12,6 +14,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CuentaPage() {
   const user = await requireUser();
+  const perfil = await prisma.user.findUnique({ where: { id: user.id }, select: { name: true, cargo: true, formacion: true, foto: true, ultimoIngreso: true } });
   const estado = await estadoClaveAgente(user.id);
   const consumo = await consumoDe(user.id);
 
@@ -36,6 +39,14 @@ export default async function CuentaPage() {
       <p className="mt-2 font-mono text-[11.5px] text-[#7d8a88]">{user.email}</p>
 
       <div className="mt-8 flex max-w-[820px] flex-col gap-6">
+        <section className="panel">
+          <h2 className="kicker mb-4">Perfil del equipo</h2>
+          <FormPerfil nombre={perfil?.name ?? user.name} cargo={perfil?.cargo ?? ""} formacion={perfil?.formacion ?? ""} fotoUrl={perfil?.foto ? `/api/foto/${user.id}?v=${perfil.foto}` : null} />
+        </section>
+        <section className="panel">
+          <h2 className="kicker mb-4">Contraseña</h2>
+          <FormCambiarClave />
+        </section>
         {estado && <ClaveOpenRouter estado={estado} />}
         <ConsumoAgente apiKey={apiKey} consumo={consumo} origen={origen} />
       </div>

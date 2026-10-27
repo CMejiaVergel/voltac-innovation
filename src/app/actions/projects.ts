@@ -482,37 +482,11 @@ export async function removeMember(slug: string, userId: string): Promise<void> 
   revalidatePath(`/proyectos/${slug}/equipo`);
 }
 
-export async function createUser(formData: FormData): Promise<void> {
-  await requireAdmin();
-
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const name = String(formData.get("name") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
-  if (!email || !name || password.length < 8) {
-    volverCon("/admin/usuarios", "error", "Correo, nombre y una contraseña de al menos 8 caracteres son obligatorios.");
-  }
-
-  const yaExiste = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-  if (yaExiste) {
-    volverCon("/admin/usuarios", "error", `Ya hay una cuenta con el correo ${email}.`);
-  }
-
-  await prisma.user.create({
-    data: {
-      email,
-      name,
-      role: String(formData.get("role") ?? "MEMBER"),
-      passwordHash: await hashPassword(password),
-    },
-  });
-
-  revalidatePath("/admin/usuarios");
-  redirect(
-    `/admin/usuarios?hecho=${encodeURIComponent(
-      `Cuenta creada para ${name} (${email}). Nace SIN clave de OpenRouter: el agente no correra para esa persona hasta que ponga la suya.`,
-    )}`,
-  );
-}
+/*
+ * Las cuentas se crean por invitación y las contraseñas se restablecen por
+ * enlace al correo: ver src/app/actions/cuentas.ts. El administrador ya no
+ * escribe ni conoce contraseñas ajenas.
+ */
 
 export async function setUserActive(userId: string, active: boolean): Promise<void> {
   const admin = await requireAdmin();
@@ -531,41 +505,6 @@ export async function setUserActive(userId: string, active: boolean): Promise<vo
       active
         ? `${objetivo.name} vuelve a tener acceso.`
         : `${objetivo.name} queda sin acceso: al intentar entrar vera «correo o contraseña incorrectos».`,
-    )}`,
-  );
-}
-
-export async function resetUserPassword(userId: string, formData: FormData): Promise<void> {
-  const admin = await requireAdmin();
-  const password = String(formData.get("password") ?? "");
-  if (password.length < 8) volverCon("/admin/usuarios", "error", "La contraseña debe tener al menos 8 caracteres.");
-
-  const objetivo = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { name: true },
-  });
-  if (!objetivo) throw new Error("Ese usuario ya no existe.");
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { passwordHash: await hashPassword(password) },
-  });
-
-  // Cerrar sesiones abiertas: si se cambio la clave, las cookies viejas mueren.
-  // Pero si el administrador se la esta cambiando A SI MISMO, hay que dejar
-  // viva la cookie de esta peticion: borrarla lo expulsaba a mitad de la accion
-  // y la pantalla se quedaba en negro sin decir si el cambio surtio efecto.
-  const propia = userId === admin.id ? await hashSesionActual() : null;
-  await prisma.session.deleteMany({
-    where: { userId, ...(propia ? { token: { not: propia } } : {}) },
-  });
-
-  revalidatePath("/admin/usuarios");
-  redirect(
-    `/admin/usuarios?hecho=${encodeURIComponent(
-      userId === admin.id
-        ? "Tu contraseña quedo cambiada. Tu sesion actual sigue abierta; las demas se cerraron."
-        : `Contraseña de ${objetivo.name} restablecida. Sus sesiones abiertas se cerraron.`,
     )}`,
   );
 }

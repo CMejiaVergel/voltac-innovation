@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/db";
 import { asEnum, USER_ROLES, type UserRole } from "@/lib/enums";
+import { INTENTOS_ANTES_DE_BLOQUEO, MINUTOS_BLOQUEO } from "@/lib/seguridad";
 
 /**
  * Sesiones propias, sin dependencia de terceros.
@@ -17,13 +18,15 @@ import { asEnum, USER_ROLES, type UserRole } from "@/lib/enums";
  */
 
 const COOKIE_NAME = "voltac_session";
-const SESSION_DAYS = 30;
+const SESSION_DAYS = 14;
 
 export type SessionUser = {
   id: string;
   email: string;
   name: string;
   role: UserRole;
+  /** Tiene foto y cargo: el perfil del equipo está completo. */
+  perfilCompleto?: boolean;
 };
 
 function hashToken(token: string): string {
@@ -91,13 +94,14 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     include: { user: true },
   });
 
-  if (!session || session.expiresAt < new Date() || !session.user.active) return null;
+  if (!session || session.expiresAt < new Date() || !session.user.active || !session.user.emailVerificadoAt) return null;
 
   return {
     id: session.user.id,
     email: session.user.email,
     name: session.user.name,
     role: asEnum(USER_ROLES, session.user.role, "MEMBER"),
+    perfilCompleto: Boolean(session.user.foto && session.user.cargo),
   };
 }
 
@@ -114,17 +118,42 @@ export async function requireAdmin(): Promise<SessionUser> {
   return user;
 }
 
-/** Autentica por email y contraseña. Devuelve el id del usuario o null. */
-export async function authenticate(email: string, password: string): Promise<string | null> {
+export type ResultadoAutenticar = { ok: true; userId: string } | { ok: false; motivo: "CREDENCIALES" | "SIN_ACTIVAR" };
+
+/**
+ * Autentica por email y contraseña.
+ *
+ * Tras INTENTOS_ANTES_DE_BLOQUEO intentos fallidos seguidos la cuenta se bloquea
+ * MINUTOS_BLOQUEO minutos. El error es siempre el mismo —credenciales— para no
+ * revelar qué correos existen ni si una cuenta está bloqueada; solo quien
+ * acierta la contraseña se entera de que le falta activar la cuenta.
+ */
+export async function authenticate(email: string, password: string): Promise<ResultadoAutenticar> {
   const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
 
   // Se compara igual aunque el usuario no exista, para no filtrar por tiempo
   // de respuesta cuales correos estan registrados.
-  const hash = user?.passwordHash ?? "$2a$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidin";
+  const hash = user?.passwordHash || "$2a$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidin";
   const ok = await verifyPassword(password, hash);
 
-  if (!user || !user.active || !ok) return null;
-  return user.id;
+  if (!user || !user.active) return { ok: false, motivo: "CREDENCIALES" };
+  if (user.bloqueadoHasta && user.bloqueadoHasta > new Date()) return { ok: false, motivo: "CREDENCIALES" };
+
+  if (!ok) {
+    const intentos = user.intentosFallidos + 1;
+    await prisma.user.update({
+      where: { id: user.id },
+      data:
+        intentos >= INTENTOS_ANTES_DE_BLOQUEO
+          ? { intentosFallidos: 0, bloqueadoHasta: new Date(Date.now() + MINUTOS_BLOQUEO * 60_000) }
+          : { intentosFallidos: intentos },
+    });
+    return { ok: false, motivo: "CREDENCIALES" };
+  }
+
+  if (!user.emailVerificadoAt) return { ok: false, motivo: "SIN_ACTIVAR" };
+  await prisma.user.update({ where: { id: user.id }, data: { intentosFallidos: 0, bloqueadoHasta: null, ultimoIngreso: new Date() } });
+  return { ok: true, userId: user.id };
 }
 
 /** Limpia sesiones vencidas. Se llama de forma oportunista en el login. */

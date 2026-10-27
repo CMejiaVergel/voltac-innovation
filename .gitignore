@@ -53,3 +53,4 @@ node_modules/
 
 # Credenciales de la cuenta de prueba local (nunca al repo).
 CREDENCIALES-PRUEBA.local.md
+uploads/

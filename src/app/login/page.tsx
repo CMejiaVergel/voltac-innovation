@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getSessionUser } from "@/lib/auth";
@@ -27,8 +28,13 @@ export default async function LoginPage() {
           <LoginForm />
         </div>
 
-        <p className="mt-5 font-mono text-[10px] leading-relaxed text-[#4d5a58]">
-          Si no tienes credenciales, pideselas al administrador de la instancia.
+        <p className="mt-4 text-[12px]">
+          <Link href="/recuperar" className="text-accent hover:underline">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </p>
+        <p className="mt-3 font-mono text-[10px] leading-relaxed text-[#4d5a58]">
+          El acceso es por invitación. Si no tienes cuenta, pídele una invitación al administrador de la instancia.
         </p>
       </div>
     </main>

@@ -42,6 +42,22 @@ model User {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  /// Cuándo confirmó su correo con el enlace de activación. Sin esto no entra.
+  emailVerificadoAt DateTime?
+  /// Perfil del equipo (Taller 4, lám. 37: roles, formación y experiencia).
+  cargo             String    @default("")
+  formacion         String    @default("")
+  /// Archivo de la foto en UPLOADS_DIR/avatares. Vacío = sin foto.
+  foto              String    @default("")
+  /// Bloqueo temporal por intentos fallidos de inicio de sesión.
+  intentosFallidos  Int       @default(0)
+  bloqueadoHasta    DateTime?
+  ultimoIngreso     DateTime?
+  claveCambiadaAt   DateTime?
+
+  tokensCuenta TokenCuenta[]
+  invitaciones Invitacion[]  @relation("InvitacionAutor")
+
   sessions         Session[]
   apiTokens        ApiToken[]
   pushSubs         PushSubscription[]
@@ -1265,4 +1281,43 @@ model PlataformaFragmento {
 
   @@unique([plataformaId, fragmentId])
   @@index([fragmentId])
+}
+
+// -----------------------------------------------------------------------------
+// Cuentas: invitaciones, activación y recuperación
+// -----------------------------------------------------------------------------
+
+/// Invitación a la instancia. No hay registro abierto: solo entra quien recibe
+/// el enlace. El token viaja por correo; aquí se guarda solo su SHA-256.
+model Invitacion {
+  id            String    @id @default(cuid())
+  email         String
+  nombre        String    @default("")
+  /// Rol en la instancia. Las invitaciones solo dan MEMBER: los
+  /// administradores se crean desde la terminal del servidor.
+  role          String    @default("MEMBER")
+  tokenHash     String    @unique
+  expiresAt     DateTime
+  aceptadaAt    DateTime?
+  revocadaAt    DateTime?
+  invitadoPorId String?
+  invitadoPor   User?     @relation("InvitacionAutor", fields: [invitadoPorId], references: [id], onDelete: SetNull)
+  createdAt     DateTime  @default(now())
+
+  @@index([email])
+}
+
+/// Enlaces de un solo uso para activar la cuenta o restablecer la contraseña.
+model TokenCuenta {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// ACTIVACION | RESTABLECER
+  tipo      String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usadoAt   DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, tipo])
 }

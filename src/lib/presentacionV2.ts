@@ -9,11 +9,11 @@ import { getPrimaryMap } from "@/lib/projects";
 import { colorDeTrazo, promedioEje, ARTIFACT_KIND_LABEL, ARTIFACT_STATUS_META, asEnum, ARTIFACT_KINDS, ARTIFACT_STATUSES } from "@/lib/enums";
 import { ETAPAS_EMBUDO, LINEA_CONCEPTO, PREGUNTA_LIENZO } from "@/lib/gimi";
 import { BLOQUES_CASO, CAMPOS_CASO, PLAZOS, avanceLinea, leerActuar } from "@/lib/actuar";
-import { tituloPostit } from "@/lib/v2";
+import { leerJsonSeguro, tituloPostit } from "@/lib/v2";
+import { leerFoto, mimeDe } from "@/lib/fotos";
 
 /**
- * Exportación a PPTX del proceso v2: el embudo de principio a fin y la línea
- * recta de cada concepto priorizado. Todo es texto y formas nativas, así que
+ * Exportación a PPTX del caso de negocio (ver generarPresentacion). Todo es texto y formas nativas, así que
  * el equipo puede editar el archivo en PowerPoint antes de presentarlo.
  */
 
@@ -91,20 +91,50 @@ async function cargar(slug: string, soloConcepto?: string) {
         select: { id: true, rowId: true, colId: true, titulo: true, text: true },
       })
     : [];
-  const conceptos = await prisma.concept.findMany({
-    where: { projectId: project.id, reviewState: "ACCEPTED", hidden: false },
-    orderBy: { position: "asc" },
-    include: {
-      anclas: { orderBy: { position: "asc" }, include: { fragment: { select: { titulo: true, text: true } } } },
-      artefactos: { orderBy: { createdAt: "asc" } },
-      supuestos: { orderBy: { position: "asc" } },
-    },
-  });
-  return { project, shape: primary?.shape ?? null, fragmentos, conceptos, soloConcepto };
+  const [conceptos, miembros, tendencias, plataforma, insights] = await Promise.all([
+    prisma.concept.findMany({
+      where: { projectId: project.id, reviewState: "ACCEPTED", hidden: false },
+      orderBy: { position: "asc" },
+      include: {
+        anclas: { orderBy: { position: "asc" }, include: { fragment: { select: { titulo: true, text: true } } } },
+        artefactos: { orderBy: { createdAt: "asc" } },
+        supuestos: { orderBy: { position: "asc" } },
+      },
+    }),
+    prisma.membership.findMany({
+      where: { projectId: project.id, user: { active: true } },
+      orderBy: { createdAt: "asc" },
+      include: { user: { select: { id: true, name: true, cargo: true, formacion: true, foto: true } } },
+    }),
+    prisma.elementoLente.findMany({ where: { projectId: project.id, colId: "futuro" }, orderBy: { position: "asc" } }),
+    prisma.plataforma.findFirst({ where: { projectId: project.id, priorizada: true }, include: { _count: { select: { fragmentos: true } } } }),
+    prisma.insight.findMany({
+      where: { projectId: project.id, reviewState: "ACCEPTED", hidden: false },
+      orderBy: { position: "asc" },
+      select: { id: true, statement: true, dots: { select: { fragmentId: true } } },
+    }),
+  ]);
+  // Las fotos van incrustadas: el archivo tiene que viajar solo, sin la plataforma.
+  const fotos = new Map<string, string>();
+  for (const m of miembros) {
+    const b = m.user.foto ? await leerFoto(m.user.foto) : null;
+    if (b) fotos.set(m.user.id, `${mimeDe(m.user.foto)};base64,${b.toString("base64")}`);
+  }
+  return { project, shape: primary?.shape ?? null, fragmentos, conceptos, soloConcepto, miembros, fotos, tendencias, plataforma, insights };
 }
 
 type Datos = Awaited<ReturnType<typeof cargar>>;
+type Concepto = Datos["conceptos"][number];
 
+/**
+ * La presentación del caso de negocio. El orden es el del IMBOK (p. 72):
+ * resumen ejecutivo, insight, propuesta de valor, concepto detallado, modelo
+ * de negocio, tamaño del mercado, incertidumbres clave y plan de acción. Antes
+ * van el equipo, el reto y el recorrido (de las ideas a la plataforma y al
+ * concepto), y al final la recomendación. El proceso detallado queda en un
+ * anexo. Cada lámina sale solo si tiene datos, así que sirve para cualquier
+ * programa, no solo para uno.
+ */
 export async function generarPresentacion(slug: string, soloConcepto?: string): Promise<{ buffer: Buffer; nombre: string }> {
   const d = await cargar(slug, soloConcepto);
   const pptx = new PptxGenJS();
@@ -141,17 +171,27 @@ export async function generarPresentacion(slug: string, soloConcepto?: string): 
       { x: x + 0.15, y: y + 0.1, w: w - 0.3, h: h - 0.2, fontFace: FUENTE, valign: "top", paraSpaceAfter: 4, fit: "shrink" },
     );
   };
+  const k: Kit = { pptx, lamina, bloque, caja };
 
   const priorizados = d.conceptos.filter((c) => c.priorizado && (!soloConcepto || c.id === soloConcepto));
+  const principal = priorizados[0];
 
   if (!soloConcepto) {
     portada(pptx, d, img);
-    reto(lamina, bloque, d);
-    embudo(pptx, lamina, d);
-    if (d.shape && d.fragmentos.length) mapa(lamina, d);
-    if (d.conceptos.length) matriz(pptx, lamina, d);
+    if (d.miembros.length) equipo(k, d);
+    if (principal) resumenEjecutivo(k, principal);
+    reto(k, d);
+    embudo(k, d);
+    if (d.tendencias.some((t) => t.tipo !== "ESCENARIO")) tendencias(k, d);
+    if (d.plataforma) plataformaPriorizada(k, d);
+    if (d.conceptos.length) matriz(k, d);
   }
-  for (const c of priorizados) lineaDeConcepto(pptx, lamina, bloque, caja, d, c);
+  for (const c of priorizados) casoDeConcepto(k, d, c);
+  if (!soloConcepto && principal) recomendacion(k, d, priorizados);
+  if (!soloConcepto && d.shape && d.fragmentos.length) {
+    separador(k, "Anexo", "El proceso en detalle");
+    mapa(k, d);
+  }
 
   const buffer = (await pptx.write({ outputType: "nodebuffer" })) as Buffer;
   const base = soloConcepto ? priorizados[0]?.title ?? "concepto" : d.project.name;
@@ -162,6 +202,7 @@ export async function generarPresentacion(slug: string, soloConcepto?: string): 
 type Lamina = (kicker: string, titulo: string) => PptxGenJS.Slide;
 type Bloque = (s: PptxGenJS.Slide, etiqueta: string, cuerpo: string, x: number, y: number, w: number, h: number, borde?: string) => void;
 type Caja = (s: PptxGenJS.Slide, x: number, y: number, w: number, h: number, borde?: string) => void;
+type Kit = { pptx: PptxGenJS; lamina: Lamina; bloque: Bloque; caja: Caja };
 
 function portada(pptx: PptxGenJS, d: Datos, img: string | null) {
   const s = pptx.addSlide();
@@ -183,22 +224,65 @@ function portada(pptx: PptxGenJS, d: Datos, img: string | null) {
   });
 }
 
-function reto(lamina: Lamina, bloque: Bloque, d: Datos) {
+/** El equipo: foto, nombre, rol y formación de cada persona (Taller 4, lám. 37). */
+function equipo({ pptx, lamina }: Kit, d: Datos) {
+  const s = lamina("El equipo", "Quiénes trabajaron este reto");
+  const n = Math.min(d.miembros.length, 12);
+  const cols = n <= 4 ? n : n <= 8 ? 4 : 6;
+  const filas = Math.ceil(n / cols);
+  const ancho = 12.3 / cols;
+  const alto = filas === 1 ? 4.6 : 2.6;
+  const foto = Math.min(filas === 1 ? 1.9 : 1.2, ancho - 0.6);
+  d.miembros.slice(0, 12).forEach((m, i) => {
+    const x = 0.5 + (i % cols) * ancho;
+    const y = 1.7 + Math.floor(i / cols) * alto;
+    const fx = x + (ancho - foto) / 2;
+    const data = d.fotos.get(m.user.id);
+    if (data) s.addImage({ data, x: fx, y, w: foto, h: foto, rounding: true, sizing: { type: "cover", w: foto, h: foto } });
+    else {
+      s.addShape(pptx.ShapeType.ellipse, { x: fx, y, w: foto, h: foto, fill: { color: C.panel }, line: { color: C.borde, width: 1 } });
+      const ini = m.user.name.split(/\s+/).slice(0, 2).map((p) => p[0] ?? "").join("").toUpperCase();
+      s.addText(ini, { x: fx, y, w: foto, h: foto, fontFace: FUENTE, fontSize: 24, bold: true, color: C.suave, align: "center", valign: "middle" });
+    }
+    s.addText(
+      [
+        { text: m.user.name, options: { bold: true, fontSize: 13, color: C.texto, breakLine: true } },
+        { text: m.user.cargo || "", options: { fontSize: 10.5, color: C.acento, breakLine: true } },
+        { text: corto(m.user.formacion || "", filas === 1 ? 180 : 90), options: { fontSize: 9, color: C.suave } },
+      ],
+      { x: x + 0.05, y: y + foto + 0.08, w: ancho - 0.1, h: alto - foto - 0.2, fontFace: FUENTE, align: "center", valign: "top", fit: "shrink" },
+    );
+  });
+}
+
+/** Si tuviera 90 segundos (Taller 4, lám. 19; IMBOK p. 72: se empieza por el resumen). */
+function resumenEjecutivo({ lamina, bloque }: Kit, c: Concepto) {
+  const caso = leerActuar(c.actuar).caso;
+  if (!caso.resumen && !c.propuestaValor) return;
+  const s = lamina("Resumen ejecutivo", caso.eslogan || c.title);
+  bloque(s, "En 90 segundos", caso.resumen ?? "", 0.5, 1.6, 12.3, 3.3, C.acento);
+  bloque(s, "Concepto recomendado", c.title, 0.5, 5.1, 4.0, 1.6);
+  bloque(s, "Propuesta de valor", c.propuestaValor, 4.7, 5.1, 8.1, 1.6);
+}
+
+function reto({ lamina, bloque }: Kit, d: Datos) {
   const b = d.project.brief;
   if (!b) return;
-  const s = lamina("1 · Configurar", "El reto");
+  const s = lamina("El reto", "Lo que nos propusimos resolver");
   bloque(s, "Enunciado", b.challengeText, 0.5, 1.6, 12.3, 1.15);
   bloque(s, "El problema", b.problema, 0.5, 2.95, 6.05, 2.4);
   bloque(s, "Por qué motiva", b.porQueMotivante, 6.75, 2.95, 6.05, 2.4);
   bloque(s, "La meta", b.meta, 0.5, 5.55, 12.3, 1.2, C.acento);
 }
 
-function embudo(pptx: PptxGenJS, lamina: Lamina, d: Datos) {
-  const s = lamina("El proceso", "De muchas ideas a un concepto en línea recta");
+/** El mapa del recorrido: de las ideas a la plataforma y al concepto. */
+function embudo({ pptx, lamina }: Kit, d: Datos) {
+  const s = lamina("Mapa del recorrido", "De muchas ideas a un concepto en línea recta");
   const priorizados = d.conceptos.filter((c) => c.priorizado);
   const cifras: Record<string, string> = {
     configurar: d.project.brief?.meta ? "Reto definido" : "Reto en construcción",
-    divergir: `${d.fragmentos.length} post-its`,
+    divergir: `${d.fragmentos.length} post-its · ${d.insights.length} insights`,
+    plataformas: d.plataforma ? `★ ${corto(d.plataforma.nombre, 40)}` : "",
     combinar: `${d.conceptos.length} conceptos`,
     convergir: `${priorizados.length} siguen adelante`,
   };
@@ -208,19 +292,18 @@ function embudo(pptx: PptxGenJS, lamina: Lamina, d: Datos) {
     s.addShape(pptx.ShapeType.rect, { x: 0.5 + i * 1.6, y, w: 1.5, h, fill: { color: i === ETAPAS_EMBUDO.length - 1 ? "1F3330" : C.panel }, line: { color: C.acento, width: 1 } });
     s.addText(
       [
-        { text: `${e.n} · ${e.name}`, options: { fontSize: 13, bold: true, color: C.texto, breakLine: true } },
+        { text: e.name, options: { fontSize: 13, bold: true, color: C.texto, breakLine: true } },
         { text: e.purpose, options: { fontSize: 10, color: C.tenue, breakLine: true } },
-        { text: cifras[e.key] ?? "", options: { fontSize: 12, color: C.acento } },
+        { text: cifras[e.key] ?? "", options: { fontSize: 11, color: C.acento } },
       ],
-      { x: 0.55 + i * 1.6, y, w: 1.4, h, fontFace: FUENTE, align: "center", valign: "middle" },
+      { x: 0.55 + i * 1.6, y, w: 1.4, h, fontFace: FUENTE, align: "center", valign: "middle", fit: "shrink" },
     );
   });
-  s.addText("6 · Actuar — cada concepto, la misma línea", { x: 8.5, y: 1.6, w: 4.4, h: 0.35, fontFace: FUENTE, fontSize: 12, bold: true, color: C.texto });
-  const lineas = priorizados.length ? priorizados : [];
-  if (!lineas.length) {
+  s.addText("Actuar — cada concepto, la misma línea", { x: 8.5, y: 1.6, w: 4.4, h: 0.35, fontFace: FUENTE, fontSize: 12, bold: true, color: C.texto });
+  if (!priorizados.length) {
     s.addText("Aún no hay conceptos priorizados.", { x: 8.5, y: 2.1, w: 4.4, h: 0.4, fontFace: FUENTE, fontSize: 11, color: C.tenue });
   }
-  lineas.slice(0, 5).forEach((c, k) => {
+  priorizados.slice(0, 5).forEach((c, k) => {
     const y = 2.3 + k * 0.85;
     const pasos = avanceLinea({ actuar: c.actuar, propuestaValor: c.propuestaValor, artefactos: c.artefactos, supuestos: c.supuestos });
     s.addText(corto(c.title, 34), { x: 8.5, y, w: 4.4, h: 0.3, fontFace: FUENTE, fontSize: 11, color: C.suave });
@@ -236,9 +319,42 @@ function embudo(pptx: PptxGenJS, lamina: Lamina, d: Datos) {
   s.addText(LINEA_CONCEPTO.map((p) => p.nombre).join("  ·  "), { x: 8.5, y: 6.45, w: 4.6, h: 0.35, fontFace: FUENTE, fontSize: 8, color: C.tenue });
 }
 
-function mapa(lamina: Lamina, d: Datos) {
+/** Tendencias de la hoja de Futuro, de mayor a menor impacto (Taller 4, lám. 40). */
+function tendencias({ lamina, bloque }: Kit, d: Datos) {
+  const lista = d.tendencias
+    .filter((t) => t.tipo !== "ESCENARIO")
+    .sort((a, b) => (b.impacto ?? 0) - (a.impacto ?? 0) || (b.incertidumbre ?? 0) - (a.incertidumbre ?? 0));
+  const escenarios = d.tendencias.filter((t) => t.tipo === "ESCENARIO");
+  const s = lamina("Tendencias de la industria", "Las fuerzas que mueven la oportunidad");
+  const texto = lista
+    .slice(0, 10)
+    .map((t) => `${t.eje ? "★ " : "• "}${t.nombre}${t.impacto ? `  (impacto ${t.impacto}${t.incertidumbre ? `, incertidumbre ${t.incertidumbre}` : ""})` : ""}`)
+    .join("\n");
+  bloque(s, "Tendencias principales", texto, 0.5, 1.6, escenarios.length ? 6.05 : 12.3, 5.1, C.acento);
+  if (escenarios.length) {
+    bloque(s, "Escenarios a 5 años", escenarios.map((e) => `${e.nombre}${e.detalle ? `: ${corto(e.detalle, 160)}` : ""}`).join("\n\n"), 6.75, 1.6, 6.05, 5.1);
+  }
+}
+
+/** La plataforma de crecimiento donde vive el concepto (IMBOK pp. 58-59). */
+function plataformaPriorizada({ lamina, bloque }: Kit, d: Datos) {
+  const p = d.plataforma!;
+  const des = leerJsonSeguro<Record<string, string>>(p.desarrollo, {});
+  const s = lamina("Plataforma de crecimiento", p.nombre);
+  bloque(s, "Propuesta de valor", des.propuesta ?? "", 0.5, 1.6, 12.3, 1.3, C.acento);
+  bloque(s, "Insights y habilitadores", des.insights ?? "", 0.5, 3.1, 6.05, 1.75);
+  bloque(s, "Segmentos y dinámica competitiva", des.segmentos ?? "", 6.75, 3.1, 6.05, 1.75);
+  bloque(s, "Activos y aliados", des.activos ?? "", 0.5, 5.05, 6.05, 1.65);
+  bloque(s, "Por qué podemos ganar", des.ganar ?? "", 6.75, 5.05, 6.05, 1.65);
+}
+
+function separador({ lamina }: Kit, kicker: string, titulo: string) {
+  lamina(kicker, titulo);
+}
+
+function mapa({ lamina }: Kit, d: Datos) {
   const shape = d.shape!;
-  const s = lamina("2 · Divergir", `Mapa de Oportunidades · ${d.fragmentos.length} post-its`);
+  const s = lamina("Anexo · Mapa de oportunidades", `${d.fragmentos.length} post-its`);
   const filas: PptxGenJS.TableRow[] = [
     [{ text: "", options: { fill: { color: C.fondo } } }, ...shape.cols.map((c) => ({ text: c.name, options: { bold: true, color: C.texto, fill: { color: C.panel }, fontSize: 10 } }))],
     ...shape.rows.map((r) => [
@@ -257,14 +373,15 @@ function mapa(lamina: Lamina, d: Datos) {
   });
 }
 
-function matriz(pptx: PptxGenJS, lamina: Lamina, d: Datos) {
-  const s = lamina("4 · Convergir", "Matriz de priorización");
+/** Conceptos identificados y el elegido, en la matriz atractivo × encaje. */
+function matriz({ pptx, lamina }: Kit, d: Datos) {
+  const s = lamina("Conceptos de negocio", "Conceptos identificados y concepto elegido");
   const X = 0.9, Y = 1.6, L = 5.0;
   s.addShape(pptx.ShapeType.rect, { x: X, y: Y, w: L, h: L, fill: { color: C.panel }, line: { color: C.borde, width: 1 } });
   s.addShape(pptx.ShapeType.rect, { x: X + L / 2, y: Y, w: L / 2, h: L / 2, fill: { color: "1F3330" }, line: { color: C.borde, width: 0 } });
-  s.addText("SEGUIR", { x: X + L - 1.3, y: Y + L / 2 - 0.35, w: 1.2, h: 0.3, fontFace: FUENTE, fontSize: 9, bold: true, color: C.acento, align: "right" });
-  s.addText("Fit →", { x: X, y: Y + L + 0.05, w: L, h: 0.3, fontFace: FUENTE, fontSize: 10, color: C.suave, align: "center" });
-  s.addText("Atractividad →", { x: X - 1.55, y: Y + L / 2 - 0.15, w: 2.6, h: 0.3, fontFace: FUENTE, fontSize: 10, color: C.suave, align: "center", rotate: 270 });
+  s.addText("ALTA PRIORIDAD", { x: X + L - 1.9, y: Y + L / 2 - 0.35, w: 1.8, h: 0.3, fontFace: FUENTE, fontSize: 9, bold: true, color: C.acento, align: "right" });
+  s.addText("Encaje →", { x: X, y: Y + L + 0.05, w: L, h: 0.3, fontFace: FUENTE, fontSize: 10, color: C.suave, align: "center" });
+  s.addText("Atractivo →", { x: X - 1.55, y: Y + L / 2 - 0.15, w: 2.6, h: 0.3, fontFace: FUENTE, fontSize: 10, color: C.suave, align: "center", rotate: 270 });
 
   const conTotal = d.conceptos.map((c, i) => {
     const a = promedioEje(c, "atractividad");
@@ -285,7 +402,7 @@ function matriz(pptx: PptxGenJS, lamina: Lamina, d: Datos) {
         [
           { text: `${r.t !== null ? k + 1 : "–"}  ${corto(r.c.title, 48)}`, options: { bold: true, color: C.texto, fontSize: 13, breakLine: true } },
           {
-            text: `${r.t !== null ? `Atractividad ${r.a!.toFixed(1)} · Fit ${r.f!.toFixed(1)}` : "Sin puntuar"}${r.c.priorizado ? "   ★ Sigue adelante" : ""}`,
+            text: `${r.t !== null ? `Atractivo ${r.a!.toFixed(1)} · Encaje ${r.f!.toFixed(1)}` : "Sin puntuar"}${r.c.priorizado ? "   ★ Elegido" : ""}`,
             options: { color: r.c.priorizado ? C.oro : C.tenue, fontSize: 10 },
           },
         ],
@@ -295,18 +412,39 @@ function matriz(pptx: PptxGenJS, lamina: Lamina, d: Datos) {
   });
 }
 
-function lineaDeConcepto(pptx: PptxGenJS, lamina: Lamina, bloque: Bloque, caja: Caja, d: Datos, c: Datos["conceptos"][number]) {
+/**
+ * El caso de negocio de un concepto, en el orden del IMBOK (p. 72): insight,
+ * propuesta de valor, concepto detallado, modelo de negocio y tamaño,
+ * incertidumbres clave y plan de acción.
+ */
+function casoDeConcepto(k: Kit, d: Datos, c: Concepto) {
+  const { pptx, lamina, bloque, caja } = k;
   const actuar = leerActuar(c.actuar);
+  const caso = actuar.caso;
+  const kick = (t: string) => `Caso de negocio · ${t}`;
 
-  // El concepto y de dónde sale
-  const s1 = lamina("3 · Combinar · concepto priorizado", c.title);
-  // La frase «Conecte los puntos» puede pasar de 900 caracteres. PowerPoint solo
-  // reajusta el texto al editarlo, así que el tamaño se fija aquí según el largo.
-  const frase = c.statement || "—";
+  // 1. Insight: el «¡ajá!» y los insights que comparten post-its con el concepto
+  const ids = new Set(c.anclas.map((a) => a.fragmentId).filter(Boolean));
+  const respaldo = d.insights.filter((i) => i.dots.some((x) => x.fragmentId && ids.has(x.fragmentId)));
+  if (caso.aja || respaldo.length) {
+    const s = lamina(kick("Insight"), c.title);
+    bloque(s, "El «¡ajá!»", caso.aja ?? "", 0.5, 1.6, 12.3, 2.3, C.oro);
+    bloque(s, "Insights que lo respaldan", respaldo.map((i) => `• ${i.statement}`).join("\n"), 0.5, 4.1, 12.3, 2.6);
+  }
+
+  // 2. Propuesta de valor
+  if (c.propuestaValor || caso.beneficios) {
+    const s = lamina(kick("Propuesta de valor"), c.title);
+    bloque(s, "Propuesta de valor", c.propuestaValor, 0.5, 1.6, 12.3, 2.4, C.acento);
+    bloque(s, "Beneficios y quién los obtiene", caso.beneficios ?? "", 0.5, 4.2, 12.3, 2.5);
+  }
+
+  // 3. Concepto detallado: los puntos que conecta, la descripción y su visualización
+  const s1 = lamina(kick("Concepto detallado"), c.title);
+  const frase = caso.descripcion || c.statement || "—";
   const tam = frase.length < 220 ? 15 : frase.length < 480 ? 12.5 : frase.length < 760 ? 11 : 9.5;
   s1.addText(frase, { x: 0.5, y: 1.45, w: 12.3, h: 1.75, fontFace: FUENTE, fontSize: tam, color: C.suave, valign: "top" });
-  const filas = d.shape?.rows ?? [];
-  filas.forEach((r, i) => {
+  (d.shape?.rows ?? []).forEach((r, i) => {
     const anclas = c.anclas.filter((a) => a.rowId === r.id);
     const x = 0.5 + i * 2.48;
     s1.addShape(pptx.ShapeType.rect, { x, y: 3.3, w: 2.38, h: 0.08, fill: { color: sin(r.color) }, line: { color: sin(r.color), width: 0 } });
@@ -317,35 +455,48 @@ function lineaDeConcepto(pptx: PptxGenJS, lamina: Lamina, bloque: Bloque, caja: 
       ],
       { x, y: 3.4, w: 2.38, h: 0.6, fontFace: FUENTE, valign: "top" },
     );
-    if (anclas.length > 4) {
-      s1.addText(`+${anclas.length - 4} más`, { x, y: 6.6, w: 2.38, h: 0.3, fontFace: FUENTE, fontSize: 9, color: C.tenue });
-    }
-    anclas.slice(0, 4).forEach((a, k) => {
+    if (anclas.length > 4) s1.addText(`+${anclas.length - 4} más`, { x, y: 6.6, w: 2.38, h: 0.3, fontFace: FUENTE, fontSize: 9, color: C.tenue });
+    anclas.slice(0, 4).forEach((a, j) => {
       const texto = a.fragment ? tituloPostit(a.fragment, 7) : tituloPostit({ titulo: "", text: a.textSnapshot }, 7);
       s1.addText(corto(texto, 60), {
-        x, y: 4.1 + k * 0.62, w: 2.38, h: 0.54, fontFace: FUENTE, fontSize: 10, color: C.tinta,
+        x, y: 4.1 + j * 0.62, w: 2.38, h: 0.54, fontFace: FUENTE, fontSize: 10, color: C.tinta,
         fill: { color: C.papel }, margin: 6, valign: "middle", fit: "shrink",
       });
     });
   });
-
-  // Brochure
   const b = actuar.brochure;
   if (b.titular || b.solucion) {
-    const s = lamina("6 · Actuar · Brochure", b.titular || c.title);
-    bloque(s, "El problema", b.problema ?? "", 0.5, 1.6, 6.05, 2.3);
-    bloque(s, "La solución", b.solucion ?? "", 6.75, 1.6, 6.05, 2.3, C.acento);
+    const s = lamina(kick("Brochure"), b.titular || c.title);
+    bloque(s, "¿Cuál es la necesidad?", b.problema ?? "", 0.5, 1.6, 6.05, 2.3);
+    bloque(s, "¿Cuál es la solución?", b.solucion ?? "", 6.75, 1.6, 6.05, 2.3, C.acento);
     const beneficios = (b.beneficios ?? "").split("\n").map((x) => x.trim()).filter(Boolean);
-    bloque(s, "Beneficios", beneficios.map((x) => `✓ ${x}`).join("\n"), 0.5, 4.1, 8.1, 2.6);
+    bloque(s, "¿Por qué nosotros?", beneficios.map((x) => `✓ ${x}`).join("\n"), 0.5, 4.1, 8.1, 2.6);
     bloque(s, "Llamado a la acción", b.llamado ?? "", 8.8, 4.1, 4.0, 2.6, C.oro);
   }
 
-  // Artefactos e ingeniería inversa
+  // 4 y 5. Modelo de negocio y tamaño de la oportunidad; stakeholders
+  laminaDeBloque(k, c, "modelo", kick("Modelo de negocio y tamaño"));
+  laminaDeBloque(k, c, "stakeholders", kick("Stakeholders"));
+
+  // 6. Incertidumbres clave: riesgos y la ingeniería inversa
+  laminaDeBloque(k, c, "riesgos", kick("Riesgos y opciones"));
   if (c.artefactos.length || c.supuestos.length) {
-    const s = lamina("6 · Actuar · Artefacto e ingeniería inversa", c.title);
+    const s = lamina(kick("Incertidumbres clave"), c.title);
     caja(s, 0.5, 1.6, 6.05, 5.1);
-    s.addText("ARTEFACTOS", { x: 0.65, y: 1.7, w: 5.7, h: 0.3, fontFace: FUENTE, fontSize: 9, bold: true, color: C.acento, charSpacing: 2 });
-    c.artefactos.slice(0, 5).forEach((a, k) => {
+    s.addText("LO QUE TENDRÍA QUE SER CIERTO", { x: 0.65, y: 1.7, w: 5.7, h: 0.3, fontFace: FUENTE, fontSize: 9, bold: true, color: C.acento, charSpacing: 2 });
+    const orden = [...c.supuestos].sort((p, q) => Number(q.critical) - Number(p.critical) || p.likelihood - q.likelihood);
+    orden.slice(0, 6).forEach((sp, j) => {
+      s.addText(
+        [
+          { text: `${sp.critical ? "★ " : ""}${corto(sp.text, 90)}`, options: { bold: sp.critical, fontSize: 11.5, color: sp.critical ? C.oro : C.texto, breakLine: true } },
+          { text: sp.critical && sp.failFastTest ? `Prueba: ${corto(sp.failFastTest, 110)}` : `Probabilidad ${sp.likelihood}/5`, options: { fontSize: 9.5, color: C.suave } },
+        ],
+        { x: 0.65, y: 2.05 + j * 0.76, w: 5.75, h: 0.72, fontFace: FUENTE, valign: "top", fit: "shrink" },
+      );
+    });
+    caja(s, 6.75, 1.6, 6.05, 5.1);
+    s.addText("ARTEFACTOS PARA VALIDARLO", { x: 6.9, y: 1.7, w: 5.7, h: 0.3, fontFace: FUENTE, fontSize: 9, bold: true, color: C.acento, charSpacing: 2 });
+    c.artefactos.slice(0, 5).forEach((a, j) => {
       const kind = ARTIFACT_KIND_LABEL[asEnum(ARTIFACT_KINDS, a.kind, "PROTOCEPTO")];
       const st = ARTIFACT_STATUS_META[asEnum(ARTIFACT_STATUSES, a.status, "BORRADOR")];
       s.addText(
@@ -354,56 +505,55 @@ function lineaDeConcepto(pptx: PptxGenJS, lamina: Lamina, bloque: Bloque, caja: 
           { text: `${kind} · ${st.label} · iteración ${a.iteration}`, options: { fontSize: 10, color: sin(st.color), breakLine: true } },
           { text: a.promise ? `«${corto(a.promise, 120)}»` : "", options: { fontSize: 10, color: C.suave } },
         ],
-        { x: 0.65, y: 2.05 + k * 0.92, w: 5.75, h: 0.88, fontFace: FUENTE, valign: "top", fit: "shrink" },
-      );
-    });
-    caja(s, 6.75, 1.6, 6.05, 5.1);
-    s.addText("LO QUE TENDRÍA QUE SER CIERTO", { x: 6.9, y: 1.7, w: 5.7, h: 0.3, fontFace: FUENTE, fontSize: 9, bold: true, color: C.acento, charSpacing: 2 });
-    const orden = [...c.supuestos].sort((p, q) => Number(q.critical) - Number(p.critical) || p.likelihood - q.likelihood);
-    orden.slice(0, 6).forEach((sp, k) => {
-      s.addText(
-        [
-          { text: `${sp.critical ? "★ " : ""}${corto(sp.text, 90)}`, options: { bold: sp.critical, fontSize: 11.5, color: sp.critical ? C.oro : C.texto, breakLine: true } },
-          { text: sp.critical && sp.failFastTest ? `Prueba: ${corto(sp.failFastTest, 110)}` : `Probabilidad ${sp.likelihood}/5`, options: { fontSize: 9.5, color: C.suave } },
-        ],
-        { x: 6.9, y: 2.05 + k * 0.76, w: 5.75, h: 0.72, fontFace: FUENTE, valign: "top", fit: "shrink" },
+        { x: 6.9, y: 2.05 + j * 0.92, w: 5.75, h: 0.88, fontFace: FUENTE, valign: "top", fit: "shrink" },
       );
     });
   }
 
-  // Propuesta de valor
-  if (c.propuestaValor) {
-    const s = lamina("6 · Actuar · Propuesta de valor", c.title);
-    bloque(s, "Propuesta de valor", c.propuestaValor, 0.5, 1.6, 12.3, 2.4, C.acento);
+  // 7. Plan de acción
+  const filas = actuar.plan.filter((f) => f.que);
+  if (filas.length) {
+    const s = lamina(kick("Plan de acción"), c.title);
+    const plazo = (x: string) => PLAZOS.find((p) => p.key === x)?.label ?? "";
+    s.addTable(
+      [
+        ["Qué", "Cómo", "Quién", "Cuándo", "Plazo"].map((t) => ({ text: t, options: { bold: true, color: C.acento, fontSize: 11 } })),
+        ...filas.slice(0, 10).map((f) => [f.que, f.como, f.quien, f.cuando, plazo(f.plazo)].map((t) => ({ text: corto(t, 160), options: { color: C.texto, fontSize: 10 } }))),
+      ],
+      { x: 0.5, y: 1.6, w: 12.3, colW: [3.2, 4.1, 2.0, 1.5, 1.5], fontFace: FUENTE, border: { type: "solid", color: C.borde, pt: 0.75 }, fill: { color: C.panel } },
+    );
   }
 
-  // Caso de negocio: un bloque por lámina, en el orden del Taller 4 (lám. 32)
-  const caso = actuar.caso;
-  for (const bl of BLOQUES_CASO) {
-    if (bl.key === "plan") {
-      const filas = actuar.plan.filter((f) => f.que);
-      if (!filas.length) continue;
-      const s = lamina(`Caso de negocio · ${bl.n}. ${bl.titulo}`, c.title);
-      const plazo = (k: string) => PLAZOS.find((x) => x.key === k)?.label ?? "";
-      s.addTable(
-        [
-          ["Qué", "Cómo", "Quién", "Cuándo", "Plazo"].map((t) => ({ text: t, options: { bold: true, color: C.acento, fontSize: 11 } })),
-          ...filas.slice(0, 10).map((f) => [f.que, f.como, f.quien, f.cuando, plazo(f.plazo)].map((t) => ({ text: corto(t, 160), options: { color: C.texto, fontSize: 10 } }))),
-        ],
-        { x: 0.5, y: 1.6, w: 12.3, colW: [3.2, 4.1, 2.0, 1.5, 1.5], fontFace: FUENTE, border: { type: "solid", color: "33413F", pt: 0.75 }, fill: { color: C.panel } },
-      );
-      continue;
-    }
-    const campos = CAMPOS_CASO.filter((f) => f.bloque === bl.key && caso[f.campo]);
-    if (!campos.length) continue;
-    const s = lamina(`Caso de negocio · ${bl.n}. ${bl.titulo}`, c.title);
-    const cols = campos.length === 1 ? 1 : campos.length <= 4 ? 2 : 3;
-    const filas = Math.ceil(campos.length / cols);
-    const w = (12.3 - (cols - 1) * 0.2) / cols;
-    const h = (5.1 - (filas - 1) * 0.2) / filas;
-    campos.forEach((f, i) => {
-      const col = i % cols, fila = Math.floor(i / cols);
-      bloque(s, f.label, caso[f.campo] ?? "", 0.5 + col * (w + 0.2), 1.6 + fila * (h + 0.2), w, h, f.campo === "indicadores" ? C.oro : undefined);
-    });
+  laminaDeBloque(k, c, "discurso", kick("Discurso"));
+}
+
+/** Una lámina con los campos llenos de un bloque del caso. */
+function laminaDeBloque({ lamina, bloque }: Kit, c: Concepto, clave: (typeof BLOQUES_CASO)[number]["key"], kicker: string) {
+  const caso = leerActuar(c.actuar).caso;
+  const campos = CAMPOS_CASO.filter((f) => f.bloque === clave && caso[f.campo]);
+  if (!campos.length) return;
+  const s = lamina(kicker, c.title);
+  const cols = campos.length === 1 ? 1 : campos.length <= 4 ? 2 : 3;
+  const filas = Math.ceil(campos.length / cols);
+  const w = (12.3 - (cols - 1) * 0.2) / cols;
+  const h = (5.1 - (filas - 1) * 0.2) / filas;
+  campos.forEach((f, i) => {
+    const col = i % cols, fila = Math.floor(i / cols);
+    bloque(s, f.label, caso[f.campo] ?? "", 0.5 + col * (w + 0.2), 1.6 + fila * (h + 0.2), w, h, f.campo === "indicadores" ? C.oro : undefined);
+  });
+}
+
+/** Cierre: la recomendación y los próximos pasos (Taller 4, lám. 47). */
+function recomendacion({ lamina, bloque }: Kit, d: Datos, priorizados: Concepto[]) {
+  const c = priorizados[0];
+  const actuar = leerActuar(c.actuar);
+  const pasos = actuar.plan.filter((f) => f.que && f.plazo === "CORTO").map((f) => `• ${f.que}${f.quien ? ` — ${f.quien}` : ""}${f.cuando ? ` (${f.cuando})` : ""}`);
+  const pruebas = c.supuestos.filter((s) => s.critical).map((s) => `• ${corto(s.text, 220)}`);
+  const s = lamina("Resumen y recomendación", `Recomendamos: ${c.title}`);
+  bloque(s, "Por qué", actuar.caso.resumen || c.propuestaValor, 0.5, 1.6, 12.3, 2.0, C.acento);
+  bloque(s, "Próximos pasos", pasos.join("\n"), 0.5, 3.8, 6.05, 2.9);
+  bloque(s, "Hipótesis por probar primero", pruebas.join("\n"), 6.75, 3.8, 6.05, 2.9, C.oro);
+  if (priorizados.length > 1) {
+    s.addText(`También siguen adelante: ${priorizados.slice(1).map((x) => x.title).join(" · ")}`, { x: 0.5, y: 6.75, w: 12.3, h: 0.25, fontFace: FUENTE, fontSize: 9, color: C.tenue });
   }
 }
