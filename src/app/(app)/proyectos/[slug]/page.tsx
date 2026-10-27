@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireProject, getPrimaryMap } from "@/lib/projects";
 import { IDEX, HATS, THIN_CELL_THRESHOLD } from "@/lib/gimi";
 import { VERIFICATION_META, puntuados, type Verification } from "@/lib/enums";
-import { V2 } from "@/lib/v2";
+import { PPTX_ACTIVO, V2 } from "@/lib/v2";
 import { Embudo } from "@/components/v2/Embudo";
 import { avanceLinea, pasosEnOrden } from "@/lib/actuar";
 import { Avisos } from "@/components/v2/ui";
@@ -56,11 +56,13 @@ export default async function ProjectOverview({
     return (
       <div className="mt-8 flex flex-col gap-6">
         <Avisos hecho={hecho} />
-        <div className="-mb-2 flex justify-end">
-          <a href={`/api/proyectos/${slug}/pptx`} className="btn">
-            Descargar presentación (PPTX)
-          </a>
-        </div>
+        {PPTX_ACTIVO && (
+          <div className="-mb-2 flex justify-end">
+            <a href={`/api/proyectos/${slug}/pptx`} className="btn">
+              Descargar presentación (PPTX)
+            </a>
+          </div>
+        )}
         <Embudo
           etapas={[
             {

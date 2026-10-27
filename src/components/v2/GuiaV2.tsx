@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { LINEA_CONCEPTO, SOLUTION_FOCI } from "@/lib/gimi";
 import { VERIFICATION_META, VERIFICATIONS } from "@/lib/enums";
+import { PPTX_ACTIVO } from "@/lib/v2";
 
 /**
  * Guía de uso de la v2. Organizada como el propio proceso: cada etapa con qué
@@ -45,7 +46,7 @@ export function GuiaV2() {
       </nav>
       <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-[#8b9a97]">
         <a href="#ia" className="hover:text-accent">Dónde ayuda la IA</a>
-        <a href="#pptx" className="hover:text-accent">Descargar en PowerPoint</a>
+        {PPTX_ACTIVO && <a href="#pptx" className="hover:text-accent">Descargar en PowerPoint</a>}
         <a href="#claude" className="hover:text-accent">Trabajar con Claude</a>
         <a href="#roles" className="hover:text-accent">Roles y celular</a>
       </p>
@@ -179,13 +180,15 @@ export function GuiaV2() {
         </p>
       </Seccion>
 
-      <Seccion id="pptx" titulo="Descargar en PowerPoint">
-        <ul className="lista">
-          <li><b>Vista general → «Descargar presentación (PPTX)»:</b> portada, reto, embudo, mapa, matriz y la línea de cada concepto que sigue adelante.</li>
-          <li><b>Actuar → «Descargar PPTX»:</b> solo la línea de ese concepto, para una reunión puntual.</li>
-        </ul>
-        <p className="mt-2">El archivo es editable: texto y formas de PowerPoint, no imágenes.</p>
-      </Seccion>
+      {PPTX_ACTIVO && (
+        <Seccion id="pptx" titulo="Descargar en PowerPoint">
+          <ul className="lista">
+            <li><b>Vista general → «Descargar presentación (PPTX)»:</b> portada, reto, embudo, mapa, matriz y la línea de cada concepto que sigue adelante.</li>
+            <li><b>Actuar → «Descargar PPTX»:</b> solo la línea de ese concepto, para una reunión puntual.</li>
+          </ul>
+          <p className="mt-2">El archivo es editable: texto y formas de PowerPoint, no imágenes.</p>
+        </Seccion>
+      )}
 
       <Seccion id="claude" titulo="Trabajar con Claude (canal no-code)">
         <p>

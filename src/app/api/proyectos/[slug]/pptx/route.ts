@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getProjectRole } from "@/lib/projects";
 import { generarPresentacion } from "@/lib/presentacionV2";
+import { PPTX_ACTIVO } from "@/lib/v2";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,7 @@ export const runtime = "nodejs";
  * la línea de ese concepto, para llevarla a una reunión puntual.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+  if (!PPTX_ACTIVO) return NextResponse.json({ error: "La descarga en PPTX está desactivada." }, { status: 404 });
   const { slug } = await params;
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "No autenticado." }, { status: 401 });

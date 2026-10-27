@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { DETONANTES, LINEA_CONCEPTO } from "@/lib/gimi";
 import { BLOQUES_CASO, CAMPOS_BROCHURE, CAMPOS_CASO, PLAZOS, type BloqueCaso, type DatosActuar, type FilaPlan, type PasoLinea } from "@/lib/actuar";
+import { PPTX_ACTIVO } from "@/lib/v2";
 import {
   ARTIFACT_KINDS,
   ARTIFACT_KIND_LABEL,
@@ -116,9 +117,11 @@ export function LineaConcepto({ slug, conceptos, editable }: { slug: string; con
           <h2 className="text-[22px] font-bold leading-tight text-[#e8e3d8]">{activo.title}</h2>
           {activo.statement && <p className="mt-1 max-w-[90ch] text-[13px] leading-relaxed text-[#a9b5b3]">{activo.statement}</p>}
         </div>
-        <a href={`/api/proyectos/${slug}/pptx?concepto=${activo.id}`} className="btn shrink-0">
-          Descargar PPTX
-        </a>
+        {PPTX_ACTIVO && (
+          <a href={`/api/proyectos/${slug}/pptx?concepto=${activo.id}`} className="btn shrink-0">
+            Descargar PPTX
+          </a>
+        )}
       </div>
 
       {/* La línea recta */}

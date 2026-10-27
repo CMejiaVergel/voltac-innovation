@@ -9,6 +9,14 @@
  */
 export const V2 = process.env.NEXT_PUBLIC_PLATAFORMA_V2 === "1";
 
+/**
+ * Descarga del caso en PPTX. Apagada por ahora (27-oct-2026): los equipos
+ * arman sus láminas con el formato que prefieran a partir de la información
+ * de la plataforma. El generador (lib/presentacionV2.ts) se conserva para
+ * cuando se defina cómo exportar.
+ */
+export const PPTX_ACTIVO = false;
+
 /** Pestañas del proyecto visibles en la v2, en orden. */
 export const TABS_V2 = ["", "/configurar", "/divergir", "/plataformas", "/combinar", "/convergir", "/actuar", "/equipo", "/ajustes"] as const;
 
