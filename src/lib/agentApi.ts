@@ -31,6 +31,11 @@ export class AgentApiError extends Error {
   }
 }
 
+/** Un MCP limitado a un proyecto no crea ni copia proyectos ni organizaciones. */
+export function sinCandado(user: SessionUser, que: string) {
+  if (user.soloProyectoId) throw new AgentApiError(`Esta conexión está limitada a un proyecto: no puede ${que}.`, 403);
+}
+
 async function loadProject(user: SessionUser, slug: string, needsWrite: boolean) {
   const project = await prisma.project.findUnique({
     where: { slug },
@@ -80,6 +85,7 @@ export type NuevoProyecto = {
  * justo los campos que luego limitan lo que el agente puede proponer.
  */
 export async function createProjectForAgent(user: SessionUser, datos: NuevoProyecto) {
+  sinCandado(user, "crear proyectos");
   const nombre = (datos.nombre ?? "").trim();
   if (nombre.length < 4) {
     throw new AgentApiError("El proyecto necesita un nombre de al menos 4 caracteres.", 400);
@@ -162,11 +168,15 @@ export async function renameProject(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function listProjects(user: SessionUser) {
-  const where = user.role === "ADMIN" ? {} : { members: { some: { userId: user.id } } };
+  const where = user.soloProyectoId
+    ? { id: user.soloProyectoId }
+    : user.role === "ADMIN"
+      ? {}
+      : { members: { some: { userId: user.id } } };
   const projects = await prisma.project.findMany({
     where,
     orderBy: { updatedAt: "desc" },
-    include: { maps: { select: { _count: { select: { fragments: true } } } } },
+    include: { maps: { select: { _count: { select: { fragments: true } } } }, organizacion: { select: { slug: true } } },
   });
 
   return projects.map((p) => ({
@@ -174,6 +184,7 @@ export async function listProjects(user: SessionUser) {
     nombre: p.name,
     empresa: p.company,
     programa: p.program,
+    organizacion: p.organizacion?.slug ?? null,
     estado: p.status,
     fragmentos: p.maps.reduce((a, m) => a + m._count.fragments, 0),
   }));
@@ -1022,6 +1033,7 @@ export async function cloneProject(
   slug: string,
   opts: { sufijo?: string; incluirFragmentos?: boolean } = {},
 ) {
+  sinCandado(user, "copiar proyectos");
   const origin = await loadProject(user, slug, false);
   const { map, shape } = await loadMap(origin.id);
 

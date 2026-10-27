@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { prisma } from "@/lib/db";
 import type { SessionUser } from "@/lib/auth";
-import { AgentApiError } from "@/lib/agentApi";
+import { AgentApiError, sinCandado } from "@/lib/agentApi";
 import { canEdit, asEnum, VERIFICATIONS, ARTIFACT_KINDS } from "@/lib/enums";
 import { getProjectRole, getPrimaryMap } from "@/lib/projects";
 import { getOrgRole, listOrgsFor, uniqueOrgSlug, leerJson } from "@/lib/organizaciones";
@@ -126,6 +126,7 @@ const ACCIONES: Record<string, (u: SessionUser, p: P) => Promise<unknown>> = {
   },
 
   async crear_organizacion(u, p) {
+    sinCandado(u, "crear organizaciones");
     const nombre = txt(p.nombre, 160);
     if (!nombre) throw new AgentApiError("La organización necesita un nombre.", 400);
     const slug = await uniqueOrgSlug(nombre);

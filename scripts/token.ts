@@ -5,9 +5,10 @@
  *   npm run token:listar
  *   npm run token:revocar -- --prefijo vin_AbCdEfGh
  *
- * Se hace por CLI y no por interfaz web a proposito: el token en claro se
- * muestra UNA sola vez y no debe quedar en el historial de un navegador ni en
- * una pantalla compartida.
+ * Desde oct. 2026 el superadmin tambien los genera en Administracion →
+ * Conexion con Claude, confirmando su contraseña y ligando el token a un
+ * proyecto. Esta via queda para el servidor. En ambas el token en claro se
+ * muestra UNA sola vez: la base solo guarda su hash.
  */
 
 import crypto from "node:crypto";

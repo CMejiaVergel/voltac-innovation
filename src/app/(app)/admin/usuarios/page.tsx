@@ -4,11 +4,44 @@ import { correoConfigurado } from "@/lib/correo";
 import { setUserActive, setPermisoClaveInstancia } from "@/app/actions/projects";
 import { revocarInvitacion } from "@/app/actions/cuentas";
 import { AccionConEnlace, FormInvitar } from "@/components/cuentas/Formularios";
+import { enLinea } from "@/lib/actividad";
 
 export const metadata = { title: "Usuarios — Voltac Innovacion" };
 export const dynamic = "force-dynamic";
 
 const fecha = (d: Date | null) => (d ? d.toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" }) : "—");
+const ZONA = "America/Bogota";
+const hora = (d: Date | null) =>
+  d ? d.toLocaleString("es-CO", { timeZone: ZONA, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
+const soloHora = (d: Date) => d.toLocaleTimeString("es-CO", { timeZone: ZONA, hour: "2-digit", minute: "2-digit" });
+
+/** «hace 5 min», «hace 3 h», o la fecha si pasó más de un día. */
+function hace(d: Date | null, ahora: number) {
+  if (!d) return "sin registro todavía";
+  const min = Math.round((ahora - d.getTime()) / 60_000);
+  if (min < 1) return "hace un momento";
+  if (min < 60) return `hace ${min} min`;
+  if (min < 24 * 60) return `hace ${Math.round(min / 60)} h`;
+  return hora(d);
+}
+
+const ETAPAS: Record<string, string> = {
+  "": "Vista general",
+  configurar: "Configurar",
+  divergir: "Divergir",
+  plataformas: "Plataformas",
+  combinar: "Combinar",
+  convergir: "Convergir",
+  actuar: "Actuar",
+  equipo: "Equipo",
+  ajustes: "Ajustes",
+};
+const etapa = (a: { etapa: string; via: string }) => (a.via === "MCP" ? "Claude (MCP)" : (ETAPAS[a.etapa] ?? a.etapa));
+
+function duracion(desde: Date, hasta: Date) {
+  const min = Math.round((hasta.getTime() - desde.getTime()) / 60_000);
+  return min < 1 ? "menos de 1 min" : min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${min % 60} min`;
+}
 
 export default async function UsersPage({
   searchParams,
@@ -18,7 +51,7 @@ export default async function UsersPage({
   const admin = await requireAdmin();
   const { hecho, error } = await searchParams;
 
-  const [users, invitaciones] = await Promise.all([
+  const [users, invitaciones, accesos] = await Promise.all([
     prisma.user.findMany({
       orderBy: [{ active: "desc" }, { createdAt: "asc" }],
       include: { _count: { select: { memberships: true } } },
@@ -28,12 +61,25 @@ export default async function UsersPage({
       orderBy: { createdAt: "desc" },
       include: { invitadoPor: { select: { name: true } } },
     }),
+    prisma.accesoProyecto.findMany({
+      where: { hasta: { gte: new Date(Date.now() - 30 * 86400_000) } },
+      orderBy: { hasta: "desc" },
+      take: 1500,
+      include: { project: { select: { name: true, slug: true } } },
+    }),
   ]);
+  const ahora = Date.now();
+  const porUsuario = new Map<string, typeof accesos>();
+  for (const a of accesos) {
+    const l = porUsuario.get(a.userId) ?? [];
+    if (l.length < 15) l.push(a);
+    porUsuario.set(a.userId, l);
+  }
+  const conectados = users.filter((u) => enLinea(u.ultimaActividadAt, ahora)).length;
   const smtp = correoConfigurado();
 
   return (
-    <div className="max-w-[860px] pt-8 pb-16">
-      <p className="kicker mb-2">Administracion</p>
+    <div className="pb-16 pt-6">
       <h1 className="text-[30px] font-bold leading-none tracking-[-0.02em] text-[#e8e3d8]">Usuarios de la instancia</h1>
       <p className="hint mt-3 max-w-[70ch]">
         El acceso es por invitación: la persona recibe un enlace, crea su perfil con foto y su contraseña, y activa la cuenta desde su correo. Nadie más conoce su
@@ -83,11 +129,17 @@ export default async function UsersPage({
         </section>
       )}
 
-      <h2 className="kicker mb-2 mt-7">Cuentas</h2>
+      <h2 className="kicker mb-2 mt-7">
+        Cuentas · {conectados} en línea ahora
+      </h2>
       <ul className="flex flex-col gap-2">
         {users.map((u) => {
           const toggle = setUserActive.bind(null, u.id, !u.active);
           const permiso = setPermisoClaveInstancia.bind(null, u.id, !u.usaClaveInstancia);
+          const recientes = porUsuario.get(u.id) ?? [];
+          const enLineaAhora = enLinea(u.ultimaActividadAt, ahora);
+          const ultimo = recientes[0];
+          const ahoraEn = enLineaAhora && ultimo && enLinea(ultimo.hasta, ahora) ? ultimo : null;
           return (
             <li key={u.id} className="rounded-[3px] border border-[rgba(232,227,216,0.1)] bg-panel px-4 py-3">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -123,7 +175,7 @@ export default async function UsersPage({
                 )}
                 <span className="flex-1" />
                 <span className="font-mono text-[10px] text-[#4d5a58]">
-                  último ingreso {fecha(u.ultimoIngreso)} · {u._count.memberships} proyecto{u._count.memberships === 1 ? "" : "s"}
+                  {u._count.memberships} proyecto{u._count.memberships === 1 ? "" : "s"}
                 </span>
                 {u.id !== admin.id && (
                   <>
@@ -140,6 +192,52 @@ export default async function UsersPage({
                   </>
                 )}
               </div>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-[#8b9a97]">
+                {enLineaAhora ? (
+                  <span className="flex items-center gap-1.5 font-semibold text-[#7fd39b]">
+                    <span className="h-2 w-2 rounded-full bg-[#7fd39b]" aria-hidden />
+                    En línea
+                    {ahoraEn && (
+                      <span className="font-normal text-[#c9d1cf]">
+                        · {ahoraEn.project.name} · {etapa(ahoraEn)}
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-[#4d5a58]" aria-hidden />
+                    Última actividad {hace(u.ultimaActividadAt, ahora)}
+                  </span>
+                )}
+                <span>Último inicio de sesión: {hora(u.ultimoIngreso)}</span>
+              </div>
+              {recientes.length > 0 && (
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-[11.5px] text-accent">Actividad reciente ({recientes.length})</summary>
+                  <table className="mt-2 w-full text-left text-[11.5px]">
+                    <thead className="text-[#5e7370]">
+                      <tr>
+                        <th className="py-1 pr-3 font-normal">Proyecto</th>
+                        <th className="py-1 pr-3 font-normal">Dónde</th>
+                        <th className="py-1 pr-3 font-normal">Cuándo (hora de Colombia)</th>
+                        <th className="py-1 font-normal">Tiempo</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-[#c9d1cf]">
+                      {recientes.map((a) => (
+                        <tr key={a.id} className="border-t border-[rgba(232,227,216,0.06)]">
+                          <td className="py-1 pr-3">{a.project.name}</td>
+                          <td className="py-1 pr-3">{etapa(a)}</td>
+                          <td className="py-1 pr-3 font-mono text-[10.5px]">
+                            {hora(a.desde)} – {soloHora(a.hasta)}
+                          </td>
+                          <td className="py-1 font-mono text-[10.5px]">{duracion(a.desde, a.hasta)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </details>
+              )}
               {u.id !== admin.id && (
                 <div className="mt-2.5">
                   <AccionConEnlace id={u.id} tipo={u.emailVerificadoAt ? "RESTABLECER" : "ACTIVACION"} />

@@ -53,6 +53,9 @@ model User {
   intentosFallidos  Int       @default(0)
   bloqueadoHasta    DateTime?
   ultimoIngreso     DateTime?
+  /// Última señal de vida: la pestaña abierta (cada minuto) o una llamada del MCP.
+  /// Con menos de dos minutos, la persona está en línea.
+  ultimaActividadAt DateTime?
   claveCambiadaAt   DateTime?
 
   tokensCuenta TokenCuenta[]
@@ -60,6 +63,7 @@ model User {
 
   sessions         Session[]
   apiTokens        ApiToken[]
+  accesos          AccesoProyecto[]
   pushSubs         PushSubscription[]
   memberships      Membership[]
   projects         Project[]          @relation("ProjectCreator")
@@ -96,6 +100,9 @@ model ApiToken {
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// Solo lectura, o lectura y escritura.
   readOnly   Boolean   @default(false)
+  /// Proyecto al que queda limitado el token. Vacío = todos los del usuario.
+  projectId  String?
+  project    Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   lastUsedAt DateTime?
   expiresAt  DateTime?
   revokedAt  DateTime?
@@ -184,6 +191,8 @@ model Project {
   lecciones      Leccion[]
   elementosLente ElementoLente[]
   plataformas    Plataforma[]
+  apiTokens      ApiToken[]
+  accesos        AccesoProyecto[]
 
   /// Criterios con que el equipo califica sus Plataformas de Crecimiento,
   /// como JSON [{id, nombre}] (IMBOK p. 57: «determine los criterios»).
@@ -1320,4 +1329,28 @@ model TokenCuenta {
   createdAt DateTime  @default(now())
 
   @@index([userId, tipo])
+}
+
+// -----------------------------------------------------------------------------
+// Actividad: qué proyecto abrió cada persona, en qué etapa y de qué hora a qué hora
+// -----------------------------------------------------------------------------
+
+/// Un tramo de trabajo en un proyecto. Mientras la persona sigue en la misma
+/// etapa, la señal de cada minuto solo corre `hasta`; al cambiar de etapa o tras
+/// diez minutos sin señal empieza un tramo nuevo.
+model AccesoProyecto {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// Etapa o página (divergir, actuar…). Vacío = la vista general.
+  etapa     String   @default("")
+  /// WEB | MCP
+  via       String   @default("WEB")
+  desde     DateTime @default(now())
+  hasta     DateTime @default(now())
+
+  @@index([userId, hasta])
+  @@index([projectId])
 }

@@ -12,6 +12,7 @@ import type { SessionUser } from "@/lib/auth";
  * miembros; el ADMIN de la plataforma la ve toda como responsable.
  */
 export async function getOrgRole(user: SessionUser, organizacionId: string): Promise<ProjectRole | null> {
+  if (user.soloProyectoId && user.soloOrganizacionId !== organizacionId) return null;
   if (user.role === "ADMIN") return "OWNER";
   const m = await prisma.orgMembership.findUnique({
     where: { organizacionId_userId: { organizacionId, userId: user.id } },
@@ -32,7 +33,11 @@ export async function requireOrg(user: SessionUser, slug: string) {
 
 export async function listOrgsFor(user: SessionUser) {
   return prisma.organizacion.findMany({
-    where: user.role === "ADMIN" ? {} : { miembros: { some: { userId: user.id } } },
+    where: user.soloProyectoId
+      ? { id: user.soloOrganizacionId ?? "" }
+      : user.role === "ADMIN"
+        ? {}
+        : { miembros: { some: { userId: user.id } } },
     orderBy: { updatedAt: "desc" },
     include: {
       perfil: true,

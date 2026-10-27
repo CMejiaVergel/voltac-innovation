@@ -217,7 +217,8 @@ export function FormRecuperar() {
   );
 }
 
-export function FormRestablecer({ token }: { token: string }) {
+/** `vigente` lo decide la página; el éxito se muestra aunque el enlace ya quedó usado. */
+export function FormRestablecer({ token, vigente }: { token: string; vigente: boolean }) {
   const { estado, onSubmit, pending } = useFormulario(restablecerClave.bind(null, token));
   if (estado.ok)
     return (
@@ -225,6 +226,15 @@ export function FormRestablecer({ token }: { token: string }) {
         <Resultado estado={estado} />
         <Link href="/login" className="btn btn-primary self-start">
           Iniciar sesión
+        </Link>
+      </div>
+    );
+  if (!vigente)
+    return (
+      <div className="flex flex-col gap-4">
+        <Resultado estado={{ ok: false, mensaje: "Este enlace venció o ya se usó. Pide uno nuevo: los enlaces sirven una sola vez y duran 60 minutos." }} />
+        <Link href="/recuperar" className="btn btn-primary self-start">
+          Pedir un enlace nuevo
         </Link>
       </div>
     );

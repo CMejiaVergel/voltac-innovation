@@ -24,6 +24,8 @@ export async function getProjectRole(
   user: SessionUser,
   projectId: string,
 ): Promise<ProjectAccess | null> {
+  // Un MCP limitado a un proyecto no ve los demás, aunque su dueño sí pueda.
+  if (user.soloProyectoId && user.soloProyectoId !== projectId) return null;
   if (user.role === "ADMIN") return { role: "OWNER", isPlatformAdmin: true };
 
   const membership = await prisma.membership.findUnique({

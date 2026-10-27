@@ -27,6 +27,12 @@ export type SessionUser = {
   role: UserRole;
   /** Tiene foto y cargo: el perfil del equipo está completo. */
   perfilCompleto?: boolean;
+  /**
+   * Solo en llamadas del MCP: el único proyecto (y su organización) que esta
+   * llamada puede tocar. Lo fija el token o la cabecera X-Voltac-Proyecto.
+   */
+  soloProyectoId?: string;
+  soloOrganizacionId?: string | null;
 };
 
 function hashToken(token: string): string {

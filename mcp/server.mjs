@@ -19,15 +19,21 @@
  * Configuracion (variables de entorno):
  *   VOLTAC_API_URL    https://innovation.voltac.com.co   (o http://localhost:3000)
  *   VOLTAC_API_TOKEN  el token de `npm run token:crear`
- *   VOLTAC_PROYECTO   (opcional) slug del UNICO proyecto que este servidor puede tocar
+ *   VOLTAC_PROYECTO   (opcional) slug del UNICO proyecto que este servidor puede tocar, fijo
  *   VOLTAC_ORGANIZACION (opcional, con VOLTAC_PROYECTO) slug de la unica organizacion visible
  *
- * El candado (VOLTAC_PROYECTO) existe porque el token hereda TODOS los
- * proyectos de su dueño: un slug equivocado bastaria para escribir en el reto
- * de otro cliente. Con el candado puesto se ocultan las herramientas que ven o
- * crean otros proyectos, cualquier slug distinto se rechaza y las herramientas
- * que reciben un id solo aceptan ids que aparezcan en el proyecto permitido.
- * Sin la variable, el servidor se comporta como siempre.
+ * El candado existe porque el token puede heredar TODOS los proyectos de su
+ * dueño: un slug equivocado bastaria para escribir en el reto de otro cliente.
+ * Con el candado puesto se ocultan las herramientas que ven o crean otros
+ * proyectos, cualquier slug distinto se rechaza y las herramientas que reciben
+ * un id solo aceptan ids que aparezcan en el proyecto permitido. Ademas, cada
+ * llamada viaja con la cabecera X-Voltac-Proyecto y la plataforma rechaza por
+ * su cuenta cualquier otro proyecto.
+ *
+ * Sin VOLTAC_PROYECTO el candado se pone en la conversacion: hasta elegir el
+ * proyecto con `trabajar_en_proyecto` solo se puede listar o crear proyectos y
+ * organizaciones. Cambiar de proyecto es otra llamada explicita a esa
+ * herramienta, asi que el cambio queda a la vista.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -53,6 +59,7 @@ async function api(path, { method = "GET", body } = {}) {
     method,
     headers: {
       Authorization: `Bearer ${TOKEN}`,
+      ...(proyecto ? { "X-Voltac-Proyecto": proyecto } : {}),
       ...(body ? { "Content-Type": "application/json" } : {}),
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
@@ -76,8 +83,13 @@ const slugPath = (slug) => `/api/agent/proyectos/${encodeURIComponent(slug)}`;
 
 // ─── Candado de proyecto ─────────────────────────────────────────────────────
 
-const PROYECTO = (process.env.VOLTAC_PROYECTO ?? "").trim();
-const ORGANIZACION = PROYECTO ? (process.env.VOLTAC_ORGANIZACION ?? "").trim() : "";
+/** Fijo desde la configuracion: la conversacion no lo puede cambiar. */
+const FIJO = (process.env.VOLTAC_PROYECTO ?? "").trim();
+let proyecto = FIJO;
+let organizacion = FIJO ? (process.env.VOLTAC_ORGANIZACION ?? "").trim() : "";
+
+/** Sin proyecto elegido solo existen estas: ninguna toca un proyecto existente. */
+const SIN_PROYECTO = new Set(["listar_proyectos", "crear_proyecto", "listar_organizaciones", "crear_organizacion", "trabajar_en_proyecto"]);
 
 /** Con candado no existen: ven, crean o copian otros proyectos u organizaciones. */
 const OCULTAS_CON_CANDADO = new Set([
@@ -113,15 +125,15 @@ function bajoCandado(tool) {
   if ("slug" in props) {
     return {
       ...tool,
-      description: `[Solo el proyecto «${PROYECTO}»; slug opcional] ${tool.description}`,
+      description: `[Solo el proyecto «${proyecto}»; slug opcional] ${tool.description}`,
       inputSchema: { ...tool.inputSchema, required: (tool.inputSchema.required ?? []).filter((r) => r !== "slug") },
     };
   }
   if ("org" in props) {
-    if (!ORGANIZACION) return null;
+    if (!organizacion) return null;
     return {
       ...tool,
-      description: `[Solo la organizacion «${ORGANIZACION}»; org opcional] ${tool.description}`,
+      description: `[Solo la organizacion «${organizacion}»; org opcional] ${tool.description}`,
       inputSchema: { ...tool.inputSchema, required: (tool.inputSchema.required ?? []).filter((r) => r !== "org") },
     };
   }
@@ -143,9 +155,9 @@ async function idsDelProyecto() {
     }
   };
   const lecturas = await Promise.allSettled([
-    api(`${slugPath(PROYECTO)}?incluir=fragmentos,insights,conceptos,artefactos&detalle=completo`),
-    v2("ver_embudo")({ slug: PROYECTO }),
-    v2("ver_mapa")({ slug: PROYECTO, conTexto: false }),
+    api(`${slugPath(proyecto)}?incluir=fragmentos,insights,conceptos,artefactos&detalle=completo`),
+    v2("ver_embudo")({ slug: proyecto }),
+    v2("ver_mapa")({ slug: proyecto, conTexto: false }),
   ]);
   for (const l of lecturas) if (l.status === "fulfilled") recoger(l.value);
   return ids;
@@ -156,30 +168,61 @@ async function aplicarCandado(tool, args) {
   const a = { ...args };
   const props = tool.inputSchema?.properties ?? {};
   if ("slug" in props) {
-    if (a.slug && a.slug !== PROYECTO) {
-      throw new Error(`Candado: este servidor solo trabaja en el proyecto «${PROYECTO}»; se rechazo «${a.slug}».`);
+    if (a.slug && a.slug !== proyecto) {
+      throw new Error(`Candado: este servidor solo trabaja en el proyecto «${proyecto}»; se rechazo «${a.slug}».`);
     }
-    a.slug = PROYECTO;
+    a.slug = proyecto;
   }
   if ("org" in props) {
-    if (a.org && a.org !== ORGANIZACION) {
-      throw new Error(`Candado: este servidor solo trabaja en la organizacion «${ORGANIZACION}»; se rechazo «${a.org}».`);
+    if (a.org && a.org !== organizacion) {
+      throw new Error(`Candado: este servidor solo trabaja en la organizacion «${organizacion}»; se rechazo «${a.org}».`);
     }
-    a.org = ORGANIZACION;
+    a.org = organizacion;
   }
   const clave = ARG_ID[tool.name];
   if (clave) {
     const id = a[clave];
     if (typeof id !== "string" || !(await idsDelProyecto()).has(id)) {
-      throw new Error(`Candado: el id «${id}» no pertenece al proyecto «${PROYECTO}».`);
+      throw new Error(`Candado: el id «${id}» no pertenece al proyecto «${proyecto}».`);
     }
   }
   return a;
 }
 
+/** Pone el candado de la conversacion en un proyecto, comprobando que exista y que el token lo vea. */
+async function elegirProyecto({ slug } = {}) {
+  const pedido = typeof slug === "string" ? slug.trim() : "";
+  if (!pedido) return proyecto ? { proyecto, organizacion: organizacion || null } : { proyecto: null, aviso: "Aun no hay proyecto elegido." };
+  if (FIJO && pedido !== FIJO) throw new Error(`Este servidor esta fijo en «${FIJO}» por su configuracion; no puede cambiar a «${pedido}».`);
+  const anterior = proyecto;
+  proyecto = "";
+  const { proyectos: lista } = await api("/api/agent/proyectos");
+  const p = lista.find((x) => x.slug === pedido);
+  if (!p) {
+    proyecto = anterior;
+    throw new Error(`No existe el proyecto «${pedido}» o este token no lo ve. Usa listar_proyectos.`);
+  }
+  proyecto = p.slug;
+  organizacion = FIJO ? organizacion : p.organizacion ?? "";
+  void server.sendToolListChanged().catch(() => {});
+  return {
+    proyecto: p.slug,
+    nombre: p.nombre,
+    organizacion: organizacion || null,
+    aviso: anterior && anterior !== p.slug ? `Cambio de proyecto: antes «${anterior}».` : "Candado puesto: solo este proyecto.",
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TOOLS = [
+  {
+    name: "trabajar_en_proyecto",
+    description:
+      "Elige el UNICO proyecto en el que vas a trabajar en esta conversacion. Llamala antes de leer o cambiar cualquier proyecto, con el slug que la persona te indique (si no lo dijo, pregunta; no lo adivines). Desde ahi todas las herramientas quedan limitadas a ese proyecto y a su organizacion, y la plataforma rechaza cualquier otro. Para cambiar de proyecto llamala de nuevo, solo si la persona lo pidio. Sin slug, dice cual esta activo.",
+    inputSchema: { type: "object", properties: { slug: { type: "string", description: "Slug del proyecto, de listar_proyectos." } } },
+    run: elegirProyecto,
+  },
   {
     name: "listar_proyectos",
     description:
@@ -1046,14 +1089,18 @@ const TOOLS = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 const server = new Server(
-  { name: "voltac-innovacion", version: "2.0.0" },
-  { capabilities: { tools: {} } },
+  { name: "voltac-innovacion", version: "2.1.0" },
+  { capabilities: { tools: { listChanged: true } } },
 );
 
-const VISIBLES = PROYECTO ? TOOLS.map(bajoCandado).filter(Boolean) : TOOLS;
+/** Lo que se ve depende del proyecto activo, que puede cambiar en la conversacion. */
+function visibles() {
+  if (!proyecto) return TOOLS.filter((t) => SIN_PROYECTO.has(t.name));
+  return TOOLS.map((t) => (t.name === "trabajar_en_proyecto" ? t : bajoCandado(t))).filter(Boolean);
+}
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: VISIBLES.map(({ name, description, inputSchema }) => ({
+  tools: visibles().map(({ name, description, inputSchema }) => ({
     name,
     description,
     inputSchema,
@@ -1061,17 +1108,25 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const tool = VISIBLES.find((t) => t.name === request.params.name);
+  const tool = visibles().find((t) => t.name === request.params.name);
   if (!tool) {
+    const existe = TOOLS.some((t) => t.name === request.params.name);
     return {
       isError: true,
-      content: [{ type: "text", text: `Herramienta desconocida: ${request.params.name}` }],
+      content: [
+        {
+          type: "text",
+          text: existe && !proyecto
+            ? `Primero elige el proyecto con trabajar_en_proyecto: «${request.params.name}» solo funciona dentro de un proyecto.`
+            : `Herramienta desconocida: ${request.params.name}`,
+        },
+      ],
     };
   }
 
   try {
     let args = request.params.arguments ?? {};
-    if (PROYECTO) args = await aplicarCandado(tool, args);
+    if (proyecto && tool.name !== "trabajar_en_proyecto") args = await aplicarCandado(tool, args);
     const result = await tool.run(args);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   } catch (e) {

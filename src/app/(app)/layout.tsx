@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { logoutAction } from "@/app/actions/auth";
 import { Brand } from "@/components/Brand";
 import { MobileTabBar } from "@/components/MobileTabBar";
+import { SenalActividad } from "@/components/SenalActividad";
 import { V2 } from "@/lib/v2";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -66,6 +67,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="mx-auto max-w-[1680px] px-4 pb-24 md:px-[18px] md:pb-20">{children}</main>
 
       <MobileTabBar />
+      <SenalActividad />
     </div>
   );
 }
