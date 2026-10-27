@@ -723,6 +723,11 @@ model Concept {
   artefactos Artifact[]
   anclas     ConceptFragment[]
 
+  /// Plataforma de Crecimiento en torno a la que se armó el concepto (IMBOK
+  /// p. 61: los conceptos se desarrollan dentro de la plataforma priorizada).
+  plataformaId String?
+  plataforma   Plataforma? @relation(fields: [plataformaId], references: [id], onDelete: SetNull)
+
   @@index([projectId, reviewState])
 }
 
@@ -1245,6 +1250,7 @@ model Plataforma {
   updatedAt    DateTime @updatedAt
 
   fragmentos PlataformaFragmento[]
+  conceptos  Concept[]
 
   @@index([projectId])
 }

@@ -854,15 +854,16 @@ export const LINEA_CONCEPTO = [
 ] as const;
 
 /**
- * La pregunta de cada casilla del lienzo de concepto (mentor, 15-oct-2026: «se
- * toma un fragmento de cada dimensión»). Las llaves son las filas del mapa 5×5.
+ * La pregunta de cada casilla del lienzo de concepto. Es la del IMBOK (p. 63)
+ * para enlazar los puntos de las cinco dimensiones; el mentor la planteó igual
+ * (15-oct-2026: «¿quién es el cliente?, ¿cuál es el canal?…»).
  */
 export const PREGUNTA_LIENZO: Record<string, string> = {
-  mercado: "¿Quién es el cliente y qué necesita?",
-  entrega: "¿Cómo le llega?",
-  oferta: "¿Qué le ofrecemos?",
-  produccion: "¿Cómo lo producimos?",
-  modelos: "¿Cómo ganamos dinero?",
+  mercado: "¿A quiénes vamos a dirigirnos?",
+  entrega: "¿Dónde y cuándo lo ofrecemos?",
+  oferta: "¿Qué ofrecemos?",
+  produccion: "¿Qué capacidades requerimos?",
+  modelos: "¿Qué modelo de negocio, precios, redes y aliados necesitamos?",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

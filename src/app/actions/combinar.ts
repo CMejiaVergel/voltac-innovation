@@ -59,10 +59,13 @@ export async function crearConcepto(slug: string): Promise<Resultado<{ id: strin
     orderBy: { position: "desc" },
     select: { position: true },
   });
+  // Los conceptos se arman en torno a la plataforma priorizada (IMBOK p. 61).
+  const plataforma = await prisma.plataforma.findFirst({ where: { projectId: g.project.id, priorizada: true }, select: { id: true } });
   const c = await prisma.concept.create({
     data: {
       projectId: g.project.id,
       authorId: g.user.id,
+      plataformaId: plataforma?.id ?? null,
       title: `Concepto ${n + 1}`,
       position: (ultimo?.position ?? -1) + 1,
     },
@@ -104,13 +107,33 @@ export async function soltarPostit(conceptId: string, fragmentId: string): Promi
 
 export async function guardarConcepto(
   conceptId: string,
-  campos: { title: string; statement: string },
+  campos: { title: string; statement: string; propuestaValor?: string },
 ): Promise<Resultado> {
   const g = await guardConcepto(conceptId);
   if (!g) return SIN_PERMISO;
   const title = campos.title.trim().slice(0, 120);
   if (!title) return { ok: false, error: "El concepto necesita un nombre." };
-  await prisma.concept.update({ where: { id: conceptId }, data: { title, statement: campos.statement.trim() } });
+  await prisma.concept.update({
+    where: { id: conceptId },
+    data: {
+      title,
+      statement: campos.statement.trim(),
+      ...(typeof campos.propuestaValor === "string" ? { propuestaValor: campos.propuestaValor.trim() } : {}),
+    },
+  });
+  refrescar(g.concept.project.slug);
+  return { ok: true };
+}
+
+/** Cambia la plataforma de crecimiento en torno a la que está el concepto. */
+export async function asignarPlataforma(conceptId: string, plataformaId: string | null): Promise<Resultado> {
+  const g = await guardConcepto(conceptId);
+  if (!g) return SIN_PERMISO;
+  if (plataformaId) {
+    const ok = await prisma.plataforma.count({ where: { id: plataformaId, projectId: g.concept.project.id } });
+    if (!ok) return { ok: false, error: "Esa plataforma no es de este proyecto." };
+  }
+  await prisma.concept.update({ where: { id: conceptId }, data: { plataformaId } });
   refrescar(g.concept.project.slug);
   return { ok: true };
 }

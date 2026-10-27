@@ -116,13 +116,17 @@ export function GuiaV2() {
 
       <Etapa id="combinar" n={4} nombre="Combinar" donde="pestaña Combinar (Conceptos en el celular)">
         <p>
-          El lienzo de concepto es donde los post-its se vuelven negocio. Cada concepto tiene una casilla por
-          dimensión: quién es el cliente, cómo le llega, qué le ofrecemos, cómo lo producimos y cómo ganamos dinero.
+          El lienzo de concepto es donde los post-its se vuelven negocio, en torno a la plataforma priorizada. Cada concepto
+          tiene una casilla por dimensión: a quiénes nos dirigimos, dónde y cuándo lo ofrecemos, qué ofrecemos, qué capacidades
+          requerimos y qué modelo de negocio, precios y aliados necesitamos.
         </p>
         <ul className="lista">
           <li>Arrastre post-its desde el mapa de la izquierda, tóquelos, o use el <b>+</b> de cada casilla.</li>
           <li>La <b>×</b> devuelve el post-it al mapa. Un post-it puede estar en varios conceptos: se enlaza, no se mueve.</li>
-          <li>Varios conceptos a la vez, cada uno en su pestaña. Al final, la frase: «Ofreceremos … a …, que necesita …, entregado a través de …, producido por …, y generamos dinero mediante …».</li>
+          <li>En el mapa de la izquierda, <b>★ Plataforma</b> deja solo los fragmentos de la plataforma; los puntos de interés salen primero.</li>
+          <li>El concepto dice si es incremental, disruptivo o radical según cuántos de sus puntos son del negocio actual (lente Su Compañía). «Hacerlo robusto» abre las preguntas de cada casilla.</li>
+          <li>Debajo se ven los insights que lo respaldan: los que comparten post-its con el concepto.</li>
+          <li>Varios conceptos a la vez, cada uno en su pestaña. Al final, la propuesta de valor y la frase: «Ofreceremos … a …, que necesita …, entregado a través de …, producido por …, y generamos dinero mediante …».</li>
         </ul>
         <Hecho>Cuando los conceptos empiezan a evaluarse en Convergir.</Hecho>
       </Etapa>

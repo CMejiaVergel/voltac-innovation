@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { LINEA_CONCEPTO } from "@/lib/gimi";
+import { DETONANTES, LINEA_CONCEPTO } from "@/lib/gimi";
 import { CAMPOS_BROCHURE, CAMPOS_CASO, type DatosActuar, type PasoLinea } from "@/lib/actuar";
 import {
   ARTIFACT_KINDS,
@@ -37,7 +37,7 @@ export type ConceptoLinea = {
   propuestaValor: string;
   datos: DatosActuar;
   artefactos: { id: string; title: string; kind: ArtifactKind; promise: string; status: ArtifactStatus; iteration: number; presentedTo: string }[];
-  supuestos: { id: string; text: string; likelihood: number; critical: boolean; failFastTest: string; status: AssumptionStatus }[];
+  supuestos: { id: string; text: string; likelihood: number; critical: boolean; failFastTest: string; expectedResult: string; trigger: string; status: AssumptionStatus }[];
   avance: Record<PasoLinea, boolean>;
 };
 
@@ -343,7 +343,16 @@ function PasoIngenieria({ c, editable, pendiente, correr }: PasoProps) {
   return (
     <div className="flex flex-col gap-3">
       <p className="hint">
-        ¿Qué tendría que ser cierto para que este concepto funcione? Marquen las 3 menos probables ({criticos} de 3) y diseñen una prueba rápida para cada una.
+        ¿Qué debe ser una realidad para que el concepto sea un éxito en la organización? Listen todas las condiciones, marquen las 3 menos probables ({criticos} de 3) y
+        definan para cada una una prueba de falla rápida y el resultado o la decisión que esperan.
+      </p>
+      <p className="flex flex-wrap items-center gap-1.5 text-[11.5px] text-[#7f8f8c]">
+        Piensen en:
+        {DETONANTES.map((d) => (
+          <span key={d.key} className="rounded-full border px-2 py-0.5" style={{ borderColor: `${d.color}88`, color: "#c9d1cf" }}>
+            {d.label}
+          </span>
+        ))}
       </p>
       {orden.map((s) => (
         <article key={s.id} className="panel flex flex-col gap-3" style={s.critical ? { borderColor: "#E8C66A" } : undefined}>
@@ -359,6 +368,20 @@ function PasoIngenieria({ c, editable, pendiente, correr }: PasoProps) {
               ★
             </button>
             <p className="flex-1 text-[13.5px] leading-relaxed text-[#e8e3d8]">{s.text}</p>
+            <select
+              value={s.trigger}
+              disabled={!editable}
+              onChange={(e) => correr(() => actualizarSupuesto(s.id, { trigger: e.target.value }))}
+              className="rounded-[3px] border border-[rgba(232,227,216,0.16)] bg-transparent px-1 py-0.5 text-[11.5px] text-[#a9b5b3]"
+              aria-label="Detonante"
+            >
+              <option value="">Detonante…</option>
+              {DETONANTES.map((d) => (
+                <option key={d.key} value={d.key}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
             {editable && (
               <button type="button" onClick={() => confirm("¿Borrar este supuesto?") && correr(() => borrarSupuesto(s.id))} className="text-[12px] text-[#7f8f8c] hover:text-[#e8a99c]">
                 Borrar
@@ -401,8 +424,16 @@ function PasoIngenieria({ c, editable, pendiente, correr }: PasoProps) {
                 disabled={!editable}
                 rows={2}
                 onBlur={(e) => e.target.value !== s.failFastTest && correr(() => actualizarSupuesto(s.id, { failFastTest: e.target.value }))}
-                placeholder="Prueba rápida: con quién, cómo y qué resultado esperamos"
+                placeholder="Prueba de falla rápida o experimento crítico. Ej.: hablar con 3 plantas vecinas"
                 className="field resize-y text-[12.5px] leading-relaxed"
+              />
+              <textarea
+                defaultValue={s.expectedResult}
+                disabled={!editable}
+                rows={2}
+                onBlur={(e) => e.target.value !== s.expectedResult && correr(() => actualizarSupuesto(s.id, { expectedResult: e.target.value }))}
+                placeholder="Resultado deseado o decisión. Ej.: carta de intención de al menos 1"
+                className="field mt-2 resize-y text-[12.5px] leading-relaxed"
               />
             </div>
           )}

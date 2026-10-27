@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { canEdit, asEnum, ARTIFACT_KINDS, ARTIFACT_STATUSES, ASSUMPTION_STATUSES } from "@/lib/enums";
+import { canEdit, asEnum, ARTIFACT_KINDS, ARTIFACT_STATUSES, ASSUMPTION_STATUSES, DETONANTE_KEYS } from "@/lib/enums";
 import { getProjectRole } from "@/lib/projects";
 import { CAMPOS_BROCHURE, CAMPOS_CASO, leerActuar } from "@/lib/actuar";
 
@@ -127,13 +127,23 @@ async function guardSupuesto(id: string) {
 
 export async function actualizarSupuesto(
   id: string,
-  d: { likelihood?: number; critical?: boolean; failFastTest?: string; status?: string; note?: string },
+  d: { likelihood?: number; critical?: boolean; failFastTest?: string; expectedResult?: string; trigger?: string; status?: string; note?: string },
 ): Promise<Resultado> {
   const g = await guardSupuesto(id);
   if (!g) return SIN_PERMISO;
   const data: Record<string, unknown> = {};
   if (typeof d.likelihood === "number") data.likelihood = Math.min(5, Math.max(1, Math.round(d.likelihood)));
-  if (typeof d.critical === "boolean") data.critical = d.critical;
+  if (typeof d.critical === "boolean") {
+    // Se trabajan primero las tres menos probables (IMBOK p. 67; Taller 3, lám. 26).
+    if (d.critical) {
+      const s = await prisma.assumption.findUnique({ where: { id }, select: { conceptId: true } });
+      const ya = await prisma.assumption.count({ where: { conceptId: s!.conceptId, critical: true, NOT: { id } } });
+      if (ya >= 3) return { ok: false, error: "Ya hay tres marcadas. Desmarquen una antes de elegir otra." };
+    }
+    data.critical = d.critical;
+  }
+  if (typeof d.expectedResult === "string") data.expectedResult = d.expectedResult.trim().slice(0, 1000);
+  if (typeof d.trigger === "string") data.trigger = (DETONANTE_KEYS as readonly string[]).includes(d.trigger) ? d.trigger : "";
   if (typeof d.failFastTest === "string") data.failFastTest = d.failFastTest.trim().slice(0, 1000);
   if (typeof d.status === "string") data.status = asEnum(ASSUMPTION_STATUSES, d.status, "OPEN");
   if (typeof d.note === "string") data.note = d.note.trim().slice(0, 1000);

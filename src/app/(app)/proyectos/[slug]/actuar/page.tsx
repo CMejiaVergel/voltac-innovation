@@ -41,6 +41,8 @@ export default async function ActuarPage({ params }: { params: Promise<{ slug: s
       likelihood: s.likelihood,
       critical: s.critical,
       failFastTest: s.failFastTest,
+      expectedResult: s.expectedResult,
+      trigger: s.trigger,
       status: asEnum(ASSUMPTION_STATUSES, s.status, "OPEN"),
     })),
     avance: avanceLinea({ actuar: c.actuar, propuestaValor: c.propuestaValor, artefactos: c.artefactos, supuestos: c.supuestos }),

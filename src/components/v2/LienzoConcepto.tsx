@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import type { TemplateShape } from "@/lib/templates";
 import { VERIFICATION_META, type Verification } from "@/lib/enums";
-import { PREGUNTA_LIENZO } from "@/lib/gimi";
+import { COLUMNA_NUCLEO, PREGUNTA_LIENZO, PREGUNTAS_ROBUSTAS, TIPOS_CONCEPTO, tipoDeConcepto } from "@/lib/gimi";
 import { tituloPostit } from "@/lib/v2";
 import {
   anclarPostit,
@@ -15,6 +15,7 @@ import {
   guardarConcepto,
   redactarConcepto,
   soltarPostit,
+  asignarPlataforma,
 } from "@/app/actions/combinar";
 
 export type PostitLienzo = {
@@ -24,12 +25,18 @@ export type PostitLienzo = {
   titulo: string;
   text: string;
   verification: Verification;
+  hotspot: boolean;
 };
+
+export type PlataformaLienzo = { id: string; nombre: string; priorizada: boolean; fragmentIds: string[] };
+export type InsightLienzo = { id: string; n: number; color: string; statement: string; fragmentIds: string[] };
 
 export type ConceptoLienzo = {
   id: string;
   title: string;
   statement: string;
+  propuestaValor: string;
+  plataformaId: string | null;
   /** fragmentId null = el post-it se borró del mapa; queda la copia del texto. */
   anclas: { fragmentId: string | null; rowId: string; texto: string }[];
 };
@@ -45,12 +52,16 @@ export function LienzoConcepto({
   shape,
   postits,
   conceptos: iniciales,
+  plataformas,
+  insights,
   editable,
 }: {
   slug: string;
   shape: TemplateShape;
   postits: PostitLienzo[];
   conceptos: ConceptoLienzo[];
+  plataformas: PlataformaLienzo[];
+  insights: InsightLienzo[];
   editable: boolean;
 }) {
   const router = useRouter();
@@ -68,6 +79,8 @@ export function LienzoConcepto({
   }, [iniciales]);
 
   const activo = conceptos.find((c) => c.id === activoId) ?? null;
+  const priorizada = plataformas.find((x) => x.priorizada) ?? null;
+  const plataformaActiva = plataformas.find((x) => x.id === activo?.plataformaId) ?? null;
   const usados = useMemo(() => new Set(activo?.anclas.map((a) => a.fragmentId) ?? []), [activo]);
   const porId = useMemo(() => new Map(postits.map((p) => [p.id, p])), [postits]);
   const color = (rowId: string) => shape.rows.find((r) => r.id === rowId)?.color ?? "#6FBFB2";
@@ -125,6 +138,7 @@ export function LienzoConcepto({
       style={{ background: `color-mix(in srgb, ${color(p.rowId)} 28%, #f4ecd6)` }}
     >
       {usados.has(p.id) && <span className="mr-1">✓</span>}
+      {p.hotspot && <span className="mr-1 text-[#b8860b]">★</span>}
       {tituloPostit(p)}
       <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full" style={{ background: VERIFICATION_META[p.verification].color }} />
     </button>
@@ -136,7 +150,11 @@ export function LienzoConcepto({
       <aside className="hidden lg:block">
         <div className="sticky top-[72px] flex max-h-[calc(100vh-96px)] flex-col rounded-[4px] border border-[rgba(232,227,216,0.12)] bg-panel">
           <div className="flex flex-wrap gap-1.5 border-b border-[rgba(232,227,216,0.08)] p-3">
-            {[{ id: "todas", name: "Todas" }, ...shape.cols].map((c) => (
+            {[
+              { id: "todas", name: "Todas" },
+              ...(plataformaActiva?.fragmentIds.length ? [{ id: "plataforma", name: "★ Plataforma" }] : []),
+              ...shape.cols,
+            ].map((c) => (
               <button
                 key={c.id}
                 type="button"
@@ -151,7 +169,11 @@ export function LienzoConcepto({
           </div>
           <div className="flex flex-col gap-4 overflow-y-auto p-3">
             {shape.rows.map((r) => {
-              const lista = postits.filter((p) => p.rowId === r.id && (lente === "todas" || p.colId === lente));
+              const lista = postits.filter(
+                (p) =>
+                  p.rowId === r.id &&
+                  (lente === "todas" || p.colId === lente || (lente === "plataforma" && !!plataformaActiva?.fragmentIds.includes(p.id))),
+              );
               return (
                 <section key={r.id}>
                   <h3 className="mb-1.5 flex items-center gap-2 text-[12px] font-semibold text-[#e8e3d8]">
@@ -172,6 +194,24 @@ export function LienzoConcepto({
         {error && (
           <p className="mb-3 rounded-[4px] border border-[rgba(142,51,36,0.5)] bg-[rgba(142,51,36,0.15)] p-3 text-[12.5px] text-[#e8a99c]">{error}</p>
         )}
+
+        <p className="mb-3 text-[12.5px] text-[#8b9a97]">
+          {priorizada ? (
+            <>
+              Conceptos en torno a la plataforma{" "}
+              <Link href={`/proyectos/${slug}/plataformas`} className="font-semibold text-[#E8C66A] hover:underline">
+                ★ {priorizada.nombre}
+              </Link>
+            </>
+          ) : (
+            <>
+              Los conceptos se arman en torno a la plataforma de crecimiento priorizada.{" "}
+              <Link href={`/proyectos/${slug}/plataformas`} className="text-accent hover:underline">
+                Priorizar una plataforma
+              </Link>
+            </>
+          )}
+        </p>
 
         <div className="mb-4 flex flex-wrap items-center gap-1.5">
           {conceptos.map((c) => (
@@ -215,6 +255,12 @@ export function LienzoConcepto({
             concepto={activo}
             shape={shape}
             porId={porId}
+            plataformas={plataformas}
+            insights={insights}
+            onPlataforma={(id) => {
+              setConceptos((cs) => cs.map((c) => (c.id === activo.id ? { ...c, plataformaId: id } : c)));
+              correr(() => asignarPlataforma(activo.id, id));
+            }}
             editable={editable}
             pendiente={pendiente}
             sobre={sobre}
@@ -284,6 +330,9 @@ function Concepto({
   concepto,
   shape,
   porId,
+  plataformas,
+  insights,
+  onPlataforma,
   editable,
   pendiente,
   sobre,
@@ -297,6 +346,9 @@ function Concepto({
   concepto: ConceptoLienzo;
   shape: TemplateShape;
   porId: Map<string, PostitLienzo>;
+  plataformas: PlataformaLienzo[];
+  insights: InsightLienzo[];
+  onPlataforma: (id: string | null) => void;
   editable: boolean;
   pendiente: boolean;
   sobre: string | null;
@@ -310,10 +362,17 @@ function Concepto({
   const router = useRouter();
   const [title, setTitle] = useState(concepto.title);
   const [statement, setStatement] = useState(concepto.statement);
+  const [propuesta, setPropuesta] = useState(concepto.propuestaValor);
   const [redactando, startRedactar] = useTransition();
   const [guardando, startGuardar] = useTransition();
   const [guardado, setGuardado] = useState(false);
-  const sucio = title !== concepto.title || statement !== concepto.statement;
+  const sucio = title !== concepto.title || statement !== concepto.statement || propuesta !== concepto.propuestaValor;
+  const ids = concepto.anclas.map((a) => a.fragmentId).filter((x): x is string => !!x);
+  const lentes = ids.map((id) => porId.get(id)?.colId).filter((x): x is string => !!x);
+  const tipo = tipoDeConcepto(lentes);
+  const dentro = lentes.filter((l) => l === COLUMNA_NUCLEO).length;
+  // Los insights cuyos post-its están en este concepto: el «¡ajá!» que lo respalda.
+  const respaldo = insights.filter((i) => i.fragmentIds.some((f) => ids.includes(f)));
 
   return (
     <div className="panel flex flex-col gap-4">
@@ -329,6 +388,34 @@ function Concepto({
         placeholder="Nombre del concepto"
         aria-label="Nombre del concepto"
       />
+
+      <div className="-mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] text-[#8b9a97]">
+        {plataformas.length > 0 && (
+          <label className="flex items-center gap-1.5">
+            Plataforma
+            <select
+              value={concepto.plataformaId ?? ""}
+              disabled={!editable}
+              onChange={(e) => onPlataforma(e.target.value || null)}
+              className="rounded-[3px] border border-[rgba(232,227,216,0.16)] bg-transparent px-1.5 py-0.5 text-[12px] text-[#e8e3d8]"
+            >
+              <option value="">Sin plataforma</option>
+              {plataformas.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.priorizada ? "★ " : ""}
+                  {x.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {tipo && (
+          <span title={`${TIPOS_CONCEPTO[tipo].definicion} Quién lo impulsa: ${TIPOS_CONCEPTO[tipo].quien}`}>
+            Concepto <b className="text-[#e8e3d8]">{TIPOS_CONCEPTO[tipo].label.toLowerCase()}</b> · {dentro} de {lentes.length} puntos del negocio actual
+            {tipo === "DISRUPTIVO" && dentro < 2 && <span className="text-[#E8C66A]"> · sume otro punto de Su Compañía para hacerlo accionable</span>}
+          </span>
+        )}
+      </div>
 
       <ol className="flex flex-col">
         {shape.rows.map((r, i) => {
@@ -393,6 +480,16 @@ function Concepto({
                     </button>
                   )}
                 </div>
+                {PREGUNTAS_ROBUSTAS[r.id] && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-[11px] text-[#5e7370] hover:text-[#8b9a97]">Hacerlo robusto</summary>
+                    <ul className="mt-1 list-disc pl-5 text-[11.5px] text-[#8b9a97]">
+                      {PREGUNTAS_ROBUSTAS[r.id].preguntas.map((q) => (
+                        <li key={q}>{q}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
               </div>
               {i < shape.rows.length - 1 && <span className="ml-5 h-3 w-px bg-[rgba(232,227,216,0.18)]" aria-hidden />}
             </li>
@@ -415,6 +512,37 @@ function Concepto({
         />
       </label>
 
+      <label className="block">
+        <span className="label">Propuesta de valor</span>
+        <textarea
+          value={propuesta}
+          onChange={(e) => {
+            setPropuesta(e.target.value);
+            setGuardado(false);
+          }}
+          disabled={!editable}
+          rows={2}
+          placeholder="En una frase: por qué es único, por qué no pueden copiarlo y cuál es su impacto."
+          className="field resize-y leading-relaxed"
+        />
+      </label>
+
+      {respaldo.length > 0 && (
+        <div>
+          <span className="label">Insights que lo respaldan</span>
+          <div className="flex flex-wrap gap-1.5">
+            {respaldo.map((i) => (
+              <span key={i.id} title={i.statement} className="flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] text-[#c9d1cf]" style={{ borderColor: `${i.color}88` }}>
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: i.color }} />
+                <span className="truncate">
+                  {i.n} · {i.statement}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {editable && (
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -424,7 +552,7 @@ function Concepto({
             onClick={() =>
               startGuardar(async () => {
                 onError(null);
-                const r = await guardarConcepto(concepto.id, { title, statement });
+                const r = await guardarConcepto(concepto.id, { title, statement, propuestaValor: propuesta });
                 if (!r.ok) onError(r.error);
                 else setGuardado(true);
                 router.refresh();

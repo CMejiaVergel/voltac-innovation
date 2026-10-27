@@ -3,12 +3,12 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireProject, getPrimaryMap } from "@/lib/projects";
-import { canEdit, asEnum, VERIFICATIONS, DOT_ROLES, REVIEW_STATES } from "@/lib/enums";
+import { canEdit, asEnum, colorDeTrazo, VERIFICATIONS, DOT_ROLES, REVIEW_STATES } from "@/lib/enums";
 import { estadoClaveAgente } from "@/lib/claveAgente";
 import { CombinarBoard } from "@/components/combinar/CombinarBoard";
 import type { InsightVista, Punto } from "@/components/combinar/types";
 import { V2 } from "@/lib/v2";
-import { LienzoConcepto, type ConceptoLienzo, type PostitLienzo } from "@/components/v2/LienzoConcepto";
+import { LienzoConcepto, type ConceptoLienzo, type InsightLienzo, type PlataformaLienzo, type PostitLienzo } from "@/components/v2/LienzoConcepto";
 
 export default async function CombinarPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -25,28 +25,48 @@ export default async function CombinarPage({ params }: { params: Promise<{ slug:
   }
 
   if (V2) {
-    const [frags, conceptos] = await Promise.all([
+    const [frags, conceptos, plataformasDb, insightsDb] = await Promise.all([
       prisma.fragment.findMany({
         where: { mapId: primary.map.id, reviewState: "ACCEPTED", hidden: false },
-        orderBy: [{ rowId: "asc" }, { colId: "asc" }, { position: "asc" }],
-        select: { id: true, rowId: true, colId: true, titulo: true, text: true, verification: true },
+        orderBy: [{ rowId: "asc" }, { hotspot: "desc" }, { colId: "asc" }, { position: "asc" }],
+        select: { id: true, rowId: true, colId: true, titulo: true, text: true, verification: true, hotspot: true },
       }),
       prisma.concept.findMany({
         where: { projectId: project.id, reviewState: "ACCEPTED", hidden: false },
         orderBy: { position: "asc" },
         include: { anclas: { orderBy: { position: "asc" } } },
       }),
+      prisma.plataforma.findMany({
+        where: { projectId: project.id },
+        orderBy: [{ priorizada: "desc" }, { position: "asc" }],
+        select: { id: true, nombre: true, priorizada: true, fragmentos: { select: { fragmentId: true } } },
+      }),
+      prisma.insight.findMany({
+        where: { projectId: project.id, reviewState: "ACCEPTED", hidden: false },
+        orderBy: { position: "asc" },
+        select: { id: true, color: true, statement: true, dots: { select: { fragmentId: true } } },
+      }),
     ]);
+    const plataformas: PlataformaLienzo[] = plataformasDb.map((x) => ({ id: x.id, nombre: x.nombre, priorizada: x.priorizada, fragmentIds: x.fragmentos.map((f) => f.fragmentId) }));
+    const insights: InsightLienzo[] = insightsDb.map((i, n) => ({
+      id: i.id,
+      n: n + 1,
+      color: colorDeTrazo(i.color, n),
+      statement: i.statement,
+      fragmentIds: i.dots.map((d) => d.fragmentId).filter((x): x is string => !!x),
+    }));
     const postits: PostitLienzo[] = frags.map((f) => ({ ...f, verification: asEnum(VERIFICATIONS, f.verification, "TO_CONFIRM") }));
     const lienzos: ConceptoLienzo[] = conceptos.map((c) => ({
       id: c.id,
       title: c.title,
       statement: c.statement,
+      propuestaValor: c.propuestaValor,
+      plataformaId: c.plataformaId,
       anclas: c.anclas.map((a) => ({ fragmentId: a.fragmentId, rowId: a.rowId, texto: a.textSnapshot })),
     }));
     return (
       <div className="mt-6 pb-16">
-        <LienzoConcepto slug={slug} shape={primary.shape} postits={postits} conceptos={lienzos} editable={canEdit(role)} />
+        <LienzoConcepto slug={slug} shape={primary.shape} postits={postits} conceptos={lienzos} plataformas={plataformas} insights={insights} editable={canEdit(role)} />
       </div>
     );
   }
