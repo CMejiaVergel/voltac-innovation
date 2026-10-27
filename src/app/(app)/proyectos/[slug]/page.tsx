@@ -48,6 +48,8 @@ export default async function ProjectOverview({
         _count: { select: { anclas: true } },
       },
     });
+    const plataformas = await prisma.plataforma.findMany({ where: { projectId: project.id }, select: { nombre: true, priorizada: true } });
+    const plataformaPriorizada = plataformas.find((x) => x.priorizada);
     const armados = conceptos.filter((c) => c._count.anclas > 0).length;
     const evaluados = conceptos.filter((c) => puntuados(c) > 0).length;
     const priorizados = conceptos.filter((c) => c.priorizado);
@@ -69,9 +71,19 @@ export default async function ProjectOverview({
             },
             {
               key: "divergir",
-              estado: !configurado ? "PENDIENTE" : armados ? "HECHA" : "ACTUAL",
+              estado: !configurado ? "PENDIENTE" : plataformas.length || armados ? "HECHA" : "ACTUAL",
               href: `/proyectos/${slug}/divergir`,
               cifra: postits ? `${postits} post-its en el mapa` : "Mapa de oportunidades",
+            },
+            {
+              key: "plataformas",
+              estado: plataformaPriorizada || armados ? "HECHA" : plataformas.length ? "ACTUAL" : "PENDIENTE",
+              href: postits ? `/proyectos/${slug}/plataformas` : undefined,
+              cifra: plataformaPriorizada
+                ? `★ ${plataformaPriorizada.nombre}`
+                : plataformas.length
+                  ? `${plataformas.length} plataforma${plataformas.length === 1 ? "" : "s"}`
+                  : undefined,
             },
             {
               key: "combinar",

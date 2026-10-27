@@ -53,6 +53,7 @@ function projectTabs(slug: string): Tab[] {
     return [
       { href: base, label: "Embudo", icon: <Icon d={ICONS.laminas} /> },
       { href: `${base}/divergir`, label: "Mapa", icon: <Icon d={ICONS.grid} /> },
+      { href: `${base}/plataformas`, label: "Plataformas", icon: <Icon d={ICONS.target} /> },
       { href: `${base}/combinar`, label: "Conceptos", icon: <Icon d={ICONS.link} /> },
       { href: `${base}/convergir`, label: "Priorizar", icon: <Icon d={ICONS.matriz} /> },
       { href: `${base}/actuar`, label: "Actuar", icon: <Icon d={ICONS.artefacto} /> },

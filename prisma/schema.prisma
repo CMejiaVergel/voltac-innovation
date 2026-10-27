@@ -148,24 +148,30 @@ model Project {
   /// v2: organizacion en la que se innova. El reto nace de su perfil de
   /// innovacion (Set Up). Opcional para no romper los proyectos de la v1.
   organizacionId String?
-  organizacion   Organizacion? @relation(fields: [organizacionId], references: [id])
+  organizacion   Organizacion?     @relation(fields: [organizacionId], references: [id])
   /// v2: desafio propuesto (ejercicios 2.1.1 y 2.1.2) del que nacio este reto.
   desafioOrigen  DesafioPropuesto?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  brief         Brief?
-  members       Membership[]
-  maps          BomMap[]
-  sources       Source[]
-  openQuestions OpenQuestion[]
-  researchRuns  ResearchRun[]
-  insights      Insight[]
-  concepts      Concept[]
-  decks         Deck[]
-  artifacts     Artifact[]
-  lecciones     Leccion[]
+  brief          Brief?
+  members        Membership[]
+  maps           BomMap[]
+  sources        Source[]
+  openQuestions  OpenQuestion[]
+  researchRuns   ResearchRun[]
+  insights       Insight[]
+  concepts       Concept[]
+  decks          Deck[]
+  artifacts      Artifact[]
+  lecciones      Leccion[]
+  elementosLente ElementoLente[]
+  plataformas    Plataforma[]
+
+  /// Criterios con que el equipo califica sus Plataformas de Crecimiento,
+  /// como JSON [{id, nombre}] (IMBOK p. 57: «determine los criterios»).
+  criteriosPlataforma String @default("[]")
 }
 
 model Membership {
@@ -264,6 +270,7 @@ model BomMap {
 
   fragments    Fragment[]
   researchRuns ResearchRun[]
+  grupos       GrupoMapa[]
 
   @@index([projectId])
 }
@@ -335,6 +342,16 @@ model Fragment {
   insightDots    InsightDot[]
   artifactClaims ArtifactClaim[]
   conceptAnclas  ConceptFragment[]
+
+  /// Grupo con etiqueta dentro de su dimensión (v2, organizar el mapa: IMBOK
+  /// pp. 39 y 50). Vacío = todavía sin agrupar.
+  grupoId String?
+  grupo   GrupoMapa? @relation(fields: [grupoId], references: [id], onDelete: SetNull)
+  /// Punto de interés («hot spot») del que puede arrancar una Plataforma de
+  /// Crecimiento (IMBOK p. 54; Taller 3, lám. 5).
+  hotspot Boolean    @default(false)
+
+  plataformas PlataformaFragmento[]
 
   @@index([mapId, rowId, colId])
   @@index([mapId, reviewState])
@@ -1071,39 +1088,39 @@ model PerfilInnovacion {
   organizacion   Organizacion @relation(fields: [organizacionId], references: [id], onDelete: Cascade)
 
   /// 1. Definicion de innovacion: que significa innovar para esta organizacion.
-  definicion       String @default("")
-  tiposInnovacion  String @default("[]") // JSON string[] (claves TIPOS_INNOVACION)
-  dondeInnovar     String @default("")   // mercados, geografias, campos de juego
-  queNoEsInnovar   String @default("")   // lo que explicitamente queda fuera
+  definicion      String @default("")
+  tiposInnovacion String @default("[]") // JSON string[] (claves TIPOS_INNOVACION)
+  dondeInnovar    String @default("") // mercados, geografias, campos de juego
+  queNoEsInnovar  String @default("") // lo que explicitamente queda fuera
 
   /// 2. Razon de cambio (case for change)
-  razonesCambio  String @default("[]") // JSON string[] (claves RAZON_DE_CAMBIO)
+  razonesCambio   String @default("[]") // JSON string[] (claves RAZON_DE_CAMBIO)
   argumentoCambio String @default("")
 
   /// 3. Brecha de crecimiento: cuanto y para cuando
-  brechaCuanto  String @default("")
-  brechaCuando  String @default("")
-  objetivos     String @default("[]") // JSON string[]
-  metricas      String @default("[]") // JSON string[]
+  brechaCuanto String @default("")
+  brechaCuando String @default("")
+  objetivos    String @default("[]") // JSON string[]
+  metricas     String @default("[]") // JSON string[]
 
   /// 4. Perfil de inversion / perfil de proyectos (escala 1..5 entre polos)
-  ejeGeografico Int    @default(0) // 1 local … 5 global
-  ejeNovedad    Int    @default(0) // 1 incremental … 5 avance
-  ejeNucleo     Int    @default(0) // 1 nucleo … 5 lejos del nucleo
-  ejeInversion  Int    @default(0) // 1 pequeña … 5 gran inversion
+  ejeGeografico   Int    @default(0) // 1 local … 5 global
+  ejeNovedad      Int    @default(0) // 1 incremental … 5 avance
+  ejeNucleo       Int    @default(0) // 1 nucleo … 5 lejos del nucleo
+  ejeInversion    Int    @default(0) // 1 pequeña … 5 gran inversion
   /// Ejes que completan los 7 del perfil de inversion (Masterclass Caribe Innova,
   /// lamina 53: de tactico a estrategico).
-  ejePlazo       Int    @default(0) // 1 corto plazo … 5 largo plazo
-  ejeOportunidad Int    @default(0) // 1 existentes … 5 nuevas oportunidades
-  ejePosicion    Int    @default(0) // 1 imitador/copiador rapido … 5 pionero
-  perfilOtro     String @default("")
+  ejePlazo        Int    @default(0) // 1 corto plazo … 5 largo plazo
+  ejeOportunidad  Int    @default(0) // 1 existentes … 5 nuevas oportunidades
+  ejePosicion     Int    @default(0) // 1 imitador/copiador rapido … 5 pionero
+  perfilOtro      String @default("")
   /// Matriz de posicionamiento estrategico (IMBOK pp. 33-34): donde esta hoy y
   /// donde quiere estar. IMITADOR | TRANSFORMADOR | PIONERO.
   posicionActual  String @default("")
   posicionDeseada String @default("")
-  presupuesto   String @default("")
-  horizonte     String @default("") // CORTO | MEDIANO | LARGO
-  restricciones String @default("[]") // JSON string[]: lo que la organizacion no hara
+  presupuesto     String @default("")
+  horizonte       String @default("") // CORTO | MEDIANO | LARGO
+  restricciones   String @default("[]") // JSON string[]: lo que la organizacion no hara
 
   /// 5. Prospeccion futura (opcional)
   prospeccion String @default("")
@@ -1139,8 +1156,8 @@ model DesafioPropuesto {
   project   Project? @relation(fields: [projectId], references: [id])
 
   votos     VotoDesafio[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   @@index([organizacionId])
 }
@@ -1156,4 +1173,90 @@ model VotoDesafio {
   createdAt DateTime         @default(now())
 
   @@unique([desafioId, userId])
+}
+
+// -----------------------------------------------------------------------------
+// v2 · Paso 2 (organizar y hojas de las lentes) y Paso 3 (Plataformas)
+// -----------------------------------------------------------------------------
+
+/// Un grupo de post-its parecidos dentro de una dimensión, con su etiqueta.
+/// «Agrupe los puntos similares y etiquete cada grupo» (IMBOK p. 39).
+model GrupoMapa {
+  id        String   @id @default(cuid())
+  mapId     String
+  map       BomMap   @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  rowId     String
+  nombre    String
+  position  Int      @default(0)
+  authorId  String?
+  createdAt DateTime @default(now())
+
+  fragmentos Fragment[]
+
+  @@index([mapId, rowId])
+}
+
+/// Un renglón de la hoja de trabajo de una lente: una tendencia o un
+/// escenario (Futuro), un competidor (Competidores), un aliado posible
+/// (Adyacencias) o un actor de la cadena (Cadena de Valor).
+model ElementoLente {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  colId         String
+  /// Clasificación dentro de la lente; ver HOJAS_LENTE en src/lib/gimi.ts.
+  tipo          String
+  nombre        String
+  detalle       String   @default("")
+  /// Solo tendencias: 1 a 5 (IMBOK p. 42).
+  impacto       Int?
+  incertidumbre Int?
+  /// Tendencia elegida como eje de los escenarios (son dos; IMBOK p. 42).
+  eje           Boolean  @default(false)
+  position      Int      @default(0)
+  authorId      String?
+  createdAt     DateTime @default(now())
+
+  @@index([projectId, colId])
+}
+
+/// Plataforma de Crecimiento («Field of Play»): un espacio donde la empresa
+/// quiere innovar, armado con fragmentos relacionados del mapa (IMBOK pp. 51-60).
+model Plataforma {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  nombre       String
+  /// La historia de la plataforma (IMBOK pp. 56-57).
+  historia     String   @default("")
+  /// NUCLEO | EXTENDIDA | LEJANA — dónde queda respecto al negocio principal (IMBOK pp. 54-56).
+  alcance      String   @default("")
+  /// Entre las cinco que más resuenan con la organización (IMBOK p. 56).
+  seleccionada Boolean  @default(false)
+  /// La única que sigue adelante (IMBOK p. 57).
+  priorizada   Boolean  @default(false)
+  /// Calificación por criterio, JSON {criterioId: 1..5}.
+  puntajes     String   @default("{}")
+  /// Desarrollo de la priorizada (IMBOK pp. 58-59), JSON por bloque.
+  desarrollo   String   @default("{}")
+  position     Int      @default(0)
+  authorId     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  fragmentos PlataformaFragmento[]
+
+  @@index([projectId])
+}
+
+model PlataformaFragmento {
+  id           String     @id @default(cuid())
+  plataformaId String
+  plataforma   Plataforma @relation(fields: [plataformaId], references: [id], onDelete: Cascade)
+  fragmentId   String
+  fragment     Fragment   @relation(fields: [fragmentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([plataformaId, fragmentId])
+  @@index([fragmentId])
 }

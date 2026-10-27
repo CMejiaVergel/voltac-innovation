@@ -7,7 +7,7 @@ import PptxGenJS from "pptxgenjs";
 import { prisma } from "@/lib/db";
 import { getPrimaryMap } from "@/lib/projects";
 import { colorDeTrazo, promedioEje, ARTIFACT_KIND_LABEL, ARTIFACT_STATUS_META, asEnum, ARTIFACT_KINDS, ARTIFACT_STATUSES } from "@/lib/enums";
-import { IDEX, LINEA_CONCEPTO, PREGUNTA_LIENZO } from "@/lib/gimi";
+import { ETAPAS_EMBUDO, LINEA_CONCEPTO, PREGUNTA_LIENZO } from "@/lib/gimi";
 import { CAMPOS_CASO, avanceLinea, leerActuar } from "@/lib/actuar";
 import { tituloPostit } from "@/lib/v2";
 
@@ -202,20 +202,20 @@ function embudo(pptx: PptxGenJS, lamina: Lamina, d: Datos) {
     combinar: `${d.conceptos.length} conceptos`,
     convergir: `${priorizados.length} siguen adelante`,
   };
-  IDEX.filter((e) => e.key !== "actuar").forEach((e, i) => {
-    const h = 3.6 - i * 0.55;
+  ETAPAS_EMBUDO.forEach((e, i) => {
+    const h = 3.6 - i * 0.45;
     const y = 1.7 + (3.6 - h) / 2;
-    s.addShape(pptx.ShapeType.rect, { x: 0.5 + i * 1.95, y, w: 1.85, h, fill: { color: i === 3 ? "1F3330" : C.panel }, line: { color: C.acento, width: 1 } });
+    s.addShape(pptx.ShapeType.rect, { x: 0.5 + i * 1.6, y, w: 1.5, h, fill: { color: i === ETAPAS_EMBUDO.length - 1 ? "1F3330" : C.panel }, line: { color: C.acento, width: 1 } });
     s.addText(
       [
-        { text: `${e.n} · ${e.name}`, options: { fontSize: 14, bold: true, color: C.texto, breakLine: true } },
+        { text: `${e.n} · ${e.name}`, options: { fontSize: 13, bold: true, color: C.texto, breakLine: true } },
         { text: e.purpose, options: { fontSize: 10, color: C.tenue, breakLine: true } },
         { text: cifras[e.key] ?? "", options: { fontSize: 12, color: C.acento } },
       ],
-      { x: 0.55 + i * 1.95, y, w: 1.75, h, fontFace: FUENTE, align: "center", valign: "middle" },
+      { x: 0.55 + i * 1.6, y, w: 1.4, h, fontFace: FUENTE, align: "center", valign: "middle" },
     );
   });
-  s.addText("5 · Actuar — cada concepto, la misma línea", { x: 8.5, y: 1.6, w: 4.4, h: 0.35, fontFace: FUENTE, fontSize: 12, bold: true, color: C.texto });
+  s.addText("6 · Actuar — cada concepto, la misma línea", { x: 8.5, y: 1.6, w: 4.4, h: 0.35, fontFace: FUENTE, fontSize: 12, bold: true, color: C.texto });
   const lineas = priorizados.length ? priorizados : [];
   if (!lineas.length) {
     s.addText("Aún no hay conceptos priorizados.", { x: 8.5, y: 2.1, w: 4.4, h: 0.4, fontFace: FUENTE, fontSize: 11, color: C.tenue });
@@ -332,7 +332,7 @@ function lineaDeConcepto(pptx: PptxGenJS, lamina: Lamina, bloque: Bloque, caja: 
   // Brochure
   const b = actuar.brochure;
   if (b.titular || b.solucion) {
-    const s = lamina("5 · Actuar · Brochure", b.titular || c.title);
+    const s = lamina("6 · Actuar · Brochure", b.titular || c.title);
     bloque(s, "El problema", b.problema ?? "", 0.5, 1.6, 6.05, 2.3);
     bloque(s, "La solución", b.solucion ?? "", 6.75, 1.6, 6.05, 2.3, C.acento);
     const beneficios = (b.beneficios ?? "").split("\n").map((x) => x.trim()).filter(Boolean);
@@ -342,7 +342,7 @@ function lineaDeConcepto(pptx: PptxGenJS, lamina: Lamina, bloque: Bloque, caja: 
 
   // Artefactos e ingeniería inversa
   if (c.artefactos.length || c.supuestos.length) {
-    const s = lamina("5 · Actuar · Artefacto e ingeniería inversa", c.title);
+    const s = lamina("6 · Actuar · Artefacto e ingeniería inversa", c.title);
     caja(s, 0.5, 1.6, 6.05, 5.1);
     s.addText("ARTEFACTOS", { x: 0.65, y: 1.7, w: 5.7, h: 0.3, fontFace: FUENTE, fontSize: 9, bold: true, color: C.acento, charSpacing: 2 });
     c.artefactos.slice(0, 5).forEach((a, k) => {
@@ -374,7 +374,7 @@ function lineaDeConcepto(pptx: PptxGenJS, lamina: Lamina, bloque: Bloque, caja: 
   // Propuesta de valor y caso de negocio
   const caso = actuar.caso;
   if (c.propuestaValor || CAMPOS_CASO.some((f) => caso[f.campo])) {
-    const s = lamina("5 · Actuar · Propuesta de valor y caso de negocio", c.title);
+    const s = lamina("6 · Actuar · Propuesta de valor y caso de negocio", c.title);
     bloque(s, "Propuesta de valor", c.propuestaValor, 0.5, 1.6, 12.3, 1.35, C.acento);
     CAMPOS_CASO.forEach((f, i) => {
       const col = i % 3, fila = Math.floor(i / 3);

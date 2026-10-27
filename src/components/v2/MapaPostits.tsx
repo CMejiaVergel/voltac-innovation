@@ -15,6 +15,10 @@ import {
   updatePostit,
 } from "@/app/actions/fragments";
 import { guardarInsightMapa, ocultarInsightMapa, type CamposInsightMapa } from "@/app/actions/insightsMapa";
+import { agruparPostit, marcarHotspot } from "@/app/actions/organizar";
+import { HOJAS_LENTE } from "@/lib/gimi";
+import { HojaLente, type Elemento } from "./HojaLente";
+import { MapaOrganizado, type Grupo } from "./MapaOrganizado";
 
 export type Postit = {
   id: string;
@@ -27,6 +31,8 @@ export type Postit = {
   sourceCitation: string | null;
   authorId: string | null;
   authorName: string | null;
+  grupoId: string | null;
+  hotspot: boolean;
 };
 
 /** Un insight dibujado sobre el mapa: lo que el equipo descubrió al conectar post-its. */
@@ -39,7 +45,7 @@ export type InsightMapa = CamposInsightMapa & {
   authorName: string | null;
 };
 
-type Panel = { modo: "ver"; id: string } | { modo: "nuevo"; rowId: string; colId: string } | null;
+type Panel = { modo: "ver"; id: string } | { modo: "nuevo"; rowId: string; colId: string; texto?: string } | null;
 
 /** El insight que se está armando: primero se tocan los post-its, después se escribe. */
 type Borrador = { id?: string; seleccion: string[]; campos: CamposInsightMapa; paso: "elegir" | "escribir" };
@@ -61,6 +67,8 @@ export function MapaPostits({
   shape,
   postits: iniciales,
   insights,
+  grupos,
+  elementos,
   editable,
 }: {
   slug: string;
@@ -68,6 +76,8 @@ export function MapaPostits({
   shape: TemplateShape;
   postits: Postit[];
   insights: InsightMapa[];
+  grupos: Grupo[];
+  elementos: Elemento[];
   editable: boolean;
 }) {
   const router = useRouter();
@@ -75,6 +85,7 @@ export function MapaPostits({
   const [panel, setPanel] = useState<Panel>(null);
   const [lente, setLente] = useState(0);
   const [guia, setGuia] = useState<string | null>(null);
+  const [vista, setVista] = useState<"lentes" | "organizado">("lentes");
   const [foco, setFoco] = useState<string | null>(null);
   const [borrador, setBorrador] = useState<Borrador | null>(null);
   const [arrastrando, setArrastrando] = useState<string | null>(null);
@@ -183,6 +194,7 @@ export function MapaPostits({
           boxShadow: `inset 3px 0 0 ${p.authorId ? colorDePersona(p.authorId) : "transparent"}${anillo ? `, 0 0 0 2px ${anillo}` : ""}`,
         }}
       >
+        {p.hotspot && <span className="mr-1 text-[#b8860b]" aria-label="Punto de interés">★</span>}
         {tituloPostit(p)}
         <span
           className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full"
@@ -326,6 +338,15 @@ export function MapaPostits({
           ))}
         </ol>
         {c.fuente && <p className="mt-1.5 text-[10.5px] text-[#5e7370]">{c.fuente}</p>}
+        {HOJAS_LENTE[c.id] && (
+          <HojaLente
+            slug={slug}
+            colId={c.id}
+            elementos={elementos}
+            editable={editable}
+            onIdea={(texto) => setPanel({ modo: "nuevo", rowId: shape.rows[0].id, colId: c.id, texto })}
+          />
+        )}
       </div>
     );
   }
@@ -384,11 +405,34 @@ export function MapaPostits({
         </p>
       )}
 
-      {barraInsights()}
+      <div className="mb-3 inline-flex rounded-full border border-[rgba(232,227,216,0.16)] p-0.5 text-[12px]">
+        {([
+          ["lentes", "Por lentes"],
+          ["organizado", "Organizado"],
+        ] as const).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => {
+              setVista(k);
+              setBorrador(null);
+            }}
+            className={`rounded-full px-3 py-1 ${vista === k ? "bg-[rgba(111,191,178,0.18)] text-accent" : "text-[#a9b5b3]"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {vista === "organizado" && (
+        <MapaOrganizado slug={slug} shape={shape} postits={postits} grupos={grupos} editable={editable} onAbrir={(id) => setPanel({ modo: "ver", id })} />
+      )}
+
+      {vista === "lentes" && barraInsights()}
 
       {/* Pantalla ancha: el pliego completo */}
-      <div className="hidden md:block">{guia && guiaLente(guia)}</div>
-      <div className="hidden overflow-x-auto md:block">
+      <div className={vista === "lentes" ? "hidden md:block" : "hidden"}>{guia && guiaLente(guia)}</div>
+      <div className={vista === "lentes" ? "hidden overflow-x-auto md:block" : "hidden"}>
         <div
           className="grid min-w-[980px] gap-1.5"
           style={{ gridTemplateColumns: `128px repeat(${shape.cols.length}, minmax(0, 1fr))` }}
@@ -411,7 +455,7 @@ export function MapaPostits({
       </div>
 
       {/* Celular: una lente a la vez, las cinco dimensiones hacia abajo */}
-      <div className="md:hidden">
+      <div className={vista === "lentes" ? "md:hidden" : "hidden"}>
         <div className="-mx-4 mb-3 flex gap-1.5 overflow-x-auto px-4 pb-1">
           {shape.cols.map((c, i) => (
             <button
@@ -462,7 +506,8 @@ export function MapaPostits({
           key={panel.modo === "ver" ? panel.id : `${panel.rowId}|${panel.colId}`}
           shape={shape}
           postit={abierto ?? null}
-          celda={panel.modo === "nuevo" ? { rowId: panel.rowId, colId: panel.colId } : null}
+          celda={panel.modo === "nuevo" ? { rowId: panel.rowId, colId: panel.colId, texto: panel.texto } : null}
+          grupos={grupos}
           editable={editable}
           pendiente={pendiente}
           onCerrar={() => setPanel(null)}
@@ -473,11 +518,14 @@ export function MapaPostits({
                 await updatePostit(abierto.id, { titulo: datos.titulo, text: datos.text });
                 if (datos.verification !== abierto.verification) await setVerification(abierto.id, datos.verification);
                 if (datos.rowId !== abierto.rowId || datos.colId !== abierto.colId) await moveFragment(abierto.id, datos.rowId, datos.colId);
+                else if (datos.grupoId !== abierto.grupoId) await agruparPostit(slug, abierto.id, datos.grupoId);
+                if (datos.hotspot !== abierto.hotspot) await marcarHotspot(slug, abierto.id, datos.hotspot);
               });
             } else {
               correr(async () => {
                 const { id } = await createFragment({ mapId, rowId: datos.rowId, colId: datos.colId, text: datos.text, titulo: datos.titulo });
                 if (datos.verification !== "TO_CONFIRM") await setVerification(id, datos.verification);
+                if (datos.hotspot) await marcarHotspot(slug, id, true);
               });
             }
             setPanel(null);
@@ -512,12 +560,13 @@ export function MapaPostits({
   }
 }
 
-type Datos = { titulo: string; text: string; verification: Verification; rowId: string; colId: string };
+type Datos = { titulo: string; text: string; verification: Verification; rowId: string; colId: string; grupoId: string | null; hotspot: boolean };
 
 function PanelPostit({
   shape,
   postit,
   celda,
+  grupos,
   editable,
   pendiente,
   onCerrar,
@@ -527,7 +576,8 @@ function PanelPostit({
 }: {
   shape: TemplateShape;
   postit: Postit | null;
-  celda: { rowId: string; colId: string } | null;
+  celda: { rowId: string; colId: string; texto?: string } | null;
+  grupos: Grupo[];
   editable: boolean;
   pendiente: boolean;
   onCerrar: () => void;
@@ -537,11 +587,14 @@ function PanelPostit({
 }) {
   const [d, setD] = useState<Datos>({
     titulo: postit?.titulo ?? "",
-    text: postit?.text ?? "",
+    text: postit?.text ?? celda?.texto ?? "",
     verification: postit?.verification ?? "TO_CONFIRM",
     rowId: postit?.rowId ?? celda!.rowId,
     colId: postit?.colId ?? celda!.colId,
+    grupoId: postit?.grupoId ?? null,
+    hotspot: postit?.hotspot ?? false,
   });
+  const gruposFila = grupos.filter((g) => g.rowId === d.rowId);
   const fila = shape.rows.find((r) => r.id === d.rowId);
   const col = shape.cols.find((c) => c.id === d.colId);
 
@@ -617,11 +670,16 @@ function PanelPostit({
             </div>
           </div>
 
-          {postit && (
+          <label className="flex items-center gap-2 text-[12.5px] text-[#c9d1cf]" title="Un punto de interés del que puede arrancar una Plataforma de Crecimiento">
+            <input type="checkbox" checked={d.hotspot} onChange={() => setD({ ...d, hotspot: !d.hotspot })} />
+            <span className="text-[#E8C66A]">★</span> Punto de interés («hot spot»)
+          </label>
+
+          {(postit || celda?.texto !== undefined) && (
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
                 <span className="label">Dimensión</span>
-                <select value={d.rowId} onChange={(e) => setD({ ...d, rowId: e.target.value })} className="field">
+                <select value={d.rowId} onChange={(e) => setD({ ...d, rowId: e.target.value, grupoId: null })} className="field">
                   {shape.rows.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.name}
@@ -639,6 +697,19 @@ function PanelPostit({
                   ))}
                 </select>
               </label>
+              {postit && gruposFila.length > 0 && (
+                <label className="col-span-2 block">
+                  <span className="label">Grupo</span>
+                  <select value={d.grupoId ?? ""} onChange={(e) => setD({ ...d, grupoId: e.target.value || null })} className="field">
+                    <option value="">Sin agrupar</option>
+                    {gruposFila.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </div>
           )}
         </fieldset>

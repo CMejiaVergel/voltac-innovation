@@ -13,9 +13,10 @@ import { VERIFICATION_META, VERIFICATIONS } from "@/lib/enums";
 const ETAPAS = [
   { id: "configurar", n: 1, nombre: "Configurar", idea: "La organización y su reto" },
   { id: "divergir", n: 2, nombre: "Divergir", idea: "El mapa de post-its" },
-  { id: "combinar", n: 3, nombre: "Combinar", idea: "Armar conceptos" },
-  { id: "convergir", n: 4, nombre: "Convergir", idea: "Priorizar" },
-  { id: "actuar", n: 5, nombre: "Actuar", idea: "La línea recta" },
+  { id: "plataformas", n: 3, nombre: "Plataformas", idea: "Dónde crecer" },
+  { id: "combinar", n: 4, nombre: "Combinar", idea: "Armar conceptos" },
+  { id: "convergir", n: 5, nombre: "Convergir", idea: "Priorizar" },
+  { id: "actuar", n: 6, nombre: "Actuar", idea: "La línea recta" },
 ];
 
 export function GuiaV2() {
@@ -92,10 +93,28 @@ export function GuiaV2() {
             </span>
           ))}
         </div>
-        <Hecho>Cuando el equipo arma su primer concepto con el material del mapa.</Hecho>
+        <ul className="lista">
+          <li>Al abrir una lente aparece su hoja de trabajo: las tendencias con su impacto e incertidumbre y los escenarios (Futuro), los competidores usuales e inusuales, los aliados posibles o los actores de la cadena. Desde cada renglón, <b>+ idea al mapa</b> pega un post-it en esa lente.</li>
+          <li><b>Organizado</b> (arriba del mapa): cada dimensión con los post-its de todas las lentes. Arrastre los parecidos a un mismo grupo y póngale una etiqueta; oculte los duplicados. En el celular, el grupo se elige desde el post-it.</li>
+          <li>Marque con <b>★ Punto de interés</b> los post-its de los que puede arrancar una plataforma de crecimiento.</li>
+        </ul>
+        <Hecho>Cuando el mapa está organizado en grupos y el equipo pasa a Plataformas.</Hecho>
       </Etapa>
 
-      <Etapa id="combinar" n={3} nombre="Combinar" donde="pestaña Combinar (Conceptos en el celular)">
+      <Etapa id="plataformas" n={3} nombre="Plataformas de crecimiento" donde="pestaña Plataformas">
+        <p>
+          Una plataforma de crecimiento es un espacio donde la empresa quiere innovar: lo bastante amplio para varios conceptos y lo bastante concreto para
+          imaginarlo. Se trabaja en tres ejercicios cortos.
+        </p>
+        <ul className="lista">
+          <li><b>Identificar:</b> cree una plataforma, toque en el mapa organizado los fragmentos que la sostienen, escriba su historia y marque las cinco que más resuenan.</li>
+          <li><b>Priorizar:</b> el equipo define sus criterios, califica cada plataforma de 1 a 5 y prioriza una.</li>
+          <li><b>Desarrollar:</b> la priorizada se explica en cinco bloques: insights que la impulsan, segmentos, activos y aliados, propuesta de valor y por qué puede ganar.</li>
+        </ul>
+        <Hecho>Cuando hay una plataforma priorizada y desarrollada: los conceptos se arman dentro de ella.</Hecho>
+      </Etapa>
+
+      <Etapa id="combinar" n={4} nombre="Combinar" donde="pestaña Combinar (Conceptos en el celular)">
         <p>
           El lienzo de concepto es donde los post-its se vuelven negocio. Cada concepto tiene una casilla por
           dimensión: quién es el cliente, cómo le llega, qué le ofrecemos, cómo lo producimos y cómo ganamos dinero.
@@ -108,7 +127,7 @@ export function GuiaV2() {
         <Hecho>Cuando los conceptos empiezan a evaluarse en Convergir.</Hecho>
       </Etapa>
 
-      <Etapa id="convergir" n={4} nombre="Convergir" donde="pestaña Convergir (Priorizar en el celular)">
+      <Etapa id="convergir" n={5} nombre="Convergir" donde="pestaña Convergir (Priorizar en el celular)">
         <p>
           La matriz ubica cada concepto según dos preguntas: <b>Atractividad</b> (¿vale la pena?: mercado, opciones
           que abre, recompensa frente a riesgo) y <b>Fit</b> (¿es para nosotros?: viabilidad, estrategia, pasión). Cada
@@ -121,7 +140,7 @@ export function GuiaV2() {
         <Hecho>Cuando al menos un concepto sigue adelante.</Hecho>
       </Etapa>
 
-      <Etapa id="actuar" n={5} nombre="Actuar" donde="pestaña Actuar">
+      <Etapa id="actuar" n={6} nombre="Actuar" donde="pestaña Actuar">
         <p>Cada concepto que sigue adelante recorre los mismos cinco pasos, uno por pantalla:</p>
         <ol className="mt-3 grid gap-2 sm:grid-cols-5">
           {LINEA_CONCEPTO.map((p, i) => (

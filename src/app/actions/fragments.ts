@@ -299,7 +299,7 @@ export async function moveFragment(
 
   await prisma.fragment.update({
     where: { id: fragmentId },
-    data: { rowId, colId, position: (last?.position ?? -1) + 1 },
+    data: { rowId, colId, position: (last?.position ?? -1) + 1, ...(rowId !== fragment.rowId ? { grupoId: null } : {}) },
   });
   await prisma.fragmentRevision.create({
     data: {

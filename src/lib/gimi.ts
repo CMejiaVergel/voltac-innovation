@@ -864,3 +864,150 @@ export const PREGUNTA_LIENZO: Record<string, string> = {
   produccion: "¿Cómo lo producimos?",
   modelos: "¿Cómo ganamos dinero?",
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Paso 2 · Hojas de trabajo de las lentes (v2)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * La hoja de trabajo de cada lente: los renglones que el GIMI pide listar
+ * antes de bajar ideas al mapa. Su Compañía no tiene hoja: se mapea directo.
+ */
+export const HOJAS_LENTE: Record<string, { titulo: string; nombreItem: string; tipos: { key: string; label: string; grupo?: string }[] }> = {
+  futuro: {
+    titulo: "Tendencias",
+    nombreItem: "Tendencia",
+    // Los cuatro cuadrantes de tendencias (Masterclass 2, lám. 75; IMBOK p. 41).
+    tipos: [
+      { key: "MEGAFUERZAS", label: "Megafuerzas globales: económico, tecnológico, social, político, medioambiental" },
+      { key: "CANAL_CLIENTE", label: "Canal y cliente: necesidades cambiantes de clientes, consumidores e influenciadores" },
+      { key: "PROVEEDORES", label: "Proveedores: competencias, tecnologías, socios y redes" },
+      { key: "COMPETIDORES", label: "Competidores: sustitutos, movimientos de la competencia, nuevos participantes" },
+    ],
+  },
+  compet: {
+    titulo: "Competidores",
+    nombreItem: "Competidor",
+    // Usuales e inusuales (Masterclass 2, lám. 80-83; IMBOK p. 45).
+    tipos: [
+      { key: "ACTUAL", label: "Competidores actuales", grupo: "Usuales" },
+      { key: "REDEFINIENDO", label: "Empresas redefiniendo la industria", grupo: "Inusuales" },
+      { key: "OTRA_UBICACION", label: "Empresas en otras ubicaciones", grupo: "Inusuales" },
+      { key: "EMERGENTE", label: "Empresas pequeñas emergentes", grupo: "Inusuales" },
+    ],
+  },
+  adyac: {
+    titulo: "Actores adyacentes",
+    nombreItem: "Actor adyacente",
+    // «Enumere todos los posibles actores adyacentes» (IMBOK p. 47).
+    tipos: [{ key: "ADYACENTE", label: "Aliado posible" }],
+  },
+  cadena: {
+    titulo: "Actores de la cadena de valor",
+    nombreItem: "Actor",
+    // Masterclass 2, lám. 89; IMBOK p. 48.
+    tipos: [
+      { key: "PROVEEDOR", label: "Proveedores" },
+      { key: "CLIENTE", label: "Clientes" },
+      { key: "DISTRIBUIDOR", label: "Distribuidores" },
+      { key: "REGULADOR", label: "Gobierno / reguladores" },
+      { key: "ALIADO", label: "Otros aliados" },
+    ],
+  },
+};
+
+/** Un escenario futuro: se arma con dos tendencias de alto impacto y alta incertidumbre (IMBOK pp. 42-44). */
+export const TIPO_ESCENARIO = "ESCENARIO";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Paso 3 · Plataformas de Crecimiento (IMBOK pp. 51-60)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Dónde queda la plataforma respecto al negocio principal (IMBOK pp. 54-56). */
+export const ALCANCES_PLATAFORMA = [
+  { key: "NUCLEO", label: "Dentro del negocio principal" },
+  { key: "EXTENDIDA", label: "Más allá del negocio principal, sin perder contacto con él" },
+  { key: "LEJANA", label: "Lejos del negocio principal, sin contacto con él" },
+] as const;
+
+/** Preguntas para la historia de cada plataforma (IMBOK pp. 56-57). */
+export const PREGUNTAS_HISTORIA_PLATAFORMA = [
+  "¿Qué grandes tendencias afectarán su negocio?",
+  "¿Qué segmentos serán los más afectados por esas tendencias?",
+  "¿Cuáles son las necesidades de esos segmentos?",
+  "¿Qué ofrecerán?",
+  "¿Qué capacidades pueden usar?",
+  "¿Cuál es el tamaño potencial del mercado de esta plataforma?",
+];
+
+/**
+ * Criterios para empezar a calificar. El IMBOK pide que el equipo los
+ * determine (p. 57); estos dos salen de su propio ejemplo: una plataforma vale
+ * si es atractiva y accionable con las competencias de la empresa (p. 51).
+ */
+export const CRITERIOS_PLATAFORMA_INICIALES = [
+  { id: "atractiva", nombre: "Atractiva" },
+  { id: "accionable", nombre: "Accionable con nuestras competencias y activos" },
+];
+
+/** Desarrollo de la plataforma priorizada, en cinco bloques (IMBOK pp. 58-59). */
+export const DESARROLLO_PLATAFORMA = [
+  {
+    key: "insights",
+    titulo: "Insights y habilitadores",
+    preguntas: [
+      "¿Cuáles son los insights claves o impulsores de esta oportunidad?",
+      "¿Qué tendencias de mercados, distribución, ofertas, producción y modelos de negocio la impulsan?",
+      "¿Qué hace que esta oportunidad sea emocionante?",
+    ],
+  },
+  {
+    key: "segmentos",
+    titulo: "Segmentos de mercado y dinámica competitiva",
+    preguntas: [
+      "¿Cuál es el segmento clave y cuáles son sus necesidades y comportamientos?",
+      "¿Qué tan grandes son los mercados y qué tan rápido crecen?",
+      "¿Cómo está cambiando la industria? ¿Es un océano azul o hay muchos competidores? ¿Quiénes son?",
+    ],
+  },
+  {
+    key: "activos",
+    titulo: "Activos de la empresa y de los aliados",
+    preguntas: [
+      "¿Qué activos actuales o potenciales nos diferenciarían en esta oportunidad?",
+      "¿Qué aliados actuales o potenciales nos diferenciarían?",
+      "¿Permiten crear las nuevas ofertas más rápido, mejor o más barato?",
+    ],
+  },
+  {
+    key: "propuesta",
+    titulo: "Propuesta de valor",
+    preguntas: [
+      "En una oración, ¿qué propuesta de valor captura lo atractivo y diferenciado de esta oportunidad?",
+      "¿Qué beneficios obtienen los clientes, los canales, los proveedores y los aliados?",
+    ],
+  },
+  {
+    key: "ganar",
+    titulo: "Por qué podemos ganar",
+    preguntas: [
+      "¿Por qué los clientes comprarán nuestras ofertas?",
+      "¿Por qué nuestra oferta es diferente de la competencia y podemos producir mejor, más barato o más rápido?",
+      "¿Por qué es significativa para nuestros aliados y por qué ganaremos dinero?",
+    ],
+  },
+] as const;
+
+/**
+ * Las etapas del embudo (vista general y presentación). Plataformas de
+ * Crecimiento es el paso 3 del proceso del GIMI (IMBOK p. 51): va entre el
+ * mapa y los conceptos. Actuar no entra: es la línea recta que sigue.
+ */
+export const ETAPAS_EMBUDO = (() => {
+  const base = IDEX.filter((s) => s.key !== "actuar");
+  return [
+    ...base.slice(0, 2),
+    { key: "plataformas", name: "Plataformas", purpose: "Espacios donde la empresa quiere crecer" },
+    ...base.slice(2),
+  ].map((s, i) => ({ key: s.key, name: s.name, purpose: s.purpose, n: i + 1 }));
+})();

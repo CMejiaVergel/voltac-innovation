@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 
-import { IDEX, LINEA_CONCEPTO } from "@/lib/gimi";
+import { ETAPAS_EMBUDO, LINEA_CONCEPTO } from "@/lib/gimi";
 
 export type EtapaEmbudo = {
   key: string;
@@ -18,7 +18,7 @@ export type ConceptoEnLinea = {
   href?: string;
 };
 
-const EMBUDO = IDEX.filter((s) => s.key !== "actuar");
+const EMBUDO = ETAPAS_EMBUDO;
 
 /**
  * El proceso como lo dibujó el mentor (15-oct-2026): un embudo que va de muchas
@@ -99,11 +99,11 @@ export function Embudo({
         <div className="flex flex-col justify-center gap-2 border-t border-dashed border-[rgba(232,227,216,0.14)] pt-4 lg:ml-3 lg:flex-[2] lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
           {actuarHref ? (
             <Link href={actuarHref} className="text-[13px] font-semibold text-[#e8e3d8] hover:text-accent">
-              5 · Actuar <span className="font-normal text-[#7f8f8c]">· cada concepto, la misma línea →</span>
+              {EMBUDO.length + 1} · Actuar <span className="font-normal text-[#7f8f8c]">· cada concepto, la misma línea →</span>
             </Link>
           ) : (
             <span className="text-[13px] font-semibold text-[#7f8f8c]">
-              5 · Actuar <span className="font-normal">· cada concepto, la misma línea</span>
+              {EMBUDO.length + 1} · Actuar <span className="font-normal">· cada concepto, la misma línea</span>
             </span>
           )}
           <div className="grid grid-cols-[66px_repeat(5,minmax(0,1fr))] items-center gap-x-0.5 gap-y-2.5 md:grid-cols-[130px_repeat(5,minmax(0,1fr))]">

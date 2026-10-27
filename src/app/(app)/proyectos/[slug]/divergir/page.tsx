@@ -32,7 +32,20 @@ export default async function DivergirPage({ params }: { params: Promise<{ slug:
     sourceCitation: f.sourceCitation,
     authorId: f.authorId,
     authorName: f.author?.name ?? null,
+    grupoId: f.grupoId,
+    hotspot: f.hotspot,
   }));
+
+  const grupos = await prisma.grupoMapa.findMany({
+    where: { mapId: primary.map.id },
+    orderBy: { position: "asc" },
+    select: { id: true, rowId: true, nombre: true },
+  });
+  const elementos = await prisma.elementoLente.findMany({
+    where: { projectId: project.id },
+    orderBy: { position: "asc" },
+    select: { id: true, colId: true, tipo: true, nombre: true, detalle: true, impacto: true, incertidumbre: true, eje: true, authorId: true },
+  });
 
   // Los insights se dibujan sobre los post-its que los sostienen. Solo cuentan
   // los puntos cuyo post-it sigue visible en el mapa.
@@ -75,8 +88,8 @@ export default async function DivergirPage({ params }: { params: Promise<{ slug:
         {canEdit(role) && <SugerirTitulos mapId={primary.map.id} sinTitulo={postits.filter((p) => !p.titulo).length} />}
         <span className="flex-1" />
         {postits.length > 0 && (
-          <Link href={`/proyectos/${slug}/combinar`} className="btn btn-primary order-last md:order-none">
-            Armar conceptos →
+          <Link href={`/proyectos/${slug}/plataformas`} className="btn btn-primary order-last md:order-none">
+            Plataformas de crecimiento →
           </Link>
         )}
         {VERIFICATIONS.map((v) => (
@@ -86,7 +99,7 @@ export default async function DivergirPage({ params }: { params: Promise<{ slug:
           </span>
         ))}
       </div>
-      <MapaPostits slug={slug} mapId={primary.map.id} shape={primary.shape} postits={postits} insights={insights} editable={canEdit(role)} />
+      <MapaPostits slug={slug} mapId={primary.map.id} shape={primary.shape} postits={postits} insights={insights} grupos={grupos} elementos={elementos} editable={canEdit(role)} />
     </div>
   );
 }
