@@ -126,6 +126,7 @@ export function GuiaV2() {
           <li>En el mapa de la izquierda, <b>★ Plataforma</b> deja solo los fragmentos de la plataforma; los puntos de interés salen primero.</li>
           <li>El concepto dice si es incremental, disruptivo o radical según cuántos de sus puntos son del negocio actual (lente Su Compañía). «Hacerlo robusto» abre las preguntas de cada casilla.</li>
           <li>Debajo se ven los insights que lo respaldan: los que comparten post-its con el concepto.</li>
+          <li><b>Mapa de conexión de puntos</b> (debajo del concepto): el mapa completo con cada post-it como un punto y el concepto como el trazo que atraviesa las dimensiones. Dice qué dimensión le falta; tocar un punto lo suma o lo suelta, y «Ver los demás conceptos» los compara.</li>
           <li>Varios conceptos a la vez, cada uno en su pestaña. Al final, la propuesta de valor y la frase: «Ofreceremos … a …, que necesita …, entregado a través de …, producido por …, y generamos dinero mediante …».</li>
         </ul>
         <Hecho>Cuando los conceptos empiezan a evaluarse en Convergir.</Hecho>

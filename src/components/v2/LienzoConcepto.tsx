@@ -17,6 +17,7 @@ import {
   soltarPostit,
   asignarPlataforma,
 } from "@/app/actions/combinar";
+import { MapaConexion } from "./MapaConexion";
 
 export type PostitLienzo = {
   id: string;
@@ -250,31 +251,42 @@ export function LienzoConcepto({
             )}
           </div>
         ) : (
-          <Concepto
-            key={activo.id}
-            concepto={activo}
-            shape={shape}
-            porId={porId}
-            plataformas={plataformas}
-            insights={insights}
-            onPlataforma={(id) => {
-              setConceptos((cs) => cs.map((c) => (c.id === activo.id ? { ...c, plataformaId: id } : c)));
-              correr(() => asignarPlataforma(activo.id, id));
-            }}
-            editable={editable}
-            pendiente={pendiente}
-            sobre={sobre}
-            setSobre={setSobre}
-            onSoltar={soltar}
-            onAnclar={anclar}
-            onAbrirSelector={setSelector}
-            onError={setError}
-            onBorrar={() => {
-              if (!confirm(`¿Borrar «${activo.title}»? Los post-its siguen en el mapa.`)) return;
-              setConceptos((cs) => cs.filter((c) => c.id !== activo.id));
-              correr(() => borrarConcepto(activo.id));
-            }}
-          />
+          <div className="flex flex-col">
+            <Concepto
+              key={activo.id}
+              concepto={activo}
+              shape={shape}
+              porId={porId}
+              plataformas={plataformas}
+              insights={insights}
+              onPlataforma={(id) => {
+                setConceptos((cs) => cs.map((c) => (c.id === activo.id ? { ...c, plataformaId: id } : c)));
+                correr(() => asignarPlataforma(activo.id, id));
+              }}
+              editable={editable}
+              pendiente={pendiente}
+              sobre={sobre}
+              setSobre={setSobre}
+              onSoltar={soltar}
+              onAnclar={anclar}
+              onAbrirSelector={setSelector}
+              onError={setError}
+              onBorrar={() => {
+                if (!confirm(`¿Borrar «${activo.title}»? Los post-its siguen en el mapa.`)) return;
+                setConceptos((cs) => cs.filter((c) => c.id !== activo.id));
+                correr(() => borrarConcepto(activo.id));
+              }}
+            />
+            <MapaConexion
+              shape={shape}
+              postits={postits}
+              conceptos={conceptos}
+              activoId={activo.id}
+              editable={editable}
+              onAnclar={anclar}
+              onSoltar={soltar}
+            />
+          </div>
         )}
       </div>
 

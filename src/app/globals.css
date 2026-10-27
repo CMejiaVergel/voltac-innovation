@@ -192,3 +192,21 @@
 .guia-cuerpo .lista b {
   color: #e8e3d8;
 }
+
+/* Mapa de conexión de puntos: el trazo del concepto se dibuja cada vez que cambia. */
+.trazo-concepto {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: dibujar-trazo 0.9s ease-out forwards;
+}
+@keyframes dibujar-trazo {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trazo-concepto {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
