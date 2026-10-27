@@ -91,7 +91,7 @@ async function cargar(slug: string, soloConcepto?: string) {
         select: { id: true, rowId: true, colId: true, titulo: true, text: true },
       })
     : [];
-  const [conceptos, miembros, tendencias, plataforma, insights] = await Promise.all([
+  const [conceptos, delProyecto, tendencias, plataforma, insights] = await Promise.all([
     prisma.concept.findMany({
       where: { projectId: project.id, reviewState: "ACCEPTED", hidden: false },
       orderBy: { position: "asc" },
@@ -114,6 +114,14 @@ async function cargar(slug: string, soloConcepto?: string) {
       select: { id: true, statement: true, dots: { select: { fragmentId: true } } },
     }),
   ]);
+  // El equipo es la gente de la organización. Los invitados al proyecto que no
+  // son de ella —mentores, evaluadores— no salen en la lámina del equipo.
+  const deLaOrg = new Set(
+    project.organizacionId
+      ? (await prisma.orgMembership.findMany({ where: { organizacionId: project.organizacionId }, select: { userId: true } })).map((m) => m.userId)
+      : [],
+  );
+  const miembros = delProyecto.some((m) => deLaOrg.has(m.userId)) ? delProyecto.filter((m) => deLaOrg.has(m.userId)) : delProyecto;
   // Las fotos van incrustadas: el archivo tiene que viajar solo, sin la plataforma.
   const fotos = new Map<string, string>();
   for (const m of miembros) {
@@ -156,7 +164,8 @@ export async function generarPresentacion(slug: string, soloConcepto?: string): 
   const lamina = (kicker: string, titulo: string) => {
     const s = pptx.addSlide({ masterName: "V2" });
     s.addText(kicker.toUpperCase(), { x: 0.5, y: 0.35, w: 10.5, h: 0.3, fontFace: FUENTE, fontSize: 10, color: C.acento, charSpacing: 3, bold: true });
-    s.addText(titulo, { x: 0.5, y: 0.65, w: 10.8, h: 0.75, fontFace: FUENTE, fontSize: 26, bold: true, color: C.texto, valign: "top", fit: "shrink" });
+    // Termina antes del logo; un titular largo (un eslogan) baja de tamaño para caber en una línea.
+    s.addText(titulo, { x: 0.5, y: 0.65, w: 10.3, h: 0.75, fontFace: FUENTE, fontSize: titulo.length > 52 ? 21 : titulo.length > 42 ? 23 : 26, bold: true, color: C.texto, valign: "top", fit: "shrink" });
     return s;
   };
   const caja = (s: PptxGenJS.Slide, x: number, y: number, w: number, h: number, borde = C.borde) =>
@@ -328,7 +337,11 @@ function tendencias({ lamina, bloque }: Kit, d: Datos) {
   const s = lamina("Tendencias de la industria", "Las fuerzas que mueven la oportunidad");
   const texto = lista
     .slice(0, 10)
-    .map((t) => `${t.eje ? "★ " : "• "}${t.nombre}${t.impacto ? `  (impacto ${t.impacto}${t.incertidumbre ? `, incertidumbre ${t.incertidumbre}` : ""})` : ""}`)
+    .map(
+      (t) =>
+        `${t.eje ? "★ " : "• "}${t.nombre}${t.impacto ? `  (impacto ${t.impacto}${t.incertidumbre ? `, incertidumbre ${t.incertidumbre}` : ""})` : ""}` +
+        (t.detalle ? `\n   ${corto(t.detalle, escenarios.length ? 150 : 260)}` : ""),
+    )
     .join("\n");
   bloque(s, "Tendencias principales", texto, 0.5, 1.6, escenarios.length ? 6.05 : 12.3, 5.1, C.acento);
   if (escenarios.length) {
@@ -400,7 +413,7 @@ function matriz({ pptx, lamina }: Kit, d: Datos) {
     if (k < 8) {
       s.addText(
         [
-          { text: `${r.t !== null ? k + 1 : "–"}  ${corto(r.c.title, 48)}`, options: { bold: true, color: C.texto, fontSize: 13, breakLine: true } },
+          { text: `${r.t !== null ? k + 1 : "–"}  ${corto(r.c.title, 66)}`, options: { bold: true, color: C.texto, fontSize: 12, breakLine: true } },
           {
             text: `${r.t !== null ? `Atractivo ${r.a!.toFixed(1)} · Encaje ${r.f!.toFixed(1)}` : "Sin puntuar"}${r.c.priorizado ? "   ★ Elegido" : ""}`,
             options: { color: r.c.priorizado ? C.oro : C.tenue, fontSize: 10 },
@@ -484,19 +497,33 @@ function casoDeConcepto(k: Kit, d: Datos, c: Concepto) {
     const s = lamina(kick("Incertidumbres clave"), c.title);
     caja(s, 0.5, 1.6, 6.05, 5.1);
     s.addText("LO QUE TENDRÍA QUE SER CIERTO", { x: 0.65, y: 1.7, w: 5.7, h: 0.3, fontFace: FUENTE, fontSize: 9, bold: true, color: C.acento, charSpacing: 2 });
-    const orden = [...c.supuestos].sort((p, q) => Number(q.critical) - Number(p.critical) || p.likelihood - q.likelihood);
-    orden.slice(0, 6).forEach((sp, j) => {
+    // Las críticas van completas, con su prueba y su resultado; los precedentes
+    // no son incertidumbres (el proceso ya los dio por sentados) y no entran.
+    const condiciones = c.supuestos.filter((sp) => sp.kind !== "PRECEDENTE");
+    const criticas = condiciones.filter((sp) => sp.critical).slice(0, 3);
+    criticas.forEach((sp, j) => {
       s.addText(
         [
-          { text: `${sp.critical ? "★ " : ""}${corto(sp.text, 90)}`, options: { bold: sp.critical, fontSize: 11.5, color: sp.critical ? C.oro : C.texto, breakLine: true } },
-          { text: sp.critical && sp.failFastTest ? `Prueba: ${corto(sp.failFastTest, 110)}` : `Probabilidad ${sp.likelihood}/5`, options: { fontSize: 9.5, color: C.suave } },
+          { text: `★ ${corto(sp.text, 230)}`, options: { bold: true, fontSize: 10.5, color: C.oro, breakLine: true } },
+          { text: sp.failFastTest ? `Prueba: ${corto(sp.failFastTest, 150)}` : "Prueba por definir", options: { fontSize: 9.5, color: C.suave, breakLine: true } },
+          { text: sp.expectedResult ? `Resultado esperado: ${corto(sp.expectedResult, 180)}` : "", options: { fontSize: 9.5, color: C.acento } },
         ],
-        { x: 0.65, y: 2.05 + j * 0.76, w: 5.75, h: 0.72, fontFace: FUENTE, valign: "top", fit: "shrink" },
+        { x: 0.65, y: 2.05 + j * 1.3, w: 5.75, h: 1.25, fontFace: FUENTE, valign: "top", fit: "shrink" },
       );
     });
+    const otras = condiciones.filter((sp) => !sp.critical).sort((p, q) => p.likelihood - q.likelihood);
+    if (otras.length) {
+      s.addText(
+        otras.slice(0, 3).map((sp) => ({ text: `• ${corto(sp.text, 110)}`, options: { fontSize: 9, color: C.suave, breakLine: true } })),
+        { x: 0.65, y: 2.05 + criticas.length * 1.3, w: 5.75, h: 6.6 - (2.05 + criticas.length * 1.3), fontFace: FUENTE, valign: "top", fit: "shrink" },
+      );
+    }
     caja(s, 6.75, 1.6, 6.05, 5.1);
     s.addText("ARTEFACTOS PARA VALIDARLO", { x: 6.9, y: 1.7, w: 5.7, h: 0.3, fontFace: FUENTE, fontSize: 9, bold: true, color: C.acento, charSpacing: 2 });
-    c.artefactos.slice(0, 5).forEach((a, j) => {
+    // Los más recientes primero; los borradores solo si no hay otra cosa que mostrar.
+    const recientes = [...c.artefactos].reverse();
+    const vigentes = recientes.some((a) => a.status !== "BORRADOR") ? recientes.filter((a) => a.status !== "BORRADOR") : recientes;
+    vigentes.slice(0, 5).forEach((a, j) => {
       const kind = ARTIFACT_KIND_LABEL[asEnum(ARTIFACT_KINDS, a.kind, "PROTOCEPTO")];
       const st = ARTIFACT_STATUS_META[asEnum(ARTIFACT_STATUSES, a.status, "BORRADOR")];
       s.addText(
