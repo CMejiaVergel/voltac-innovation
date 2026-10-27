@@ -3,10 +3,10 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { requireOrg, leerJson } from "@/lib/organizaciones";
-import { canEdit } from "@/lib/enums";
+import { canAdminProject, canEdit } from "@/lib/enums";
 import { AUTOEVALUACION_DESAFIO, TIPOS_INNOVACION, PREGUNTAS_SETUP, tiposVigentes } from "@/lib/gimi";
 import { ENCAJE_VACIO, resumirEncaje, VEREDICTO_META, type Encaje } from "@/lib/encaje";
-import { proponerDesafio, evaluarEncaje, eliminarDesafio, retoDelSponsor } from "@/app/actions/organizaciones";
+import { proponerDesafio, evaluarEncaje, eliminarDesafio, editarDesafio, retoDelSponsor } from "@/app/actions/organizaciones";
 import { Avisos, Bloque, Campo, Siguiente } from "@/components/v2/ui";
 
 function SiNo({ name, valor, label }: { name: string; valor: boolean | null | undefined; label: string }) {
@@ -40,6 +40,7 @@ export default async function DesafiosPage({
   const user = await requireUser();
   const { org, role } = await requireOrg(user, slug);
   const editable = canEdit(role);
+  const responsable = canAdminProject(role);
 
   const tiposOrg = tiposVigentes(leerJson<string[]>(org.perfil?.tiposInnovacion, []));
   const restriccionesOrg = leerJson<string[]>(org.perfil?.restricciones, []);
@@ -156,9 +157,36 @@ export default async function DesafiosPage({
                       <button type="submit" className="btn btn-primary">Guardar encaje</button>
                     </div>
                   </form>
-                  <form action={eliminarDesafio.bind(null, slug, d.id)} className="mt-3">
-                    <button type="submit" className="btn btn-danger">Borrar desafío</button>
+                </details>
+              )}
+
+              {editable && (d.autorId === user.id || responsable) && (
+                <details className="mt-3 rounded-[3px] border border-[rgba(232,227,216,0.1)] p-3">
+                  <summary className="cursor-pointer text-[12.5px] text-[#8b9a97] hover:text-accent">Editar o borrar</summary>
+                  <form action={editarDesafio.bind(null, slug, d.id)} className="mt-4 flex flex-col gap-3">
+                    <Campo name="titulo" label="Título corto" rows={1} required defaultValue={d.titulo} />
+                    <Campo name="problema" label="¿Cuál es el problema?" rows={3} required defaultValue={d.problema} />
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Campo name="porQueRelevante" label="¿Por qué es relevante?" rows={3} defaultValue={d.porQueRelevante} />
+                      <Campo name="impacto" label="¿Cuál es el impacto si se resuelve?" rows={3} defaultValue={d.impacto} />
+                    </div>
+                    <div>
+                      <button type="submit" className="btn btn-primary">Guardar cambios</button>
+                    </div>
                   </form>
+                  {(!d.projectId || responsable) && (
+                    <form action={eliminarDesafio.bind(null, slug, d.id)} className="mt-4 flex flex-col gap-2 border-t border-[rgba(232,227,216,0.08)] pt-3">
+                      {d.projectId && (
+                        <label className="flex items-start gap-2 text-[12px] text-[#c9a94e]">
+                          <input type="checkbox" name="confirmar" value="si" required className="mt-0.5 accent-[#c9a94e]" />
+                          Este desafío ya es un reto. Entiendo que el proyecto no se borra: solo pierde el registro de dónde nació.
+                        </label>
+                      )}
+                      <div>
+                        <button type="submit" className="btn btn-danger">Borrar desafío</button>
+                      </div>
+                    </form>
+                  )}
                 </details>
               )}
             </article>

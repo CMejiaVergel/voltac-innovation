@@ -217,16 +217,40 @@ export async function evaluarEncaje(slug: string, desafioId: string, formData: F
   volverCon(ruta, "hecho", "Encaje guardado.");
 }
 
-export async function eliminarDesafio(slug: string, desafioId: string): Promise<void> {
+export async function eliminarDesafio(slug: string, desafioId: string, formData: FormData): Promise<void> {
   const { user, org, esResponsable } = await orgEditable(slug);
   const ruta = `/organizaciones/${slug}/desafios`;
   const d = await prisma.desafioPropuesto.findFirst({ where: { id: desafioId, organizacionId: org.id } });
   if (!d) volverCon(ruta, "error", "Ese desafío ya no existe.");
-  if (d.projectId) volverCon(ruta, "error", "Ese desafío ya se convirtió en reto; no se puede borrar.");
-  if (d.autorId !== user.id && !esResponsable) volverCon(ruta, "error", "Solo quien lo propuso o el responsable pueden borrarlo.");
+  if (d.projectId) {
+    // Ya es un reto: solo el responsable lo borra, y confirmándolo. El proyecto
+    // no se toca; solo pierde el registro de dónde nació.
+    if (!esResponsable) volverCon(ruta, "error", "Ese desafío ya es un reto: solo el responsable de la organización puede borrarlo.");
+    if (texto(formData, "confirmar") !== "si") volverCon(ruta, "error", "Para borrar un desafío que ya es reto, marca la confirmación.");
+  } else if (d.autorId !== user.id && !esResponsable) {
+    volverCon(ruta, "error", "Solo quien lo propuso o el responsable pueden borrarlo.");
+  }
   await prisma.desafioPropuesto.delete({ where: { id: d.id } });
-  revalidatePath(ruta);
+  revalidatePath(`/organizaciones/${slug}`, "layout");
   volverCon(ruta, "hecho", `Desafío «${d.titulo}» borrado.`);
+}
+
+/** Corrige lo escrito en un desafío. Sirve también cuando ya es reto: el reto vive en su proyecto. */
+export async function editarDesafio(slug: string, desafioId: string, formData: FormData): Promise<void> {
+  const { user, org, esResponsable } = await orgEditable(slug);
+  const ruta = `/organizaciones/${slug}/desafios`;
+  const d = await prisma.desafioPropuesto.findFirst({ where: { id: desafioId, organizacionId: org.id } });
+  if (!d) volverCon(ruta, "error", "Ese desafío ya no existe.");
+  if (d.autorId !== user.id && !esResponsable) volverCon(ruta, "error", "Solo quien lo propuso o el responsable pueden editarlo.");
+  const titulo = texto(formData, "titulo");
+  const problema = texto(formData, "problema");
+  if (!titulo || !problema) volverCon(ruta, "error", "El desafío necesita un título y la descripción del problema.");
+  await prisma.desafioPropuesto.update({
+    where: { id: d.id },
+    data: { titulo, problema, porQueRelevante: texto(formData, "porQueRelevante"), impacto: texto(formData, "impacto") },
+  });
+  revalidatePath(`/organizaciones/${slug}`, "layout");
+  volverCon(ruta, "hecho", `Desafío «${titulo}» actualizado.`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
